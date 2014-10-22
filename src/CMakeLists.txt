@@ -6,8 +6,8 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake_modules)
 ############################################
 # find dependencies
 
-#find_package(Boost REQUIRED COMPONENTS filesystem)
-#include_directories(${Boost_INCLUDE_DIRS})
+find_package(Boost REQUIRED COMPONENTS)
+include_directories(${Boost_INCLUDE_DIRS})
 
 ############################################
 
