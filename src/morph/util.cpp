@@ -21,3 +21,16 @@
 
 using namespace std;
 
+void read_file(std::string path, std::function<void(ifstream&)> reader) {
+	try {
+		ifstream in(path);
+		in.exceptions(ios::badbit);
+		if (!in.good()) {
+			throw runtime_error("Failed to open file");
+		}
+		reader(in);
+	}
+	catch (exception& e) {
+		throw runtime_error((make_string() << "Error while reading file (" << path << "): " << e.what()).str());
+	}
+}

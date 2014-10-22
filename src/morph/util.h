@@ -20,7 +20,9 @@
 #pragma once
 
 #include <sstream>
+#include <fstream>
 #include <map>
+#include <functional>
 
 // This class taken from: http://stackoverflow.com/a/25351759/1031434
 // Contributed by Jason R
@@ -68,3 +70,8 @@ typename std::map<K,V>::const_iterator infimum(const std::map<K, V>& map_, const
 	it--;
 	return it;
 }
+
+/**
+ * Open file for reading, call reader when it's open
+ */
+void read_file(std::string path, std::function<void(std::ifstream&)> reader);

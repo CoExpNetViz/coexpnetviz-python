@@ -20,6 +20,7 @@ file(GLOB_RECURSE Sources morph/*.cpp)
 add_executable(morph ${Sources})
 
 target_link_libraries(morph
+#	${Boost_LIBRARIES}
     ${LIBS})
 
 

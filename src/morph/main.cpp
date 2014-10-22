@@ -11,6 +11,11 @@
 #include "ublas.h"
 #include "util.h"
 
+#ifdef _WIN32
+
+#else
+#endif
+
 // TODO fiddling with matrix orientation, would it help performance?
 
 using namespace std;
@@ -53,49 +58,43 @@ void Application::run() {
 void Application::load() {
 	// Load config: lists clustering files and their associated gene expression files
 	string config_path = "../data/Configs/ConfigsBench.txt";
-	try {
-		ifstream in(config_path);
-		in.exceptions(ios::badbit);
+	read_file(config_path, [this](ifstream& in) {
 		while (in.good()) {
 			string gene_expression_path;
 			string clustering_path;
-			in >> gene_expression_path >> clustering_path;
+			in >> gene_expression_path;
 			if (in.fail()) {
-				throw runtime_error("Syntax error");
+				break; // probably eof
+			}
+			in >> clustering_path;
+			if (in.fail()) {
+				throw runtime_error("Incomplete line");
 			}
 
-			/*auto it = gene_expression_sets.find(gene_expression_path);
+			// TODO
+			auto it = gene_expression_sets.find(gene_expression_path);
 			if (it == gene_expression_sets.end()) {
 				it = gene_expression_sets.emplace(gene_expression_path, GeneExpression(gene_expression_path)).first;
 			}
 
-			clusterings.emplace_back(Clustering(clustering_path, it->second));*/
+			//clusterings.emplace_back(Clustering(clustering_path, it->second));
 		}
-	}
-	catch (exception& e) {
-		throw runtime_error((make_string() << "Error while reading config file (" << config_path << "): " << e.what()).str());
-	}
+	});
 
 	// Load gene of interest sets
-	// TODO genes_of_interest_sets
 	std::vector<string> goi_paths = {"../data/Configs/InputTextGOI2.txt", "../data/Configs/InputTextGOI3.txt"};
 	for (string path : goi_paths) {
-		try {
-			ifstream in(path);
-			in.exceptions(ios::badbit);
+		read_file(path, [this](ifstream& in) {
 			while (in.good()) {
 				string gene_name;
 				in >> gene_name;
 				if (in.fail()) {
 					break;
 				}
+				// TODO genes_of_interest_sets
 				//cout << gene_name << ",";
 			}
-		}
-		catch (exception& e) {
-			throw runtime_error((make_string() << "Error while reading genes-of-interest file (" << path << "): " << e.what()).str());
-		}
-		cout << endl;
+		});
 	}
 }
 
