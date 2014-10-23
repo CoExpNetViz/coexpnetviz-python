@@ -63,13 +63,15 @@ void GeneExpression::load_correlations(const std::vector<std::string>& all_genes
 	// all_genes_of_interest -> row_indices
 	indirect_array interesting_indices(all_genes_of_interest.size());
 	for (int i=0; i<all_genes_of_interest.size(); i++) {
-		interesting_indices(i) = get_gene_index(all_genes_of_interest.at(i));
+		string gene = all_genes_of_interest.at(i);
+		if (has_gene(gene)) {
+			interesting_indices(i) = get_gene_index(gene);
+		}
 	}
 
 	gene_correlations = GeneCorrelations(expression_matrix.size1(), expression_matrix.size1(), expression_matrix.size1() * interesting_indices.size());
 	for (size_type i=0; i<4 && i<expression_matrix.size1(); i++) {
 		for (auto j : interesting_indices) {
-			if (i==0) cout << ".";
 			if (i==j) {
 				gene_correlations(i,j) = 1.0;
 			}
@@ -78,15 +80,17 @@ void GeneExpression::load_correlations(const std::vector<std::string>& all_genes
 			}
 		}
 	}
-	cout << endl;
 }
 
 GeneCorrelations& GeneExpression::get_gene_correlations() {
 	return gene_correlations;
 }
 
-size_type GeneExpression::get_gene_index(std::string name) {
-	auto it = gene_indices.find(name);
-	assert(it != gene_indices.end());
-	return it->second;
+size_type GeneExpression::get_gene_index(std::string name) const {
+	assert(has_gene(name));
+	return gene_indices.find(name)->second;
+}
+
+bool GeneExpression::has_gene(string gene) const {
+	return gene_indices.find(gene) != gene_indices.end();
 }

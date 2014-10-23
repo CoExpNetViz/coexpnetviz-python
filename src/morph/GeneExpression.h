@@ -26,7 +26,8 @@ public:
 	 */
 	GeneCorrelations& get_gene_correlations(); // TODO only fill the correlation columns corresponding to a gene of interest
 
-	size_type get_gene_index(std::string name);
+	size_type get_gene_index(std::string name) const;
+	bool has_gene(std::string name) const;
 
 private:
 	void load_correlations(const std::vector<std::string>& all_genes_of_interest);
