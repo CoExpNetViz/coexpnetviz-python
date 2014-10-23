@@ -60,18 +60,9 @@ void Application::load() {
 	std::vector<string> goi_paths = {"../data/Configs/InputTextGOI2.txt", "../data/Configs/InputTextGOI3.txt"};
 	std::vector<string> all_genes_of_interest;
 	for (string path : goi_paths) {
-		read_file(path, [this, &all_genes_of_interest](ifstream& in) {
-			while (in.good()) {
-				string gene_name;
-				in >> gene_name;
-				if (in.fail()) {
-					break;
-				}
-				all_genes_of_interest.push_back(gene_name);
-				// TODO genes_of_interest_sets
-				//cout << gene_name << ",";
-			}
-		});
+		genes_of_interest_sets.emplace_back(path);
+		auto& goi = genes_of_interest_sets.back().get_genes();
+		all_genes_of_interest.insert(all_genes_of_interest.end(), goi.begin(), goi.end());
 	}
 	sort(all_genes_of_interest.begin(), all_genes_of_interest.end());
 	all_genes_of_interest.erase(unique(all_genes_of_interest.begin(), all_genes_of_interest.end()), all_genes_of_interest.end());

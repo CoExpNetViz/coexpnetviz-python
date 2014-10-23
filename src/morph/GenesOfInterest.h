@@ -9,9 +9,10 @@
 class GenesOfInterest
 {
 public:
-	std::vector<Gene*>& get_genes();
+	GenesOfInterest(std::string path);
+	const std::vector<std::string>& get_genes();
 
 private:
 	std::string name;
-	std::vector<Gene*> genes;
+	std::vector<std::string> genes;
 };
