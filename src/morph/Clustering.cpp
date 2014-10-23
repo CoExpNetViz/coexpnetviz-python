@@ -9,10 +9,11 @@ Clustering::Clustering(string path, GeneExpression& gene_expression_)
 :	name(path), gene_expression(gene_expression_)
 {
 	// Load
-	read_file(path, [this](ifstream& in) {
+	std::map<string, Cluster*> cluster_map;
+	read_file(path, [this, &cluster_map](ifstream& in) {
 		while (in.good()) {
 			string gene_name;
-			int cluster_id;
+			string cluster_id;
 			in >> gene_name >> cluster_id;
 			if (in.fail()) {
 				break;
@@ -22,7 +23,9 @@ Clustering::Clustering(string path, GeneExpression& gene_expression_)
 				clusters.emplace_back();
 				it = cluster_map.emplace(cluster_id, &clusters.back()).first;
 			}
-			it->second->add(gene_expression.get_gene_index(gene_name));
+			auto index = gene_expression.get_gene_index(gene_name);
+			it->second->add(index);
+			genes.emplace(index);
 		}
 	});
 }
@@ -35,12 +38,6 @@ GeneExpression& Clustering::get_source() const {
 	return gene_expression;
 }
 
-indirect_array Clustering::get_genes() const {
-	throw runtime_error("nope");
-	// TODO
-	/*indirect_array indices;
-	for (auto& cluster : get_clusters()) {
-		indices.insert(cluster.get_genes());
-	}
-	return indices;*/
+const std::unordered_set<size_type>& Clustering::get_genes() const {
+	return genes;
 }
