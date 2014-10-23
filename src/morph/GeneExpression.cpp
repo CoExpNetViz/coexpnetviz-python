@@ -9,7 +9,7 @@
 using namespace std;
 namespace ublas = boost::numeric::ublas;
 
-GeneExpression::GeneExpression(std::string path, const std::vector<std::string>& all_genes_of_interest)
+GeneExpression::GeneExpression(std::string path)
 :	name(path)
 {
 	// load expression_matrix
@@ -53,25 +53,12 @@ GeneExpression::GeneExpression(std::string path, const std::vector<std::string>&
 			}
 		}
 	});
-
-	load_correlations(all_genes_of_interest);
 }
 
-void GeneExpression::load_correlations(const std::vector<std::string>& all_genes_of_interest) {
-	// TODO gene_correlations: this matrix is probably quite sparse. Is it beneficial to store it as sparse?
-
-	// all_genes_of_interest -> row_indices
-	indirect_array interesting_indices(all_genes_of_interest.size());
-	for (int i=0; i<all_genes_of_interest.size(); i++) {
-		string gene = all_genes_of_interest.at(i);
-		if (has_gene(gene)) {
-			interesting_indices(i) = get_gene_index(gene);
-		}
-	}
-
-	gene_correlations = GeneCorrelations(expression_matrix.size1(), expression_matrix.size1(), expression_matrix.size1() * interesting_indices.size());
+void GeneExpression::generate_gene_correlations(const std::vector<size_type>& all_goi) {
+	gene_correlations = GeneCorrelations(expression_matrix.size1(), expression_matrix.size1(), expression_matrix.size1() * all_goi.size());
 	for (size_type i=0; i<4 && i<expression_matrix.size1(); i++) {
-		for (auto j : interesting_indices) {
+		for (auto j : all_goi) {
 			if (i==j) {
 				gene_correlations(i,j) = 1.0;
 			}

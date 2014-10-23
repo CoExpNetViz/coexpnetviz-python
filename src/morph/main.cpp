@@ -23,6 +23,7 @@ public:
 
 	std::string get_gene_expression();
 	void add_clustering(std::string path);
+	const std::vector<std::string> get_clusterings();
 
 private:
 	std::string gene_expression_path;
@@ -43,6 +44,10 @@ void JobGroup::add_clustering(std::string path) {
 	clustering_paths.emplace_back(path);
 }
 
+const std::vector<std::string> JobGroup::get_clusterings() {
+	return clustering_paths;
+}
+
 class Application
 {
 public:
@@ -53,10 +58,7 @@ private:
 	void load_job_list();
 
 private:
-	std::map<std::string, GeneExpression> gene_expression_sets; // source path -> GeneExpression
-	std::vector<Clustering> clusterings;
 	std::vector<GenesOfInterest> genes_of_interest_sets;
-	std::vector<string> all_genes_of_interest;
 
 	// job list grouped by gene_expression. Contains (gene expression, clustering) combos that need to be mined
 	std::vector<JobGroup> job_list;
@@ -68,19 +70,37 @@ void Application::run() {
 	load_genes_of_interest_sets();
 	load_job_list();
 
-	for (auto& job : job_list) {
-		cout << job.get_gene_expression() << ":" << endl;
-		copy(job.clustering_paths.begin(), job.clustering_paths.end(), ostream_iterator<string>(cout, "\n"));
-		cout << endl;
-		cout << endl;
-	}
 	// load first job TODO for all jobs
-	/*auto it = gene_expression_sets.find(gene_expression_path);
-	if (it == gene_expression_sets.end()) {
-		it = gene_expression_sets.emplace(gene_expression_path, GeneExpression(gene_expression_path, all_genes_of_interest)).first;
-	}
+	for (auto& job_group : job_list) {
+		GeneExpression gene_expression(job_group.get_gene_expression());
 
-	clusterings.emplace_back(Clustering(clustering_path, it->second));*/
+		// translate gene names to indices; and drop genes missing from the gene expression data
+		std::vector<std::vector<int>> goi_sets;
+		for (auto& goi : genes_of_interest_sets) {
+			goi_sets.emplace_back();
+			for (auto gene : goi.get_genes()) {
+				if (gene_expression.has_gene(gene)) {
+					goi_sets.back().emplace_back(gene_expression.get_gene_index(gene));
+				}
+			}
+		}
+
+		// distinct union all left over genes of interest
+		std::vector<size_type> all_goi;
+		for (auto& goi : goi_sets) {
+			all_goi.insert(all_goi.end(), goi.begin(), goi.end());
+		}
+		sort(all_goi.begin(), all_goi.end());
+		all_goi.erase(unique(all_goi.begin(), all_goi.end()), all_goi.end());
+
+		gene_expression.generate_gene_correlations(all_goi);
+
+		// clustering
+		for (auto clustering_path : job_group.get_clusterings()) {
+			Clustering clustering(clustering_path, gene_expression);
+			// TODO rank and print result
+		}
+	}
 
 	// TODO actual calc
 	/*map<GenesOfInterest*, std::vector<Ranking>> result_sets; // name of genes of interest set -> its rankings
@@ -93,14 +113,14 @@ void Application::run() {
 	 *    - use submatrix from expr_matrix having only gene_expression.genes intersect clustering.genes
 	 *    - for each goi_set, remove missing genes
 	 */
-	for (auto& clustering : clusterings) {
+	/*for (auto& clustering : clusterings) {
 		for (auto& genes_of_interest : genes_of_interest_sets) {
 			//clustering.get_genes();
 			//genes_of_interest.get
 			//Ranking ranking(genes_of_interest, clustering);
 			//results.emplace_back(ranking);
 		}
-	}
+	}*/
 
 	// TODO print results
 }
@@ -110,11 +130,8 @@ void Application::load_genes_of_interest_sets() {
 	std::vector<string> goi_paths = {"../data/Configs/InputTextGOI2.txt", "../data/Configs/InputTextGOI3.txt"};
 	for (string path : goi_paths) {
 		genes_of_interest_sets.emplace_back(path);
-		auto& goi = genes_of_interest_sets.back().get_genes();
-		all_genes_of_interest.insert(all_genes_of_interest.end(), goi.begin(), goi.end());
+		genes_of_interest_sets.back().get_genes();
 	}
-	sort(all_genes_of_interest.begin(), all_genes_of_interest.end());
-	all_genes_of_interest.erase(unique(all_genes_of_interest.begin(), all_genes_of_interest.end()), all_genes_of_interest.end());
 }
 
 void Application::load_job_list() {

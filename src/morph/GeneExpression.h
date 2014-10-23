@@ -15,7 +15,9 @@ public:
 	/**
 	 * Load gene expression from file
 	 */
-	GeneExpression(std::string path, const std::vector<std::string>& all_genes_of_interest);
+	GeneExpression(std::string path);
+
+	void generate_gene_correlations(const std::vector<size_type>& all_goi);
 
 	/**
 	 * Get correlation matrix of genes (rows) and genes of interest (columns).
