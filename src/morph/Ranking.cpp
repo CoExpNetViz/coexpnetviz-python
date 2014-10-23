@@ -8,15 +8,25 @@ namespace ublas = boost::numeric::ublas;
 using namespace ublas;
 
 Ranking::Ranking(std::vector<size_type>& goi, Clustering& clustering)
-:	genes_of_interest(goi), clustering(clustering), rankings(clustering.get_source().get_gene_correlations().size1(), -1.0) // TODO use NaN instead
+:	genes_of_interest(goi), clustering(clustering), rankings(clustering.get_source().get_gene_correlations().size1(), -99.0) // TODO use NaN instead
 {
 	rank_genes();
 	rank_self();
+
+	std::vector<pair<double, string>> results;
+	for (int i=0; i<rankings.size(); i++) {
+		results.push_back(make_pair(rankings(i), clustering.get_source().get_gene_name(i)));
+	}
+	sort(results.rbegin(), results.rend());
+	for (auto r : results) {
+		cout << r.second << " " << r.first << endl;
+	}
 }
 
 // TODO define NDEBUG on release
 void Ranking::rank_genes() {
 	auto& gene_correlations = clustering.get_source().get_gene_correlations();
+	bool meh = false;
 	for (auto& cluster : clustering.get_clusters()) {
 		auto& cluster_genes = cluster.get_genes();
 
@@ -42,8 +52,19 @@ void Ranking::rank_genes() {
 
 		// compute rankings
 		auto sub_matrix = project(gene_correlations, candidates, interesting_genes);
+		if (meh) {
+		cout << candidates(0) << " " << candidates(1) << endl;
+		cout << interesting_genes.size() << endl;
+		cout << sub_matrix << endl;
+		cout << "------" << endl;
+		}
 		auto goi_count = interesting_genes.size();
-		noalias(project(rankings, candidates)) = prod(sub_matrix, ublas::scalar_vector<double>(goi_count)) / goi_count;
+		noalias(project(rankings, candidates)) = prod(sub_matrix, ublas::scalar_vector<double>(goi_count)) / goi_count; // TODO there's some business of covariance and stuff that need be applied to results here
+		if (meh) {
+		cout << project(rankings, candidates) << endl;
+		throw runtime_error("sup");// TODO dbg
+		}
+		//meh = true;
 	}
 	cout << rankings(0) << " ";
 	cout << rankings(1) << " ";

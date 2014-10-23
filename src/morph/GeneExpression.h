@@ -29,6 +29,7 @@ public:
 	GeneCorrelations& get_gene_correlations(); // TODO only fill the correlation columns corresponding to a gene of interest
 
 	size_type get_gene_index(std::string name) const;
+	std::string get_gene_name(size_type index) const;
 	bool has_gene(std::string name) const;
 
 private:
@@ -41,4 +42,5 @@ private:
 	GeneCorrelations gene_correlations;
 
 	std::map<std::string, size_type> gene_indices; // all genes, name -> index of gene in matrices
+	std::map<size_type, std::string> gene_names;
 };

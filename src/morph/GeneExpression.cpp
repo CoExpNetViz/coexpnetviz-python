@@ -44,6 +44,7 @@ GeneExpression::GeneExpression(std::string path)
 			if (!gene_indices.emplace(gene_name, i).second) {
 				throw runtime_error("Duplicate gene in expression matrix");
 			}
+			gene_names.emplace(i, gene_name);
 
 			for (int j=0; j<expression_matrix.size2(); j++) {
 				in >> expression_matrix(i, j);
@@ -76,6 +77,11 @@ GeneCorrelations& GeneExpression::get_gene_correlations() {
 size_type GeneExpression::get_gene_index(std::string name) const {
 	assert(has_gene(name));
 	return gene_indices.find(name)->second;
+}
+
+std::string GeneExpression::get_gene_name(size_type index) const {
+	assert(gene_names.find(index) != gene_names.end());
+	return gene_names.find(index)->second;
 }
 
 bool GeneExpression::has_gene(string gene) const {

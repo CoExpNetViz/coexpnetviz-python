@@ -122,6 +122,7 @@ void Application::run() {
 					Ranking ranking(goi_, clustering);
 					//results.emplace_back(ranking);
 				}
+				throw runtime_error("dbg");
 			}
 			cout << "next clustering" << endl;
 		}
