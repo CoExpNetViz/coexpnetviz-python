@@ -15,3 +15,4 @@ typedef boost::numeric::ublas::matrix_indirect<matrix> matrix_indirect;
 typedef matrix::size_type size_type;
 //typedef boost::numeric::ublas::matrix<double>::array_type array_type;
 typedef boost::numeric::ublas::indirect_array<> indirect_array;
+typedef ::indirect_array::array_type array;

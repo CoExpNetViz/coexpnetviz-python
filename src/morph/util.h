@@ -75,3 +75,10 @@ typename std::map<K,V>::const_iterator infimum(const std::map<K, V>& map_, const
  * Open file for reading, call reader when it's open
  */
 void read_file(std::string path, std::function<void(std::ifstream&)> reader);
+
+
+template<class Container, class T>
+bool contains(const Container& container, const T& value) {
+	return std::find(container.begin(), container.end(), value) != container.end();
+}
+

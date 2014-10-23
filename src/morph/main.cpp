@@ -6,10 +6,12 @@
 #include <vector>
 #include <map>
 #include <utility>
+#include <unordered_set>
 
 #include "Clustering.h"
 #include "ublas.h"
 #include "util.h"
+#include "Ranking.h"
 
 // TODO fiddling with matrix orientation, would it help performance?
 
@@ -75,7 +77,7 @@ void Application::run() {
 		GeneExpression gene_expression(job_group.get_gene_expression());
 
 		// translate gene names to indices; and drop genes missing from the gene expression data
-		std::vector<std::vector<int>> goi_sets;
+		std::vector<std::vector<size_type>> goi_sets; // TODO could try sets
 		for (auto& goi : genes_of_interest_sets) {
 			goi_sets.emplace_back();
 			for (auto gene : goi.get_genes()) {
@@ -99,6 +101,29 @@ void Application::run() {
 		for (auto clustering_path : job_group.get_clusterings()) {
 			Clustering clustering(clustering_path, gene_expression);
 			// TODO rank and print result
+			for (auto& goi : goi_sets) {
+				copy(goi.begin(), goi.end(), ostream_iterator<size_type>(cout, " "));
+				cout << endl;
+
+				// eliminate genes missing in clustering from goi
+				std::vector<size_type> goi_(goi.size());
+				auto& clustered_genes = clustering.get_genes();
+				auto is_part_of_clustering = [&clustered_genes](size_type gene) {
+					return clustered_genes.find(gene) != clustered_genes.end();
+				};
+				auto it = copy_if(goi.begin(), goi.end(), goi_.begin(), is_part_of_clustering);
+				goi_.resize(std::distance(goi_.begin(), it));
+
+				if (goi_.empty()) {
+					throw runtime_error("Not implemented");// TODO return empty result with warning
+				}
+				else {
+					// Rank genes
+					Ranking ranking(goi_, clustering);
+					//results.emplace_back(ranking);
+				}
+			}
+			cout << "next clustering" << endl;
 		}
 	}
 
@@ -114,12 +139,7 @@ void Application::run() {
 	 *    - for each goi_set, remove missing genes
 	 */
 	/*for (auto& clustering : clusterings) {
-		for (auto& genes_of_interest : genes_of_interest_sets) {
-			//clustering.get_genes();
-			//genes_of_interest.get
-			//Ranking ranking(genes_of_interest, clustering);
-			//results.emplace_back(ranking);
-		}
+
 	}*/
 
 	// TODO print results

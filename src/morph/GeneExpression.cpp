@@ -57,7 +57,7 @@ GeneExpression::GeneExpression(std::string path)
 
 void GeneExpression::generate_gene_correlations(const std::vector<size_type>& all_goi) {
 	gene_correlations = GeneCorrelations(expression_matrix.size1(), expression_matrix.size1(), expression_matrix.size1() * all_goi.size());
-	for (size_type i=0; i<4 && i<expression_matrix.size1(); i++) {
+	for (size_type i=0; i<expression_matrix.size1(); i++) {
 		for (auto j : all_goi) {
 			if (i==j) {
 				gene_correlations(i,j) = 1.0;

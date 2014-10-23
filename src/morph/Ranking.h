@@ -11,14 +11,14 @@
 class Ranking
 {
 public:
-	Ranking(GenesOfInterest&, Clustering&);
+	Ranking(std::vector<size_type>& genes_of_interest, Clustering&);
 
 private:
 	void rank_genes();
 	void rank_self();
 
 private:
-	GenesOfInterest& genes_of_interest;
+	std::vector<size_type>& genes_of_interest; // genes_of_interest
 	Clustering& clustering;
 	boost::numeric::ublas::vector<double> rankings; // size = genes.size(), gene_index -> ranking
 };

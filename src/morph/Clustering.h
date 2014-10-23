@@ -21,11 +21,11 @@ public:
 	/**
 	 * Get all gene indices present in this clustering
 	 */
-	indirect_array get_genes() const;
+	const std::unordered_set<size_type>& get_genes() const;
 
 private:
 	std::string name;
-	std::map<int, Cluster*> cluster_map; // mutually disjunct clusters, cluster id -> cluster
-	std::vector<Cluster> clusters;
+	std::vector<Cluster> clusters;  // mutually disjunct clusters
 	GeneExpression& gene_expression; // gene expression data we clustered
-};
+	std::unordered_set<size_type> genes;
+}; // TODO consider sorted vectors instead of sets
