@@ -20,6 +20,7 @@ GeneExpression::GeneExpression(std::string path)
 		while (getline(in, line)) {
 			line_count++;
 		}
+		in.clear(); // clear eof
 		in.seekg(0);
 
 		// count number of columns (including gene name column)
@@ -33,22 +34,20 @@ GeneExpression::GeneExpression(std::string path)
 
 		// fill matrix
 		int gene_index = 0;
-		while (in.good()) {
+		for (int i=0; i<expression_matrix.size1(); i++) {
 			string gene_name;
 			in >> gene_name;
-			if (in.fail()) {
-				break;
+			if (!in.eof() && !in.good()) {
+				throw runtime_error("Syntax error in expression matrix: an empty line, an incomplete line, ...");
 			}
-			for (int i=0; i < expression_matrix.size2(); i++) {
-				in >> expression_matrix(gene_index, i);
-				if (in.fail()) {
-					throw runtime_error("Incomplete line in expression matrix");
+			for (int j=0; j<expression_matrix.size2(); j++) {
+				in >> expression_matrix(i, j);
+				if (!in.eof() && !in.good()) {
+					throw runtime_error("Syntax error in expression matrix: an empty line, an incomplete line, ...");
 				}
 			}
-			gene_index++;
 		}
 	});
-	cout << endl;
 
 	// TODO gene_correlations
 }

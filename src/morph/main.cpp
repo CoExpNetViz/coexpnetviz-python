@@ -71,6 +71,10 @@ void Application::load() {
 				throw runtime_error("Incomplete line");
 			}
 
+			// TODO no hack
+			gene_expression_path = "../data/" + gene_expression_path;
+			clustering_path = "../data/" + gene_expression_path;
+
 			// TODO
 			auto it = gene_expression_sets.find(gene_expression_path);
 			if (it == gene_expression_sets.end()) {

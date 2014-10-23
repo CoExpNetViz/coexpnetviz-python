@@ -7,6 +7,7 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/storage.hpp>
+#include <boost/numeric/ublas/io.hpp>
 
 typedef boost::numeric::ublas::matrix<double> matrix;
 typedef boost::numeric::ublas::matrix_indirect<matrix> matrix_indirect;
