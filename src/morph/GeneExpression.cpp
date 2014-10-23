@@ -3,6 +3,7 @@
 #include "GeneExpression.h"
 #include <fstream>
 #include <boost/algorithm/string.hpp>
+#include <gsl/gsl_statistics.h>
 #include "util.h"
 
 using namespace std;
@@ -33,7 +34,6 @@ GeneExpression::GeneExpression(std::string path)
 		expression_matrix.resize(line_count-1, column_count-1, false);
 
 		// fill matrix
-		int gene_index = 0;
 		for (int i=0; i<expression_matrix.size1(); i++) {
 			string gene_name;
 			in >> gene_name;
@@ -49,10 +49,24 @@ GeneExpression::GeneExpression(std::string path)
 		}
 	});
 
-	// TODO gene_correlations
+	// gene_correlations  // TODO this matrix is probably quite sparse. Is it beneficial to store it as sparse?
+	// TODO skip non-goi genes in column
+	cout << path << endl;
+	gene_correlations.resize(expression_matrix.size1(), expression_matrix.size1());
+	for (int i=0; i<4 && i<expression_matrix.size1(); i++) {
+		for (int j=0; j<=i; j++) {
+			if (i==j) {
+				gene_correlations(i,j) = 1.0;
+			}
+			else {
+				gene_correlations(i,j) = gsl_stats_correlation(&expression_matrix(i,0), 1, &expression_matrix(j,0), 1, expression_matrix.size2());
+			}
+		}
+	}
+	throw runtime_error("dbg");
 }
 
-matrix& GeneExpression::get_gene_correlations() {
+GeneCorrelations& GeneExpression::get_gene_correlations() {
 	return gene_correlations;
 }
 

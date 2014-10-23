@@ -9,6 +9,9 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake_modules)
 find_package(Boost REQUIRED COMPONENTS)
 include_directories(${Boost_INCLUDE_DIRS})
 
+find_package(GSL REQUIRED COMPONENTS)
+include_directories(${GSL_INCLUDE_DIR})
+
 ############################################
 
 include_directories(BEFORE ${CMAKE_SOURCE_DIR})
@@ -20,6 +23,7 @@ file(GLOB_RECURSE Sources morph/*.cpp)
 add_executable(morph ${Sources})
 
 target_link_libraries(morph
+	${GSL_LIBRARIES}
 #	${Boost_LIBRARIES}
     ${LIBS})
 
