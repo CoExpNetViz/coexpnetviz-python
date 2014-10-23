@@ -7,7 +7,7 @@
 #include "ublas.h"
 #include "Gene.h"
 
-typedef boost::numeric::ublas::triangular_matrix<double, boost::numeric::ublas::lower> GeneCorrelations;
+typedef boost::numeric::ublas::symmetric_matrix<double> GeneCorrelations;
 
 class GeneExpression
 {
@@ -15,23 +15,27 @@ public:
 	/**
 	 * Load gene expression from file
 	 */
-	GeneExpression(std::string path);
+	GeneExpression(std::string path, const std::vector<std::string>& all_genes_of_interest);
 
 	/**
-	 * Get correlation matrix of genes (rows) and genes of interest (columns)
+	 * Get correlation matrix of genes (rows) and genes of interest (columns).
+	 *
+	 * Size of matrix: size(genes), size(genes)).
+	 * mat(i,j) = correlation between gene with index i and gene with index j.
+	 * mat(i,j) only has a valid value if j refers to a gene of interest.
 	 */
 	GeneCorrelations& get_gene_correlations(); // TODO only fill the correlation columns corresponding to a gene of interest
 
-	Gene& get_gene(std::string name);
+	size_type get_gene_index(std::string name);
+
+private:
+	void load_correlations(const std::vector<std::string>& all_genes_of_interest);
 
 private:
 	std::string name; // name of dataset
 
-	//std::map<Gene*, row> gene_mappings; // Note: it's faster to have it stored directly on the gene object (though then you'd have to look up the correct GeneExpression)
 	matrix expression_matrix; // row_major
+	GeneCorrelations gene_correlations;
 
-	//std::map<Gene*, row> gene_of_interest_mappings;
-	GeneCorrelations gene_correlations; // size = (size(genes), size(genes)), row = gene, column = gene of interest, val = correlation between 2 genes
-
-	std::map<std::string, Gene> genes; // all genes, name -> Gene
+	std::map<std::string, size_type> gene_indices; // all genes, name -> index of gene in matrices
 };

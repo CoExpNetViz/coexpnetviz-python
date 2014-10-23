@@ -56,9 +56,29 @@ void Application::run() {
 }
 
 void Application::load() {
+	// Load genes of interest sets
+	std::vector<string> goi_paths = {"../data/Configs/InputTextGOI2.txt", "../data/Configs/InputTextGOI3.txt"};
+	std::vector<string> all_genes_of_interest;
+	for (string path : goi_paths) {
+		read_file(path, [this, &all_genes_of_interest](ifstream& in) {
+			while (in.good()) {
+				string gene_name;
+				in >> gene_name;
+				if (in.fail()) {
+					break;
+				}
+				all_genes_of_interest.push_back(gene_name);
+				// TODO genes_of_interest_sets
+				//cout << gene_name << ",";
+			}
+		});
+	}
+	sort(all_genes_of_interest.begin(), all_genes_of_interest.end());
+	all_genes_of_interest.erase(unique(all_genes_of_interest.begin(), all_genes_of_interest.end()), all_genes_of_interest.end());
+
 	// Load config: lists clustering files and their associated gene expression files
 	string config_path = "../data/Configs/ConfigsBench.txt";
-	read_file(config_path, [this](ifstream& in) {
+	read_file(config_path, [this, &all_genes_of_interest](ifstream& in) {
 		while (in.good()) {
 			string gene_expression_path;
 			string clustering_path;
@@ -78,28 +98,12 @@ void Application::load() {
 			// TODO
 			auto it = gene_expression_sets.find(gene_expression_path);
 			if (it == gene_expression_sets.end()) {
-				it = gene_expression_sets.emplace(gene_expression_path, GeneExpression(gene_expression_path)).first;
+				it = gene_expression_sets.emplace(gene_expression_path, GeneExpression(gene_expression_path, all_genes_of_interest)).first;
 			}
 
 			//clusterings.emplace_back(Clustering(clustering_path, it->second));
 		}
 	});
-
-	// Load gene of interest sets
-	std::vector<string> goi_paths = {"../data/Configs/InputTextGOI2.txt", "../data/Configs/InputTextGOI3.txt"};
-	for (string path : goi_paths) {
-		read_file(path, [this](ifstream& in) {
-			while (in.good()) {
-				string gene_name;
-				in >> gene_name;
-				if (in.fail()) {
-					break;
-				}
-				// TODO genes_of_interest_sets
-				//cout << gene_name << ",";
-			}
-		});
-	}
 }
 
 int main() {

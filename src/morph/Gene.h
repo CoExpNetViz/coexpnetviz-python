@@ -5,6 +5,7 @@
 #include <string>
 #include "ublas.h"
 
+// TODO rm this class, unused
 class Gene
 {
 public:

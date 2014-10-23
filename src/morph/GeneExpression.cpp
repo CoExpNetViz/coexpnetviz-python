@@ -9,7 +9,7 @@
 using namespace std;
 namespace ublas = boost::numeric::ublas;
 
-GeneExpression::GeneExpression(std::string path)
+GeneExpression::GeneExpression(std::string path, const std::vector<std::string>& all_genes_of_interest)
 :	name(path)
 {
 	// load expression_matrix
@@ -40,6 +40,11 @@ GeneExpression::GeneExpression(std::string path)
 			if (!in.eof() && !in.good()) {
 				throw runtime_error("Syntax error in expression matrix: an empty line, an incomplete line, ...");
 			}
+
+			if (!gene_indices.emplace(gene_name, i).second) {
+				throw runtime_error("Duplicate gene in expression matrix");
+			}
+
 			for (int j=0; j<expression_matrix.size2(); j++) {
 				in >> expression_matrix(i, j);
 				if (!in.eof() && !in.good()) {
@@ -49,12 +54,22 @@ GeneExpression::GeneExpression(std::string path)
 		}
 	});
 
-	// gene_correlations  // TODO this matrix is probably quite sparse. Is it beneficial to store it as sparse?
-	// TODO skip non-goi genes in column
-	cout << path << endl;
-	gene_correlations.resize(expression_matrix.size1(), expression_matrix.size1());
-	for (int i=0; i<4 && i<expression_matrix.size1(); i++) {
-		for (int j=0; j<=i; j++) {
+	load_correlations(all_genes_of_interest);
+}
+
+void GeneExpression::load_correlations(const std::vector<std::string>& all_genes_of_interest) {
+	// TODO gene_correlations: this matrix is probably quite sparse. Is it beneficial to store it as sparse?
+
+	// all_genes_of_interest -> row_indices
+	indirect_array interesting_indices(all_genes_of_interest.size());
+	for (int i=0; i<all_genes_of_interest.size(); i++) {
+		interesting_indices(i) = get_gene_index(all_genes_of_interest.at(i));
+	}
+
+	gene_correlations.resize(expression_matrix.size1());
+	for (size_type i=0; i<4 && i<expression_matrix.size1(); i++) {
+		for (auto j : interesting_indices) {
+			if (i==0) cout << ".";
 			if (i==j) {
 				gene_correlations(i,j) = 1.0;
 			}
@@ -63,6 +78,7 @@ GeneExpression::GeneExpression(std::string path)
 			}
 		}
 	}
+	cout << endl;
 	throw runtime_error("dbg");
 }
 
@@ -70,6 +86,8 @@ GeneCorrelations& GeneExpression::get_gene_correlations() {
 	return gene_correlations;
 }
 
-Gene& GeneExpression::get_gene(std::string name) {
-	return genes.find(name)->second;
+size_type GeneExpression::get_gene_index(std::string name) {
+	auto it = gene_indices.find(name);
+	assert(it != gene_indices.end());
+	return it->second;
 }
