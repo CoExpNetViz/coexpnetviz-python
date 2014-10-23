@@ -79,7 +79,6 @@ void GeneExpression::load_correlations(const std::vector<std::string>& all_genes
 		}
 	}
 	cout << endl;
-	throw runtime_error("dbg");
 }
 
 GeneCorrelations& GeneExpression::get_gene_correlations() {

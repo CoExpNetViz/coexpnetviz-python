@@ -43,14 +43,23 @@ void Application::run() {
 
 	// TODO actual calc
 	/*map<GenesOfInterest*, std::vector<Ranking>> result_sets; // name of genes of interest set -> its rankings
-	//results.reserve(clusterings.size());
+	//results.reserve(clusterings.size());*/
 
+	/* TODO genes from goi and gene_expression not present in clustering should be ignored in ranking
+	// -> GeneExpression: make expr_matrix for all genes, make corr for genes X goi_genes [DONE]
+	// -> Clustering: nothing special [DONE]
+	// -> Ranking: [TODO put in inner loop here]
+	 *    - use submatrix from expr_matrix having only gene_expression.genes intersect clustering.genes
+	 *    - for each goi_set, remove missing genes
+	 */
 	for (auto& clustering : clusterings) {
 		for (auto& genes_of_interest : genes_of_interest_sets) {
-			Ranking ranking(genes_of_interest, clustering);
+			//clustering.get_genes();
+			//genes_of_interest.get
+			//Ranking ranking(genes_of_interest, clustering);
 			//results.emplace_back(ranking);
 		}
-	}*/
+	}
 
 	// TODO print results
 }
@@ -86,13 +95,14 @@ void Application::load() {
 			gene_expression_path = "../data/" + gene_expression_path;
 			clustering_path = "../data/" + gene_expression_path;
 
-			// TODO
 			auto it = gene_expression_sets.find(gene_expression_path);
 			if (it == gene_expression_sets.end()) {
 				it = gene_expression_sets.emplace(gene_expression_path, GeneExpression(gene_expression_path, all_genes_of_interest)).first;
 			}
 
-			//clusterings.emplace_back(Clustering(clustering_path, it->second));
+			clusterings.emplace_back(Clustering(clustering_path, it->second));
+
+			throw runtime_error("dbg");
 		}
 	});
 }
