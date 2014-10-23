@@ -66,7 +66,7 @@ void GeneExpression::load_correlations(const std::vector<std::string>& all_genes
 		interesting_indices(i) = get_gene_index(all_genes_of_interest.at(i));
 	}
 
-	gene_correlations.resize(expression_matrix.size1());
+	gene_correlations = GeneCorrelations(expression_matrix.size1(), expression_matrix.size1(), expression_matrix.size1() * interesting_indices.size());
 	for (size_type i=0; i<4 && i<expression_matrix.size1(); i++) {
 		for (auto j : interesting_indices) {
 			if (i==0) cout << ".";

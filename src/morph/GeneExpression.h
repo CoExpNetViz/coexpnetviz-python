@@ -7,7 +7,7 @@
 #include "ublas.h"
 #include "Gene.h"
 
-typedef boost::numeric::ublas::symmetric_matrix<double> GeneCorrelations;
+typedef boost::numeric::ublas::mapped_matrix<double> GeneCorrelations;
 
 class GeneExpression
 {
