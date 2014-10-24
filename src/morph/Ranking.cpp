@@ -101,7 +101,6 @@ void Ranking::rank_self() {
 	sort(rank_indices.begin(), rank_indices.end());
 
 	// calculate ausr
-	// calc ausr: area_under_curve=auc=0; for (i = 1:k) auc += fraction of goi with index <= k; ausr=auc/K
 	double auc = 0.0; // area under curve
 	for (size_type i = 0; i < K; i++) {
 		// TODO can continue last search for upper bound where we left last one...

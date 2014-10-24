@@ -1,0 +1,8 @@
+#!/bin/bash
+rm callgrind.out*
+valgrind --tool=callgrind --instr-atstart=yes --callgrind-out-file=callgrind.out ./morph
+callgrind_pid=$!
+#sleep 300
+#kill $callgrind_pid
+sleep 2
+kcachegrind callgrind.out &
