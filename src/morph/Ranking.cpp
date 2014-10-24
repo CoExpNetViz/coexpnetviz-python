@@ -8,18 +8,12 @@ using namespace std;
 namespace ublas = boost::numeric::ublas;
 using namespace ublas;
 
-// TODO
-// TODO
-// TODO
-// TODO Why do we rate clusters that in other alg are NA?
-// TODO
-// TODO
-// TODO
+size_type K = 1000;
 
-Ranking::Ranking(std::vector<size_type>& goi, Clustering& clustering)
+Ranking::Ranking(const std::vector<size_type>& goi, Clustering& clustering)
 :	genes_of_interest(goi), clustering(clustering), rankings(clustering.get_source().get_gene_correlations().size1(), -99.0) // TODO use NaN instead
 {
-	rank_genes();
+	rank_genes(goi, rankings);
 	rank_self();
 
 	std::vector<pair<double, string>> results;
@@ -27,19 +21,17 @@ Ranking::Ranking(std::vector<size_type>& goi, Clustering& clustering)
 		results.push_back(make_pair(rankings(i), clustering.get_source().get_gene_name(i)));
 	}
 	sort(results.rbegin(), results.rend());
-	for (auto r : results) {
+	/*for (auto r : results) {
 		cout << r.second << " " << r.first << endl;
-	}
+	}*/
 }
 
 // TODO define NDEBUG on release
-void Ranking::rank_genes() {
+void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, boost::numeric::ublas::vector<double>& rankings) {
 	auto& gene_expression = clustering.get_source();
 	gene_expression.debug();
 	auto& gene_correlations = gene_expression.get_gene_correlations();
-	bool meh = false;
 	for (auto& cluster : clustering.get_clusters()) {
-		cout << "c" << cluster.get_name() << endl;
 		auto& cluster_genes = cluster.get_genes();
 
 		// interesting_genes array
@@ -54,40 +46,28 @@ void Ranking::rank_genes() {
 
 		// candidate genes array
 		::array candidates_(cluster_genes.size());
-		auto is_not_gene_of_interest = [this](size_type gene) {
+		auto is_not_gene_of_interest = [&genes_of_interest](size_type gene) {
 			return !contains(genes_of_interest, gene);
 		};
 		auto it2 = copy_if(cluster_genes.begin(), cluster_genes.end(), candidates_.begin(), is_not_gene_of_interest);
 		::indirect_array candidates(distance(candidates_.begin(), it2), candidates_);
 		if (candidates.size() == 0)
 			continue;
-		cout << "y" << endl;
 
 		// compute rankings
 		auto sub_matrix = project(gene_correlations, candidates, interesting_genes);
-		if (meh) {
-		cout << candidates(0) << " " << candidates(1) << endl;
-		cout << interesting_genes.size() << endl;
-		cout << sub_matrix << endl;
-		cout << "------" << endl;
-		}
 		auto goi_count = interesting_genes.size();
 		auto sub_rankings = project(rankings, candidates);
 		noalias(sub_rankings) = prod(sub_matrix, ublas::scalar_vector<double>(goi_count)) / goi_count; // TODO there's some business of covariance and stuff that need be applied to results here
-		if (meh) {
-		cout << sub_rankings << endl;
-		throw runtime_error("sup");// TODO dbg
-		}
-		//meh = true;
 
 		// normalise scores within this cluster (TODO this implementation may be numerically unsound )
 		// Note: it's different from R's output, either it's inaccurate or it's more accurate TODO (prolly the former; try gsl)
 		/*auto mean = ublas::inner_prod(sub_rankings, ublas::scalar_vector<double>(sub_rankings.size())) / sub_rankings.size();
 		cout << mean << endl;
 		sub_rankings = sub_rankings - ublas::scalar_vector<double>(sub_rankings.size(), mean);
-		auto standard_deviation = ublas::norm_2(sub_rankings) / sqrt(sub_rankings.size()); // TODO could we pass the iterator to gsl_stats_sd and such?. If not at least use gsl_*sqrt
+		auto standard_deviation = ublas::norm_2(sub_rankings) / sqrt(sub_rankings.size()-1); // TODO could we pass the iterator to gsl_stats_sd and such?. If not at least use gsl_*sqrt
 		//sub_rankings = sub_rankings / standard_deviation;*/
-		std::vector<double> sub_ranks(sub_rankings.begin(), sub_rankings.end()); // TODO really no way around this copy?
+		std::vector<double> sub_ranks(sub_rankings.begin(), sub_rankings.end()); // TODO really no way around this copy? could like... use ublas. inspect gsl source for correctness
 		double mean_ = gsl_stats_mean(sub_ranks.data(), 1, sub_ranks.size());
 		//cout << mean_ << endl;
 		//cout << standard_deviation << endl;
@@ -95,14 +75,42 @@ void Ranking::rank_genes() {
 		//cout << standard_deviation_ << endl;
 		sub_rankings = (sub_rankings - ublas::scalar_vector<double>(sub_rankings.size(), mean_)) / standard_deviation_;
 	}
-	cout << rankings(0) << " ";
-	cout << rankings(1) << " ";
-	cout << rankings(2) << endl;
 }
 
 void Ranking::rank_self() {
-	// TODO
-	//for (gene : genes_of_interest) {
-		// leave it out, rank, ausr thingy
-	//}
+	// find rank_indices of leaving out a gene of interest one by one
+	std::vector<size_type> rank_indices;
+	boost::numeric::ublas::vector<double> rankings;
+	for (auto gene : genes_of_interest) {
+		// TODO could also copy original rankings and recalc only the cluster of the gene we removed
+		rankings = ublas::vector<double>(this->rankings.size(), -99);
+		auto goi = genes_of_interest;
+		goi.erase(find(goi.begin(), goi.end(), gene));
+		rank_genes(goi, rankings);
+		double rank = rankings(gene);
+		if (rank == -99.0) {
+			// gene undetected, give penalty
+			rank_indices.emplace_back(2*K-1);
+		}
+		else {
+			size_type count = count_if(rankings.begin(), rankings.end(), [rank](double val){return val > rank;});
+			rank_indices.emplace_back(count);
+		}
+		cout << "." << endl;
+	}
+	sort(rank_indices.begin(), rank_indices.end());
+
+	// calculate ausr
+	// calc ausr: area_under_curve=auc=0; for (i = 1:k) auc += fraction of goi with index <= k; ausr=auc/K
+	double auc = 0.0; // area under curve
+	for (size_type i = 0; i < K; i++) {
+		// TODO can continue last search for upper bound where we left last one...
+		auto supremum = upper_bound(rank_indices.begin(), rank_indices.end(), i);
+		auto count = distance(rank_indices.begin(), supremum);
+		auc += (double)count / rank_indices.size();
+	}
+	cout << endl;
+	double ausr = auc / K;
+	cout << "AUSR: " << ausr << endl;
+	copy(rank_indices.begin(), rank_indices.end(), ostream_iterator<size_type>(cout, " "));
 }

@@ -148,7 +148,7 @@ void Application::run() {
 
 void Application::load_genes_of_interest_sets() {
 	// Load genes of interest sets
-	std::vector<string> goi_paths = {"../data/Configs/InputTextGOI2.txt", "../data/Configs/InputTextGOI3.txt"};
+	std::vector<string> goi_paths = {"/home/limyreth/doc/internship/data/Configs/InputTextGOI2.txt", "/home/limyreth/doc/internship/data/Configs/InputTextGOI3.txt"};
 	for (string path : goi_paths) {
 		genes_of_interest_sets.emplace_back(path);
 		genes_of_interest_sets.back().get_genes();
@@ -157,7 +157,7 @@ void Application::load_genes_of_interest_sets() {
 
 void Application::load_job_list() {
 	// Load  jobs from config
-	string config_path = "../data/Configs/ConfigsBench.txt";
+	string config_path = "/home/limyreth/doc/internship/data/Configs/ConfigsBench.txt";
 	std::vector<std::pair<string, string>> jobs;
 	read_file(config_path, [this, &jobs](ifstream& in) {
 		while (in.good()) {
@@ -173,8 +173,8 @@ void Application::load_job_list() {
 			}
 
 			// TODO no hack
-			gene_expression_path = "../data/" + gene_expression_path;
-			clustering_path = "../data/" + clustering_path;
+			gene_expression_path = "/home/limyreth/doc/internship/data/" + gene_expression_path;
+			clustering_path = "/home/limyreth/doc/internship/data/" + clustering_path;
 
 			// TODO canonical paths
 			jobs.push_back(make_pair(gene_expression_path, clustering_path));
