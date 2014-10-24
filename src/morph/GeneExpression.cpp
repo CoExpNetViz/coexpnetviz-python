@@ -87,3 +87,8 @@ std::string GeneExpression::get_gene_name(size_type index) const {
 bool GeneExpression::has_gene(string gene) const {
 	return gene_indices.find(gene) != gene_indices.end();
 }
+
+void GeneExpression::debug() {
+	cout << "expr_mat(AT3G29810, 0) = " << expression_matrix(get_gene_index("AT3G29810"), 0) << endl;
+	cout << "cor(AT2G26660, AT3G29810) = " << gene_correlations(get_gene_index("AT2G26660"), get_gene_index("AT3G29810")) << endl;
+}

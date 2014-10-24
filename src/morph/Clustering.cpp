@@ -20,7 +20,7 @@ Clustering::Clustering(string path, GeneExpression& gene_expression_)
 			}
 			auto it = cluster_map.find(cluster_id);
 			if (it == cluster_map.end()) {
-				clusters.emplace_back();
+				clusters.emplace_back(cluster_id);
 				it = cluster_map.emplace(cluster_id, &clusters.back()).first;
 			}
 			auto index = gene_expression.get_gene_index(gene_name);

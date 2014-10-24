@@ -1,12 +1,12 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
 #include <iostream>
-
 #include <string>
 #include <vector>
 #include <map>
 #include <utility>
 #include <unordered_set>
+#include <iomanip>
 
 #include "Clustering.h"
 #include "ublas.h"
@@ -193,6 +193,7 @@ void Application::load_job_list() {
 
 // TODO loading everything at start of prog is probably too wasteful of memory, load each ~config-line one by one
 int main() {
+	cout << setprecision(9);
 	Application app;
 	app.run();
 	return 0;
