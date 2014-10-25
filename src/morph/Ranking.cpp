@@ -11,22 +11,10 @@ using namespace ublas;
 size_type K = 1000;
 
 Ranking::Ranking(const std::vector<size_type>& goi, Clustering& clustering)
-:	genes_of_interest(goi), clustering(clustering), rankings(clustering.get_source().get_gene_correlations().size1(), -99.0) // TODO use NaN instead
+:	genes_of_interest(goi), clustering(clustering), rankings(clustering.get_source().get_gene_correlations().size1(), -99.0), ausr(-1.0) // TODO use NaN instead
 {
 	rank_genes(goi, rankings);
 	rank_self();
-
-	std::vector<pair<double, string>> results;
-	for (int i=0; i<rankings.size(); i++) {
-		results.push_back(make_pair(rankings(i), clustering.get_source().get_gene_name(i)));
-	}
-	sort(results.rbegin(), results.rend());
-	/*if (clustering.get_name() == "/home/limyreth/doc/internship/data/ARABIDOBSIS/cluster_solution/Seed_GH_IsEnzymeClusteringSol.txt") {
-	for (auto r : results) {
-		cout << r.second << " " << r.first << endl;
-	}
-	throw runtime_error("dbg");
-	}*/
 }
 
 // TODO define NDEBUG on release
@@ -111,6 +99,21 @@ void Ranking::rank_self() {
 		auto count = distance(rank_indices.begin(), supremum);
 		auc += (double)count / rank_indices.size();
 	}
-	double ausr = auc / K;
-	cout << "AUSR: " << ausr << endl;
+	ausr = auc / K;
+}
+
+#include <fstream>
+void Ranking::save(std::string path) {
+	// TODO what output precision?
+	// TODO check callgrind, prolly can improve write performance by using something else here
+	ofstream out(path);
+	std::vector<pair<double, string>> results;
+	for (int i=0; i<rankings.size(); i++) {
+		results.push_back(make_pair(rankings(i), clustering.get_source().get_gene_name(i)));
+	}
+	sort(results.rbegin(), results.rend());
+	out << "AUSR: " << ausr << endl;
+	for (auto r : results) {
+		out << r.second << " " << r.first << endl;
+	}
 }

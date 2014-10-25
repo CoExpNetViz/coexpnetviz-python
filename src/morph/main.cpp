@@ -125,7 +125,9 @@ void Application::run() {
 				else {
 					// Rank genes
 					Ranking ranking(goi_, clustering);
-					//results.emplace_back(ranking);
+					string name = gene_expression.get_name() + "___" + clustering_path;
+					replace(name.begin(), name.end(), '/', '_');
+					ranking.save("output/" + name);
 				}
 			}
 		}

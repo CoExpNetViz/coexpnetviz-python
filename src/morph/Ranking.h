@@ -13,6 +13,11 @@ class Ranking
 public:
 	Ranking(const std::vector<size_type>& genes_of_interest, Clustering&);
 
+	/**
+	 * Save results at given file path
+	 */
+	void save(std::string path);
+
 private:
 	void rank_genes(const std::vector<size_type>& genes_of_interest, boost::numeric::ublas::vector<double>& rankings);
 	void rank_self();
@@ -21,4 +26,5 @@ private:
 	const std::vector<size_type>& genes_of_interest; // genes_of_interest
 	Clustering& clustering;
 	boost::numeric::ublas::vector<double> rankings; // size = genes.size(), gene_index -> ranking
+	double ausr;
 };

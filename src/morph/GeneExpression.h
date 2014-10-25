@@ -33,6 +33,8 @@ public:
 	std::string get_gene_name(size_type index) const;
 	bool has_gene(std::string name) const;
 
+	std::string get_name() const;
+
 private:
 	void load_correlations(const std::vector<std::string>& all_genes_of_interest);
 
