@@ -101,8 +101,13 @@ void Application::run() {
 		// clustering
 		for (auto clustering_path : job_group.get_clusterings()) {
 			Clustering clustering(clustering_path, gene_expression);
+			cout << job_group.get_gene_expression() << endl;
+			cout << clustering_path << endl;
 			for (auto& goi : goi_sets) {
-				copy(goi.begin(), goi.end(), ostream_iterator<size_type>(cout, " "));
+				cout << "goi: ";
+				for (auto g : goi) {
+					cout << gene_expression.get_gene_name(g) << " ";
+				}
 				cout << endl;
 
 				// eliminate genes missing in clustering from goi
@@ -123,26 +128,9 @@ void Application::run() {
 					//results.emplace_back(ranking);
 				}
 			}
-			cout << "next clustering" << endl;
 		}
+		cout << endl;
 	}
-
-	// TODO actual calc
-	/*map<GenesOfInterest*, std::vector<Ranking>> result_sets; // name of genes of interest set -> its rankings
-	//results.reserve(clusterings.size());*/
-
-	/* TODO genes from goi and gene_expression not present in clustering should be ignored in ranking
-	// -> GeneExpression: make expr_matrix for all genes, make corr for genes X goi_genes [DONE]
-	// -> Clustering: nothing special [DONE]
-	// -> Ranking: [TODO put in inner loop here]
-	 *    - use submatrix from expr_matrix having only gene_expression.genes intersect clustering.genes
-	 *    - for each goi_set, remove missing genes
-	 */
-	/*for (auto& clustering : clusterings) {
-
-	}*/
-
-	// TODO print results
 }
 
 void Application::load_genes_of_interest_sets() {
@@ -166,7 +154,6 @@ void Application::load_job_list() {
 			// TODO no hack
 			std::string gene_expression_path = "/home/limyreth/doc/internship/data/" + at_c<0>(job);
 			std::string clustering_path = "/home/limyreth/doc/internship/data/" + at_c<1>(job);
-			cout << clustering_path << endl;
 
 			// TODO canonical paths
 			jobs.push_back(make_pair(gene_expression_path, clustering_path));

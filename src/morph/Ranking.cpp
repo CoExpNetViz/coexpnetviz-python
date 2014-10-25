@@ -21,8 +21,11 @@ Ranking::Ranking(const std::vector<size_type>& goi, Clustering& clustering)
 		results.push_back(make_pair(rankings(i), clustering.get_source().get_gene_name(i)));
 	}
 	sort(results.rbegin(), results.rend());
-	/*for (auto r : results) {
+	/*if (clustering.get_name() == "/home/limyreth/doc/internship/data/ARABIDOBSIS/cluster_solution/Seed_GH_IsEnzymeClusteringSol.txt") {
+	for (auto r : results) {
 		cout << r.second << " " << r.first << endl;
+	}
+	throw runtime_error("dbg");
 	}*/
 }
 
@@ -108,8 +111,6 @@ void Ranking::rank_self() {
 		auto count = distance(rank_indices.begin(), supremum);
 		auc += (double)count / rank_indices.size();
 	}
-	cout << endl;
 	double ausr = auc / K;
 	cout << "AUSR: " << ausr << endl;
-	copy(rank_indices.begin(), rank_indices.end(), ostream_iterator<size_type>(cout, " "));
 }

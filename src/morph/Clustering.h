@@ -23,6 +23,10 @@ public:
 	 */
 	const std::unordered_set<size_type>& get_genes() const;
 
+	std::string get_name() const {
+		return name;
+	}
+
 private:
 	std::string name;
 	std::vector<Cluster> clusters;  // mutually disjunct clusters
