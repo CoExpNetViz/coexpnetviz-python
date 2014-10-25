@@ -3,6 +3,7 @@
 #include "Ranking.h"
 #include "util.h"
 #include "gsl/gsl_statistics_double.h"
+#include <cstdio>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
@@ -102,18 +103,21 @@ void Ranking::rank_self() {
 	ausr = auc / K;
 }
 
-#include <fstream>
 void Ranking::save(std::string path) {
 	// TODO what output precision?
-	// TODO check callgrind, prolly can improve write performance by using something else here
-	ofstream out(path);
+
+	// sort results
 	std::vector<pair<double, string>> results;
 	for (int i=0; i<rankings.size(); i++) {
 		results.push_back(make_pair(rankings(i), clustering.get_source().get_gene_name(i)));
 	}
 	sort(results.rbegin(), results.rend());
-	out << "AUSR: " << ausr << endl;
+
+	// write to file
+	FILE* fout = fopen(path.c_str(), "w");
+	fprintf(fout, "AUSR: %.9g\n", ausr);
 	for (auto r : results) {
-		out << r.second << " " << r.first << endl;
+		fprintf(fout, "%s %.9e\n", r.second.c_str(), r.first);
 	}
+	fclose(fout);
 }
