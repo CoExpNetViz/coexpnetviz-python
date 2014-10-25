@@ -3,7 +3,7 @@
 #include "Ranking.h"
 #include "util.h"
 #include "gsl/gsl_statistics_double.h"
-#include <cstdio>
+#include <fstream>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
@@ -105,7 +105,6 @@ void Ranking::rank_self() {
 
 void Ranking::save(std::string path) {
 	// TODO what output precision?
-
 	// sort results
 	std::vector<pair<double, string>> results;
 	for (int i=0; i<rankings.size(); i++) {
@@ -113,11 +112,10 @@ void Ranking::save(std::string path) {
 	}
 	sort(results.rbegin(), results.rend());
 
-	// write to file
-	FILE* fout = fopen(path.c_str(), "w");
-	fprintf(fout, "AUSR: %.9g\n", ausr);
+	// output results
+	ofstream out(path);
+	out << "AUSR: " << ausr << "\n";
 	for (auto r : results) {
-		fprintf(fout, "%s %.9e\n", r.second.c_str(), r.first);
+		out << r.second << " " << r.first << "\n";
 	}
-	fclose(fout);
 }
