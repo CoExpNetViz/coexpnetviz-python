@@ -73,7 +73,7 @@ void Application::run() {
 	load_genes_of_interest_sets();
 	load_job_list();
 
-	// load first job TODO for all jobs
+	// run jobs
 	for (auto& job_group : job_list) {
 		GeneExpression gene_expression(job_group.get_gene_expression());
 
@@ -101,7 +101,6 @@ void Application::run() {
 		// clustering
 		for (auto clustering_path : job_group.get_clusterings()) {
 			Clustering clustering(clustering_path, gene_expression);
-			// TODO rank and print result
 			for (auto& goi : goi_sets) {
 				copy(goi.begin(), goi.end(), ostream_iterator<size_type>(cout, " "));
 				cout << endl;
@@ -123,7 +122,6 @@ void Application::run() {
 					Ranking ranking(goi_, clustering);
 					//results.emplace_back(ranking);
 				}
-				throw runtime_error("dbg");
 			}
 			cout << "next clustering" << endl;
 		}
@@ -168,6 +166,7 @@ void Application::load_job_list() {
 			// TODO no hack
 			std::string gene_expression_path = "/home/limyreth/doc/internship/data/" + at_c<0>(job);
 			std::string clustering_path = "/home/limyreth/doc/internship/data/" + at_c<1>(job);
+			cout << clustering_path << endl;
 
 			// TODO canonical paths
 			jobs.push_back(make_pair(gene_expression_path, clustering_path));

@@ -27,7 +27,7 @@ Clustering::Clustering(string path, GeneExpression& gene_expression_)
 			it->second->add(index);
 			genes.emplace(index);
 		};
-		phrase_parse(begin, end, (as_string[lexeme[+(char_-space)]] > as_string[lexeme[+(char_-space)]])[on_cluster_item] % eol, blank);
+		phrase_parse(begin, end, (as_string[lexeme[+(char_-space)]] > as_string[lexeme[+(char_-eol)]])[on_cluster_item] % eol, blank);
 		return begin;
 	});
 }
