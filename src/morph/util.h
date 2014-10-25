@@ -20,7 +20,6 @@
 #pragma once
 
 #include <sstream>
-#include <fstream>
 #include <map>
 #include <functional>
 
@@ -72,9 +71,11 @@ typename std::map<K,V>::const_iterator infimum(const std::map<K, V>& map_, const
 }
 
 /**
- * Open file for reading, call reader when it's open
+ * Open file for efficient reading, calls reader when it's open with begin and exclusive end of file data
+ *
+ * reader returns the last position it read at. If that's not equal to end, then a trailing-chars exception is thrown
  */
-void read_file(std::string path, std::function<void(std::ifstream&)> reader);
+void read_file(std::string path, std::function<const char* (const char* begin, const char* end)> reader);
 
 
 template<class Container, class T>

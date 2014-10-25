@@ -7,6 +7,7 @@
 #include <utility>
 #include <unordered_set>
 #include <iomanip>
+#include <boost/spirit/include/qi.hpp>
 
 #include "Clustering.h"
 #include "ublas.h"
@@ -159,26 +160,21 @@ void Application::load_job_list() {
 	// Load  jobs from config
 	string config_path = "/home/limyreth/doc/internship/data/Configs/ConfigsBench.txt";
 	std::vector<std::pair<string, string>> jobs;
-	read_file(config_path, [this, &jobs](ifstream& in) {
-		while (in.good()) {
-			string gene_expression_path;
-			string clustering_path;
-			in >> gene_expression_path;
-			if (in.fail()) {
-				break;
-			}
-			in >> clustering_path;
-			if (in.fail()) {
-				throw runtime_error("Incomplete job description line");
-			}
+	read_file(config_path, [this, &jobs](const char* begin, const char* end) {
+		using namespace boost::spirit::qi;
+		using namespace boost::fusion;
 
+		auto on_job = [&jobs](const boost::fusion::vector<std::string, std::string>& job) {
 			// TODO no hack
-			gene_expression_path = "/home/limyreth/doc/internship/data/" + gene_expression_path;
-			clustering_path = "/home/limyreth/doc/internship/data/" + clustering_path;
+			std::string gene_expression_path = "/home/limyreth/doc/internship/data/" + at_c<0>(job);
+			std::string clustering_path = "/home/limyreth/doc/internship/data/" + at_c<1>(job);
 
 			// TODO canonical paths
 			jobs.push_back(make_pair(gene_expression_path, clustering_path));
-		}
+		};
+
+		phrase_parse(begin, end, (as_string[lexeme[+(char_ - space)]] > as_string[lexeme[+(char_ - space)]])[on_job] % eol, blank);
+		return begin;
 	});
 
 	// Group jobs by gene_expression
@@ -191,7 +187,7 @@ void Application::load_job_list() {
 	}
 }
 
-// TODO loading everything at start of prog is probably too wasteful of memory, load each ~config-line one by one
+// TODO perhaps not all asserts should be disabled at runtime (e.g. input checks may want to remain)
 int main() {
 	cout << setprecision(9);
 	Application app;

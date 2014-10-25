@@ -2,6 +2,7 @@
 
 #include "Clustering.h"
 #include "util.h"
+#include <boost/spirit/include/qi.hpp>
 
 using namespace std;
 
@@ -9,15 +10,14 @@ Clustering::Clustering(string path, GeneExpression& gene_expression_)
 :	name(path), gene_expression(gene_expression_)
 {
 	// Load
-	std::map<string, Cluster*> cluster_map;
-	read_file(path, [this, &cluster_map](ifstream& in) {
-		while (in.good()) {
-			string gene_name;
-			string cluster_id;
-			in >> gene_name >> cluster_id;
-			if (in.fail()) {
-				break;
-			}
+	read_file(path, [this](const char* begin, const char* end) {
+		using namespace boost::spirit::qi;
+		using namespace boost::fusion;
+
+		std::map<std::string, Cluster*> cluster_map;
+		auto on_cluster_item = [this, &cluster_map](const boost::fusion::vector<std::string, std::string>& item) {
+			auto gene_name = at_c<0>(item);
+			auto cluster_id = at_c<1>(item);
 			auto it = cluster_map.find(cluster_id);
 			if (it == cluster_map.end()) {
 				clusters.emplace_back(cluster_id);
@@ -26,7 +26,9 @@ Clustering::Clustering(string path, GeneExpression& gene_expression_)
 			auto index = gene_expression.get_gene_index(gene_name);
 			it->second->add(index);
 			genes.emplace(index);
-		}
+		};
+		phrase_parse(begin, end, (as_string[lexeme[+(char_-space)]] > as_string[lexeme[+(char_-space)]])[on_cluster_item] % eol, blank);
+		return begin;
 	});
 }
 

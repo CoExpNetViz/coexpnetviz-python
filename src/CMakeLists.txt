@@ -6,7 +6,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake_modules)
 ############################################
 # find dependencies
 
-find_package(Boost REQUIRED COMPONENTS)
+find_package(Boost REQUIRED COMPONENTS filesystem iostreams system)
 include_directories(${Boost_INCLUDE_DIRS})
 
 find_package(GSL REQUIRED COMPONENTS)
@@ -24,7 +24,7 @@ add_executable(morph ${Sources})
 
 target_link_libraries(morph
 	${GSL_LIBRARIES}
-#	${Boost_LIBRARIES}
+	${Boost_LIBRARIES}
     ${LIBS})
 
 

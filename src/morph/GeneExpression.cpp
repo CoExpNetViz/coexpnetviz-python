@@ -3,8 +3,10 @@
 #include "GeneExpression.h"
 #include <fstream>
 #include <boost/algorithm/string.hpp>
+#include <boost/spirit/include/qi.hpp>
 #include <gsl/gsl_statistics.h>
 #include "util.h"
+
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
@@ -13,46 +15,45 @@ GeneExpression::GeneExpression(std::string path)
 :	name(path)
 {
 	// load expression_matrix
-	read_file(path, [this](ifstream& in) {
-		string line;
+	read_file(path, [this](const char* begin, const char* end) {
+		using namespace boost::spirit::qi;
+
+		auto current = begin;
 
 		// count lines in file
-		int line_count = 0;
-		while (getline(in, line)) {
-			line_count++;
-		}
-		in.clear(); // clear eof
-		in.seekg(0);
+		int line_count = count(begin, end, '\n') + 1; // #lines = #line_separators + 1
 
-		// count number of columns (including gene name column)
-		getline(in, line);
-		std::vector<string> header_items;
-		boost::split(header_items, line, boost::is_any_of("\t "));
+		// parse header
+		std::vector<std::string> header_items;
+		phrase_parse(current, end, *(lexeme[+(char_ - space)]) > eol, blank, header_items);
 		int column_count = header_items.size();
 
-		// size matrix
+		// resize matrix
 		expression_matrix.resize(line_count-1, column_count-1, false);
 
-		// fill matrix
-		for (int i=0; i<expression_matrix.size1(); i++) {
-			string gene_name;
-			in >> gene_name;
-			if (!in.eof() && !in.good()) {
-				throw runtime_error("Syntax error in expression matrix: an empty line, an incomplete line, ...");
+		// parse gene lines
+		int i=-1;
+		int j=-1;
+		auto on_new_gene = [this, &i, &j](std::string name) { // start new line
+			if (i>=0 && j!=expression_matrix.size2()-1) {
+				throw runtime_error("Incomplete line");
 			}
-
-			if (!gene_indices.emplace(gene_name, i).second) {
-				throw runtime_error("Duplicate gene in expression matrix");
+			i++;
+			if (!gene_indices.emplace(name, i).second) {
+				throw runtime_error("Duplicate gene");
 			}
-			gene_names.emplace(i, gene_name);
-
-			for (int j=0; j<expression_matrix.size2(); j++) {
-				in >> expression_matrix(i, j);
-				if (!in.eof() && !in.good()) {
-					throw runtime_error("Syntax error in expression matrix: an empty line, an incomplete line, ...");
-				}
-			}
+			gene_names.emplace(i, name);
+			j=-1;
+		};
+		auto on_gene_value = [this, &i, &j](double value) { // gene expression value
+			j++;
+			expression_matrix(i, j) = value;
+		};
+		phrase_parse(current, end, (as_string[lexeme[+(char_ - space)]][on_new_gene] > (+double_[on_gene_value])) % eol, blank);
+		if (j!=expression_matrix.size2()-1) {
+			throw runtime_error("Incomplete line");
 		}
+		return current;
 	});
 }
 

@@ -18,19 +18,34 @@
  */
 
 #include "util.h"
+#include <boost/iostreams/device/mapped_file.hpp>
 
 using namespace std;
 
-void read_file(std::string path, std::function<void(ifstream&)> reader) {
-	try {
-		ifstream in(path);
-		in.exceptions(ios::badbit);
-		if (!in.good()) {
-			throw runtime_error("Failed to open file");
-		}
-		reader(in);
+void read_file(std::string path, std::function<const char* (const char*, const char*)> reader) {
+	boost::iostreams::mapped_file mmap(path, boost::iostreams::mapped_file::readonly);
+	auto begin = mmap.const_data();
+	auto end = begin + mmap.size();
+
+	// trim last newline if any
+	if (begin != end && *(end-1) == '\n') {
+		end--;
+		if (begin != end && *(end-1) == '\r')
+			end--;
 	}
-	catch (exception& e) {
-		throw runtime_error((make_string() << "Error while reading file (" << path << "): " << e.what()).str());
+
+	try {
+		auto current = reader(begin, end);
+
+		if (current != end) {
+			ostringstream out;
+			out << "Trailing characters at end of file: '";
+			copy(current, end, ostream_iterator<char>(out));
+			out << "'";
+			throw runtime_error(out.str());
+		}
+	}
+	catch (const exception& e) {
+		throw runtime_error((make_string() << "Error while reading '" << path << "': " << e.what()).str());
 	}
 }

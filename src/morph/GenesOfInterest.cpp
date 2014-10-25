@@ -2,22 +2,18 @@
 
 #include "GenesOfInterest.h"
 #include "util.h"
+#include <boost/spirit/include/qi.hpp>
 
 using namespace std;
 
 GenesOfInterest::GenesOfInterest(std::string path)
 :	name(path)
 {
-	// load
-	read_file(path, [this](ifstream& in) {
-		while (in.good()) {
-			string gene_name;
-			in >> gene_name;
-			if (in.fail()) {
-				break;
-			}
-			genes.push_back(gene_name);
-		}
+	// Load
+	read_file(path, [this](const char* begin, const char* end) {
+		using namespace boost::spirit::qi;
+		phrase_parse(begin, end, +as_string[lexeme[+(char_-space)]], space, genes);
+		return begin;
 	});
 }
 const vector<std::string>& GenesOfInterest::get_genes() {
