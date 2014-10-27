@@ -43,6 +43,7 @@ GeneExpression::GeneExpression(std::string path)
 				throw runtime_error("Duplicate gene");
 			}
 			gene_names.emplace(i, name);
+			genes.push_back(i);
 			j=-1;
 		};
 		auto on_gene_value = [this, &i, &j](double value) { // gene expression value
@@ -99,6 +100,6 @@ string GeneExpression::get_name() const {
 	return name;
 }
 
-const std::map<std::string, size_type>& GeneExpression::get_genes() const {
-	return gene_indices;
+const std::vector<size_type>& GeneExpression::get_genes() const {
+	return genes;
 }

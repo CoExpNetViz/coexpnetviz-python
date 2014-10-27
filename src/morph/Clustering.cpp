@@ -3,13 +3,14 @@
 #include "Clustering.h"
 #include "util.h"
 #include <boost/spirit/include/qi.hpp>
+#include <boost/function_output_iterator.hpp>
 
 using namespace std;
 
 Clustering::Clustering(string path, GeneExpression& gene_expression_)
 :	name(path), gene_expression(gene_expression_)
 {
-	std::unordered_set<size_type> genes;
+	std::vector<size_type> genes;
 
 	// Load
 	read_file(path, [this, &genes](const char* begin, const char* end) {
@@ -34,21 +35,21 @@ Clustering::Clustering(string path, GeneExpression& gene_expression_)
 			}
 			auto index = gene_expression.get_gene_index(gene_name);
 			it->second->add(index);
-			genes.emplace(index);
+			genes.emplace_back(index);
 		};
 		phrase_parse(begin, end, (as_string[lexeme[+(char_-space)]] > as_string[lexeme[+(char_-eol)]])[on_cluster_item] % eol, blank);
 		return begin;
 	});
 
 	// Group together unclustered genes
+	sort(genes.begin(), genes.end());
 	clusters.emplace_back("unclustered");
 	auto& cluster = clusters.back();
-	for (auto& p : gene_expression.get_genes()) {
-		auto gene = p.second;
-		if (!contains(genes, gene)) {
-			cluster.add(gene);
-		}
-	}
+	auto& all_genes = gene_expression.get_genes(); // Note: must be ordered
+	auto add_to_cluster = boost::make_function_output_iterator([&cluster](const size_type& gene) {
+		cluster.add(gene);
+	});
+	set_difference(all_genes.begin(), all_genes.end(), genes.begin(), genes.end(), add_to_cluster);
 	if (cluster.empty()) {
 		clusters.pop_back();
 	}
