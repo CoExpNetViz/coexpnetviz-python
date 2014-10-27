@@ -67,7 +67,7 @@ void GeneExpression::generate_gene_correlations(const std::vector<size_type>& al
 	gene_correlations = GeneCorrelations(expression_matrix.size1(), expression_matrix.size1(), expression_matrix.size1() * all_goi.size());
 
 	// calculate Pearson's correlation
-	// This is gsl_stats_correlation's algorithm, but in matrix form. It's thus also numerically stable
+	// This is gsl_stats_correlation's algorithm, but in matrix form.
 	size_type i;
 	ublas::vector<long double> mean(expression_matrix.size1());
 	ublas::vector<long double> delta(expression_matrix.size1());
@@ -81,17 +81,17 @@ void GeneExpression::generate_gene_correlations(const std::vector<size_type>& al
 	{
 		ratio = i / (i + 1.0);
 		noalias(delta) = column(expression_matrix, i) - mean;
-		sum_sq = sum_sq + element_prod(delta, delta) * ratio;
-		sum_cross = sum_cross + outer_prod(delta, project(delta, goi_indices)) * ratio;
-		mean = mean + delta / (i + 1.0);
+		sum_sq += element_prod(delta, delta) * ratio;
+		sum_cross += outer_prod(delta, project(delta, goi_indices)) * ratio;
+		mean += delta / (i + 1.0);
 	}
 
 	transform(sum_sq.begin(), sum_sq.end(), sum_sq.begin(), ::sqrt);
-	project(gene_correlations, ::indirect_array::all(), goi_indices) = element_div(sum_cross, outer_prod(sum_sq, project(sum_sq, goi_indices)));
+	noalias(project(gene_correlations, ::indirect_array::all(), goi_indices)) = element_div(sum_cross, outer_prod(sum_sq, project(sum_sq, goi_indices)));
 
 	// TODO rm debug
 	// Ad-hoc test to verify correctness of above algorithm
-	/*for (size_type i=0; i<expression_matrix.size1(); i++) {
+	for (size_type i=0; i<expression_matrix.size1(); i++) {
 		for (auto j : all_goi) {
 			auto a = gene_correlations(i,j);
 			auto b = gsl_stats_correlation(&expression_matrix(i,0), 1, &expression_matrix(j,0), 1, expression_matrix.size2());
@@ -100,7 +100,7 @@ void GeneExpression::generate_gene_correlations(const std::vector<size_type>& al
 				throw runtime_error((make_string() << setprecision(18) << a << " - " << b << " = " << abs((a - b)/b) << " > " << 1e-15).str());
 			}
 		}
-	}*/
+	}
 }
 
 GeneCorrelations& GeneExpression::get_gene_correlations() {
