@@ -35,6 +35,8 @@ public:
 
 	std::string get_name() const;
 
+	const std::map<std::string, size_type>& get_genes() const;
+
 private:
 	void load_correlations(const std::vector<std::string>& all_genes_of_interest);
 
@@ -45,5 +47,5 @@ private:
 	GeneCorrelations gene_correlations;
 
 	std::map<std::string, size_type> gene_indices; // all genes, name -> index of gene in matrices
-	std::map<size_type, std::string> gene_names;
+	std::map<size_type, std::string> gene_names; // TODO unordered_map may speed up things
 };

@@ -15,6 +15,9 @@ void Cluster::add(size_type gene_index) {
 	genes.emplace(gene_index);
 }
 
+bool Cluster::empty() const {
+	return genes.empty();
+}
 const unordered_set<size_type>& Cluster::get_genes() const {
 	return genes;
 }

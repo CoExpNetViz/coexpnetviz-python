@@ -98,3 +98,7 @@ void GeneExpression::debug() {
 string GeneExpression::get_name() const {
 	return name;
 }
+
+const std::map<std::string, size_type>& GeneExpression::get_genes() const {
+	return gene_indices;
+}

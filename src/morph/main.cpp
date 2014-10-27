@@ -110,21 +110,12 @@ void Application::run() {
 				}
 				cout << endl;
 
-				// eliminate genes missing in clustering from goi
-				std::vector<size_type> goi_(goi.size());
-				auto& clustered_genes = clustering.get_genes();
-				auto is_part_of_clustering = [&clustered_genes](size_type gene) {
-					return clustered_genes.find(gene) != clustered_genes.end();
-				};
-				auto it = copy_if(goi.begin(), goi.end(), goi_.begin(), is_part_of_clustering);
-				goi_.resize(std::distance(goi_.begin(), it));
-
-				if (goi_.empty()) {
+				if (goi.empty()) {
 					throw runtime_error("Not implemented");// TODO return empty result with warning
 				}
 				else {
 					// Rank genes
-					Ranking ranking(goi_, clustering);
+					Ranking ranking(goi, clustering);
 					string name = gene_expression.get_name() + "___" + clustering_path;
 					replace(name.begin(), name.end(), '/', '_');
 					ranking.save("output/" + name);

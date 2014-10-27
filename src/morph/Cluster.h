@@ -16,6 +16,11 @@ public:
 
 	void add(size_type index);
 
+	/**
+	 * Get whether cluster is empty
+	 */
+	bool empty() const;
+
 	const std::unordered_set<size_type>& get_genes() const;
 	std::string get_name() const;
 
