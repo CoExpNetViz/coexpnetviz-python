@@ -62,12 +62,7 @@ void GeneExpression::generate_gene_correlations(const std::vector<size_type>& al
 	gene_correlations = GeneCorrelations(expression_matrix.size1(), expression_matrix.size1(), expression_matrix.size1() * all_goi.size());
 	for (size_type i=0; i<expression_matrix.size1(); i++) {
 		for (auto j : all_goi) {
-			if (i==j) {
-				gene_correlations(i,j) = 1.0;
-			}
-			else {
-				gene_correlations(i,j) = gsl_stats_correlation(&expression_matrix(i,0), 1, &expression_matrix(j,0), 1, expression_matrix.size2());
-			}
+			gene_correlations(i,j) = gsl_stats_correlation(&expression_matrix(i,0), 1, &expression_matrix(j,0), 1, expression_matrix.size2());
 		}
 	}
 }
@@ -88,12 +83,6 @@ std::string GeneExpression::get_gene_name(size_type index) const {
 
 bool GeneExpression::has_gene(string gene) const {
 	return gene_indices.find(gene) != gene_indices.end();
-}
-
-// TODO
-void GeneExpression::debug() {
-	//cout << "expr_mat(AT3G29810, 0) = " << expression_matrix(get_gene_index("AT3G29810"), 0) << endl;
-	//cout << "cor(AT2G26660, AT3G29810) = " << gene_correlations(get_gene_index("AT2G26660"), get_gene_index("AT3G29810")) << endl;
 }
 
 string GeneExpression::get_name() const {

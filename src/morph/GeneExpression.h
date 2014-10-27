@@ -18,7 +18,6 @@ public:
 	GeneExpression(std::string path);
 
 	void generate_gene_correlations(const std::vector<size_type>& all_goi);
-	void debug();
 
 	/**
 	 * Get correlation matrix of genes (rows) and genes of interest (columns).

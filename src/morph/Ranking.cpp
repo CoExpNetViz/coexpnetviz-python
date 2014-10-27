@@ -22,7 +22,6 @@ Ranking::Ranking(const std::vector<size_type>& goi, Clustering& clustering)
 // TODO define NDEBUG on release
 void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, boost::numeric::ublas::vector<double>& rankings) {
 	auto& gene_expression = clustering.get_source();
-	gene_expression.debug();
 	auto& gene_correlations = gene_expression.get_gene_correlations();
 	for (auto& cluster : clustering.get_clusters()) {
 		auto& cluster_genes = cluster.get_genes();
