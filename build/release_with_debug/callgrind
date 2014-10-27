@@ -1,4 +1,5 @@
 #!/bin/bash
+make
 rm callgrind.out*
 valgrind --tool=callgrind --instr-atstart=yes --callgrind-out-file=callgrind.out ./morph < input.txt
 callgrind_pid=$!
