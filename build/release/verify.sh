@@ -1,4 +1,6 @@
 #!/bin/sh
+make
+./morph
 pushd output
 files=`ls`
 popd
