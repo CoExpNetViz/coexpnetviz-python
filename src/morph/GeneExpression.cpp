@@ -88,19 +88,6 @@ void GeneExpression::generate_gene_correlations(const std::vector<size_type>& al
 
 	transform(sum_sq.begin(), sum_sq.end(), sum_sq.begin(), ::sqrt);
 	noalias(project(gene_correlations, ::indirect_array::all(), goi_indices)) = element_div(sum_cross, outer_prod(sum_sq, project(sum_sq, goi_indices)));
-
-	// TODO rm debug
-	// Ad-hoc test to verify correctness of above algorithm
-	for (size_type i=0; i<expression_matrix.size1(); i++) {
-		for (auto j : all_goi) {
-			auto a = gene_correlations(i,j);
-			auto b = gsl_stats_correlation(&expression_matrix(i,0), 1, &expression_matrix(j,0), 1, expression_matrix.size2());
-			if (abs((a - b)/b) > 1e-15) {
-				cout << i << " " << j << endl;
-				throw runtime_error((make_string() << setprecision(18) << a << " - " << b << " = " << abs((a - b)/b) << " > " << 1e-15).str());
-			}
-		}
-	}
 }
 
 GeneCorrelations& GeneExpression::get_gene_correlations() {
