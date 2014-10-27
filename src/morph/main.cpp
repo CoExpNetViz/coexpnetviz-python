@@ -103,6 +103,7 @@ void Application::run() {
 			Clustering clustering(clustering_path, gene_expression);
 			cout << job_group.get_gene_expression() << endl;
 			cout << clustering_path << endl;
+			int goi_index=0;
 			for (auto& goi : goi_sets) {
 				cout << "goi: ";
 				for (auto g : goi) {
@@ -116,10 +117,11 @@ void Application::run() {
 				else {
 					// Rank genes
 					Ranking ranking(goi, clustering);
-					string name = gene_expression.get_name() + "___" + clustering_path;
+					string name = gene_expression.get_name() + "__" + clustering_path;
 					replace(name.begin(), name.end(), '/', '_');
-					ranking.save("output/" + name);
+					ranking.save((make_string() << "output/" << name << "__GOI" << goi_index << ".txt").str());
 				}
+				goi_index++;
 			}
 		}
 		cout << endl;

@@ -4,6 +4,7 @@
 #include "util.h"
 #include "gsl/gsl_statistics_double.h"
 #include <fstream>
+#include <iomanip>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
@@ -104,7 +105,6 @@ void Ranking::rank_self() {
 }
 
 void Ranking::save(std::string path) {
-	// TODO what output precision?
 	// sort results
 	std::vector<pair<double, string>> results;
 	for (int i=0; i<rankings.size(); i++) {
@@ -114,8 +114,11 @@ void Ranking::save(std::string path) {
 
 	// output results
 	ofstream out(path);
+	out << setprecision(9) << scientific;
 	out << "AUSR: " << ausr << "\n";
 	for (auto r : results) {
+		if (r.first == -99)
+			break;
 		out << r.second << " " << r.first << "\n";
 	}
 }
