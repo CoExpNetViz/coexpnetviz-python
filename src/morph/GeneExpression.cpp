@@ -5,6 +5,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <gsl/gsl_statistics.h>
+#include <cmath>
+#include <iomanip>
 #include "util.h"
 
 
@@ -59,12 +61,46 @@ GeneExpression::GeneExpression(std::string path)
 }
 
 void GeneExpression::generate_gene_correlations(const std::vector<size_type>& all_goi) {
+	using namespace ublas;
+	::indirect_array goi_indices(const_cast<size_type*>(all_goi.data()), const_cast<size_type*>(all_goi.data() + all_goi.size())); // TODO use this style everywhere instead of clumsily copying into unbounded array first
+
 	gene_correlations = GeneCorrelations(expression_matrix.size1(), expression_matrix.size1(), expression_matrix.size1() * all_goi.size());
-	for (size_type i=0; i<expression_matrix.size1(); i++) {
-		for (auto j : all_goi) {
-			gene_correlations(i,j) = gsl_stats_correlation(&expression_matrix(i,0), 1, &expression_matrix(j,0), 1, expression_matrix.size2());
-		}
+
+	// calculate Pearson's correlation
+	// This is gsl_stats_correlation's algorithm, but in matrix form. It's thus also numerically stable
+	size_type i;
+	ublas::vector<long double> mean(expression_matrix.size1());
+	ublas::vector<long double> delta(expression_matrix.size1());
+	ublas::vector<long double> sum_sq(expression_matrix.size1(), 0.0); // sum of squares
+	ublas::matrix<long double> sum_cross(expression_matrix.size1(), goi_indices.size(), 0.0);
+
+	long double ratio;
+	mean = column(expression_matrix, 0);
+
+	for (i = 1; i < expression_matrix.size2(); ++i)
+	{
+		ratio = i / (i + 1.0);
+		noalias(delta) = column(expression_matrix, i) - mean;
+		sum_sq = sum_sq + element_prod(delta, delta) * ratio;
+		sum_cross = sum_cross + outer_prod(delta, project(delta, goi_indices)) * ratio;
+		mean = mean + delta / (i + 1.0);
 	}
+
+	transform(sum_sq.begin(), sum_sq.end(), sum_sq.begin(), ::sqrt);
+	project(gene_correlations, ::indirect_array::all(), goi_indices) = element_div(sum_cross, outer_prod(sum_sq, project(sum_sq, goi_indices)));
+
+	// TODO rm debug
+	// Ad-hoc test to verify correctness of above algorithm
+	/*for (size_type i=0; i<expression_matrix.size1(); i++) {
+		for (auto j : all_goi) {
+			auto a = gene_correlations(i,j);
+			auto b = gsl_stats_correlation(&expression_matrix(i,0), 1, &expression_matrix(j,0), 1, expression_matrix.size2());
+			if (abs((a - b)/b) > 1e-15) {
+				cout << i << " " << j << endl;
+				throw runtime_error((make_string() << setprecision(18) << a << " - " << b << " = " << abs((a - b)/b) << " > " << 1e-15).str());
+			}
+		}
+	}*/
 }
 
 GeneCorrelations& GeneExpression::get_gene_correlations() {
