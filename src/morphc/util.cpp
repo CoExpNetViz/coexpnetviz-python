@@ -22,19 +22,21 @@
 
 using namespace std;
 
+namespace MORPHC {
+
 void read_file(std::string path, std::function<const char* (const char*, const char*)> reader) {
-	boost::iostreams::mapped_file mmap(path, boost::iostreams::mapped_file::readonly);
-	auto begin = mmap.const_data();
-	auto end = begin + mmap.size();
-
-	// trim last newline if any
-	if (begin != end && *(end-1) == '\n') {
-		end--;
-		if (begin != end && *(end-1) == '\r')
-			end--;
-	}
-
 	try {
+		boost::iostreams::mapped_file mmap(path, boost::iostreams::mapped_file::readonly);
+		auto begin = mmap.const_data();
+		auto end = begin + mmap.size();
+
+		// trim last newline if any
+		if (begin != end && *(end-1) == '\n') {
+			end--;
+			if (begin != end && *(end-1) == '\r')
+				end--;
+		}
+
 		auto current = reader(begin, end);
 
 		if (current != end) {
@@ -48,4 +50,13 @@ void read_file(std::string path, std::function<const char* (const char*, const c
 	catch (const exception& e) {
 		throw runtime_error((make_string() << "Error while reading '" << path << "': " << e.what()).str());
 	}
+}
+
+string prepend_path(string prefix, string path) {
+	if (path.at(0) == '/')
+		return path;
+	else
+		return prefix + "/" + path;
+}
+
 }

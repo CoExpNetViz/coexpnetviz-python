@@ -5,7 +5,8 @@
 #include <string>
 #include <map>
 #include "ublas.h"
-#include "Gene.h"
+
+namespace MORPHC {
 
 typedef boost::numeric::ublas::mapped_matrix<double> GeneCorrelations;
 
@@ -52,3 +53,5 @@ private:
 	std::map<std::string, size_type> gene_indices; // all genes, name -> index of gene in matrices
 	std::map<size_type, std::string> gene_names; // TODO unordered_map may speed up things
 };
+
+}

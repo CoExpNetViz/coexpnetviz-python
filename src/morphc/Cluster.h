@@ -6,8 +6,10 @@
 #include <map>
 #include <utility>
 #include <unordered_set>
-#include "GenesOfInterest.h"
+#include "config/GenesOfInterest.h"
 #include "ublas.h"
+
+namespace MORPHC {
 
 class Cluster
 {
@@ -28,3 +30,5 @@ private:
 	std::unordered_set<size_type> genes;
 	std::string name;
 };
+
+}

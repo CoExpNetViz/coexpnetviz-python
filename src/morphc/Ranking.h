@@ -5,6 +5,8 @@
 #include "ublas.h"
 #include "Clustering.h"
 
+namespace MORPHC {
+
 /**
  * Note: A negative ranking value for a gene means it wasn't ranked
  */
@@ -28,3 +30,5 @@ private:
 	boost::numeric::ublas::vector<double> rankings; // size = genes.size(), gene_index -> ranking
 	double ausr;
 };
+
+}

@@ -5,6 +5,8 @@
 using namespace std;
 namespace ublas = boost::numeric::ublas;
 
+namespace MORPHC {
+
 Cluster::Cluster(string name)
 :	name(name)
 {
@@ -24,4 +26,6 @@ const unordered_set<size_type>& Cluster::get_genes() const {
 
 string Cluster::get_name() const {
 	return name;
+}
+
 }

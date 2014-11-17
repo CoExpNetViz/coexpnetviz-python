@@ -10,6 +10,8 @@ using namespace std;
 namespace ublas = boost::numeric::ublas;
 using namespace ublas;
 
+namespace MORPHC {
+
 size_type K = 1000;
 
 Ranking::Ranking(const std::vector<size_type>& goi, Clustering& clustering)
@@ -26,22 +28,22 @@ void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, boost:
 		auto& cluster_genes = cluster.get_genes();
 
 		// interesting_genes array
-		::array interesting_genes_(genes_of_interest.size());
+		MORPHC::array interesting_genes_(genes_of_interest.size());
 		auto in_cluster = [&cluster_genes](size_type gene) {
 			return contains(cluster_genes, gene);
 		};
 		auto it = copy_if(genes_of_interest.begin(), genes_of_interest.end(), interesting_genes_.begin(), in_cluster);
-		::indirect_array interesting_genes(distance(interesting_genes_.begin(), it), interesting_genes_);
+		MORPHC::indirect_array interesting_genes(distance(interesting_genes_.begin(), it), interesting_genes_);
 		if (interesting_genes.size() == 0)
 			continue;
 
 		// candidate genes array
-		::array candidates_(cluster_genes.size());
+		MORPHC::array candidates_(cluster_genes.size());
 		auto is_not_gene_of_interest = [&genes_of_interest](size_type gene) {
 			return !contains(genes_of_interest, gene);
 		};
 		auto it2 = copy_if(cluster_genes.begin(), cluster_genes.end(), candidates_.begin(), is_not_gene_of_interest);
-		::indirect_array candidates(distance(candidates_.begin(), it2), candidates_);
+		MORPHC::indirect_array candidates(distance(candidates_.begin(), it2), candidates_);
 		if (candidates.size() == 0)
 			continue;
 
@@ -119,4 +121,6 @@ void Ranking::save(std::string path) {
 			break;
 		out << r.second << " " << r.first << "\n";
 	}
+}
+
 }

@@ -23,6 +23,8 @@
 #include <map>
 #include <functional>
 
+namespace MORPHC {
+
 // This class taken from: http://stackoverflow.com/a/25351759/1031434
 // Contributed by Jason R
 class make_string
@@ -83,3 +85,9 @@ bool contains(const Container& container, const T& value) {
 	return std::find(container.begin(), container.end(), value) != container.end();
 }
 
+/**
+ * Prepend prefix to path if path is relative path
+ */
+std::string prepend_path(std::string prefix, std::string path);
+
+}

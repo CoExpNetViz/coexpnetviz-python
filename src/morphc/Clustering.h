@@ -5,6 +5,8 @@
 #include "GeneExpression.h"
 #include "Cluster.h"
 
+namespace MORPHC {
+
 /**
  * A clustering of gene expression data.
  *
@@ -27,3 +29,5 @@ private:
 	std::vector<Cluster> clusters;  // mutually disjunct clusters
 	GeneExpression& gene_expression; // gene expression data we clustered
 }; // TODO consider sorted vectors instead of sets
+
+}

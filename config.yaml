@@ -1,0 +1,115 @@
+# Default Morph config
+#
+# Specifies which species are available for finding pathways identified by
+# genes of interest in
+species_data_path: /home/limyreth/doc/internship/data  # if provided, all paths are prefixed with this path
+species:
+    - name: Arabidopsis  # unique identifier (string)
+      data_path: ARABIDOBSIS
+      expression_matrices:
+          - name: 'Seed_GH'
+            path: data_sets/Seed_GH_DataSet.txt
+            clusterings:
+                - cluster_solution/Seed_GH_ppi_matisse_0.4.txt
+                - cluster_solution/Seed_GH_CLICK_ClusteringSol.txt
+                - cluster_solution/Seed_GH_IsEnzymeClusteringSol.txt
+          - name: 'Tissues'
+            path: data_sets/TissuesData.txt
+            clusterings:
+                - cluster_solution/Tissues_IsEnzymeClusteringSol.txt
+                - cluster_solution/Tissues_Metabolic_Network_ClusteringSol.txt
+                - cluster_solution/Tissues_PPI_Network_ClusteringSol.txt
+                - cluster_solution/Tissues_CLICK_ClusteringSol.txt
+          - name: 'Seedlings'
+            path: data_sets/SeedlingsDataSet.txt
+            clusterings:
+                - cluster_solution/Seedlings_IsEnzymeClusteringSol.txt
+                - cluster_solution/Seedlings_Metabolic_Network_ClusteringSol.txt
+                - cluster_solution/Seedlings_PPI_Network_ClusteringSol.txt
+                - cluster_solution/Seedlings_CLICK_ClusteringSol.txt
+    - name: 'Potato - ITAG'
+      data_path: ITAG
+      genes_of_interest:
+          - name: goi1
+            path: gois/ITAG.txt
+      expression_matrices:
+          - name: 'All tissues'
+            path: ITAG/data_sets/All_TissuesDataSet_ITAG.txt	
+            clusterings:
+                - cluster_solution/IsEnzyme_ClusteringSol_ITAG.txt
+                - cluster_solution/Metabolic Network_ClusteringSol_All_Tissues_ITAG.txt
+                - cluster_solution/PPI_Network_ClusteringSol_All_Tissues_ITAG.txt
+                - cluster_solution/ITAG_CLICK_ClusteringSol.txt
+          - name: 'Leafs'
+            path: ITAG/data_sets/Leafs_ITAG.txt	
+            clusterings:
+                - cluster_solution/IsEnzyme_ClusteringSol_ITAG.txt
+                - cluster_solution/Metabolic Network_ClusteringSol_Leafs_ITAG.txt
+                - cluster_solution/PPI_Network_ClusteringSol_Leafs_ITAG.txt
+                - cluster_solution/ITAG_leafs_CLICK_ClusteringSol.txt
+          - name: 'Root'
+            path: ITAG/data_sets/Root_ITAG.txt	
+            clusterings:
+                - cluster_solution/IsEnzyme_ClusteringSol_ITAG.txt
+                - cluster_solution/Metabolic Network_ClusteringSol_Roots_ITAG.txt
+                - cluster_solution/PPI_Network_ClusteringSol_Roots_ITAG.txt
+                - cluster_solution/ITAG_roots_CLICK_ClusteringSol.txt
+          - name: 'Tuber'
+            path: ITAG/data_sets/Tuber_ITAG.txt	
+            clusterings:
+                - cluster_solution/IsEnzyme_ClusteringSol_ITAG.txt
+                - cluster_solution/Metabolic Network_ClusteringSol_Tuber_ITAG.txt
+                - cluster_solution/PPI_Network_ClusteringSol_Tuber_ITAG.txt
+                - cluster_solution/ITAG_tuber_CLICK_ClusteringSol.txt
+    - name: 'Potato - PGSC'
+      data_path: PGSC
+      expression_matrices:
+          - name: 'All tissues'
+            path: data_sets/All_TissuesDataSet_PGSC.txt
+            clusterings:
+                - cluster_solution/IsEnzyme_ClusteringSol.txt
+                - cluster_solution/Metabolic Network_clusteringSol_All_Tissues_PGSC.txt
+                - cluster_solution/PPI_Network_ClusteringSol_all_Tissues_PGSC.txt
+                - cluster_solution/PGSC_CLICK_ClusteringSol.txt
+          - name: 'Leafs'
+            path: data_sets/LeafsDataSet_PGSC.txt
+            clusterings:
+                - cluster_solution/IsEnzyme_ClusteringSol.txt
+                - cluster_solution/Metabolic Network_clusteringSol_Leafs_PGSC.txt
+                - cluster_solution/PPI_Network_ClusteringSol_Leafs_PGSC.txt
+                - cluster_solution/PGSC_leafs_CLICK_ClusteringSol.txt
+          - name: 'Roots'
+            path: data_sets/RootsDataSet_PGSC.txt
+            clusterings:
+                - cluster_solution/IsEnzyme_ClusteringSol.txt
+                - cluster_solution/Metabolic Network_clusteringSol_Roots_PGSC.txt
+                - cluster_solution/PPI_Network_ClusteringSol_Roots_PGSC.txt
+                - cluster_solution/PGSC_roots_CLICK_ClusteringSol.txt
+          - name: 'Tuber'
+            path: data_sets/Tuber_PGSC.txt
+            clusterings:
+                - cluster_solution/IsEnzyme_ClusteringSol.txt
+                - cluster_solution/Metabolic Network_clusteringSol_Tuber_PGSC.txt
+                - cluster_solution/PPI_Network_ClusteringSol_Tuber_PGSC.txt
+                - cluster_solution/PGSC_tuber_CLICK_ClusteringSol.txt
+    - name: Tomato
+      data_path: TOMATO
+      expression_matrices:
+          - name: 'Root and leaf'
+            path: data_sets/RootAndLeafDataSet.txt
+            clusterings:
+                - cluster_solution/IsEnzymeTomatoClusteringSol.txt
+                - cluster_solution/RootAndLeaf_MetabolicNetworkClusteringSol.txt
+                - cluster_solution/nullClusteringSol.txt
+                - cluster_solution/RootAndLeaf_PPI_Network_ClusteringSol.txt
+                - cluster_solution/RootAndLeaf_MCL_ClusteringSol.txt
+                - cluster_solution/RootAndLeaf_CLICK_clusteringSol.txt
+          - name: 'Fruit'
+            path: data_sets/FruitDataSet.txt
+            clusterings:
+                - cluster_solution/IsEnzymeTomatoClusteringSol.txt
+                - cluster_solution/Fruit_MetabolicNetworkClusteringSol.txt
+                - cluster_solution/nullClusteringSol.txt
+                - cluster_solution/Fruit_PPI_Network_ClusteringSo.txt
+                - cluster_solution/Fruit_MCL_ClusteringSol.txt
+                - cluster_solution/Fruit_CLICK_clusteringSol.txt

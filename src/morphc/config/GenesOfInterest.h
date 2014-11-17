@@ -4,15 +4,20 @@
 
 #include <string>
 #include <vector>
-#include "Gene.h"
+#include <yaml-cpp/yaml.h>
+
+namespace MORPHC {
+namespace CONFIG {
 
 class GenesOfInterest
 {
 public:
-	GenesOfInterest(std::string path);
+	GenesOfInterest(std::string data_root, YAML::Node genes_of_interest);
 	const std::vector<std::string>& get_genes();
 
 private:
 	std::string name;
 	std::vector<std::string> genes;
 };
+
+}}

@@ -9,9 +9,10 @@
 #include <iomanip>
 #include "util.h"
 
-
 using namespace std;
 namespace ublas = boost::numeric::ublas;
+
+namespace MORPHC {
 
 GeneExpression::GeneExpression(std::string path)
 :	name(path)
@@ -62,7 +63,7 @@ GeneExpression::GeneExpression(std::string path)
 
 void GeneExpression::generate_gene_correlations(const std::vector<size_type>& all_goi) {
 	using namespace ublas;
-	::indirect_array goi_indices(const_cast<size_type*>(all_goi.data()), const_cast<size_type*>(all_goi.data() + all_goi.size())); // TODO use this style everywhere instead of clumsily copying into unbounded array first
+	MORPHC::indirect_array goi_indices(const_cast<size_type*>(all_goi.data()), const_cast<size_type*>(all_goi.data() + all_goi.size())); // TODO use this style everywhere instead of clumsily copying into unbounded array first
 
 	gene_correlations = GeneCorrelations(expression_matrix.size1(), expression_matrix.size1(), expression_matrix.size1() * all_goi.size());
 
@@ -87,7 +88,7 @@ void GeneExpression::generate_gene_correlations(const std::vector<size_type>& al
 	}
 
 	transform(sum_sq.begin(), sum_sq.end(), sum_sq.begin(), ::sqrt);
-	noalias(project(gene_correlations, ::indirect_array::all(), goi_indices)) = element_div(sum_cross, outer_prod(sum_sq, project(sum_sq, goi_indices)));
+	noalias(project(gene_correlations, MORPHC::indirect_array::all(), goi_indices)) = element_div(sum_cross, outer_prod(sum_sq, project(sum_sq, goi_indices)));
 }
 
 GeneCorrelations& GeneExpression::get_gene_correlations() {
@@ -114,4 +115,6 @@ string GeneExpression::get_name() const {
 
 const std::vector<size_type>& GeneExpression::get_genes() const {
 	return genes;
+}
+
 }

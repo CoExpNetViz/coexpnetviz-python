@@ -7,6 +7,8 @@
 
 using namespace std;
 
+namespace MORPHC {
+
 Clustering::Clustering(string path, GeneExpression& gene_expression_)
 :	name(path), gene_expression(gene_expression_)
 {
@@ -61,4 +63,6 @@ const std::vector<Cluster>& Clustering::get_clusters() const {
 
 GeneExpression& Clustering::get_source() const {
 	return gene_expression;
+}
+
 }
