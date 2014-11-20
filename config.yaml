@@ -45,7 +45,7 @@ species:
             path: gois/ITAG.txt
       expression_matrices:
           - name: 'All tissues'
-            path: ITAG/data_sets/All_TissuesDataSet_ITAG.txt	
+            path: data_sets/All_TissuesDataSet_ITAG.txt	
             clusterings:
                 - name: 'IsEnzyme'
                   path: cluster_solution/IsEnzyme_ClusteringSol_ITAG.txt
@@ -56,7 +56,7 @@ species:
                 - name: 'CLICK'
                   path: cluster_solution/ITAG_CLICK_ClusteringSol.txt
           - name: 'Leafs'
-            path: ITAG/data_sets/Leafs_ITAG.txt	
+            path: data_sets/Leafs_ITAG.txt	
             clusterings:
                 - name: 'IsEnzyme'
                   path: cluster_solution/IsEnzyme_ClusteringSol_ITAG.txt
@@ -67,7 +67,7 @@ species:
                 - name: 'CLICK'
                   path: cluster_solution/ITAG_leafs_CLICK_ClusteringSol.txt
           - name: 'Roots'
-            path: ITAG/data_sets/Root_ITAG.txt	
+            path: data_sets/Root_ITAG.txt	
             clusterings:
                 - name: 'IsEnzyme'
                   path: cluster_solution/IsEnzyme_ClusteringSol_ITAG.txt
@@ -78,7 +78,7 @@ species:
                 - name: 'CLICK'
                   path: cluster_solution/ITAG_roots_CLICK_ClusteringSol.txt
           - name: 'Tuber'
-            path: ITAG/data_sets/Tuber_ITAG.txt	
+            path: data_sets/Tuber_ITAG.txt	
             clusterings:
                 - name: 'IsEnzyme'
                   path: cluster_solution/IsEnzyme_ClusteringSol_ITAG.txt
