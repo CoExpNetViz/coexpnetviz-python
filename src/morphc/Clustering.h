@@ -4,6 +4,7 @@
 
 #include "GeneExpression.h"
 #include "Cluster.h"
+#include "config/Clustering.h"
 
 namespace MORPHC {
 
@@ -15,7 +16,7 @@ namespace MORPHC {
 class Clustering
 {
 public:
-	Clustering(std::string path, GeneExpression&);
+	Clustering(CONFIG::Clustering, GeneExpression&);
 
 	const std::vector<Cluster>& get_clusters() const;
 	GeneExpression& get_source() const;

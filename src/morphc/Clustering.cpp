@@ -9,13 +9,13 @@ using namespace std;
 
 namespace MORPHC {
 
-Clustering::Clustering(string path, GeneExpression& gene_expression_)
-:	name(path), gene_expression(gene_expression_)
+Clustering::Clustering(CONFIG::Clustering clustering_, GeneExpression& gene_expression_)
+:	name(clustering_.get_name()), gene_expression(gene_expression_)
 {
 	std::vector<size_type> genes;
 
 	// Load
-	read_file(path, [this, &genes](const char* begin, const char* end) {
+	read_file(clustering_.get_path(), [this, &genes](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
 		using namespace boost::fusion;
 

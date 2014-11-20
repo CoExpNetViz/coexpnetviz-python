@@ -4,21 +4,20 @@
 
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
 
 namespace MORPHC {
 namespace CONFIG {
 
-class GenesOfInterest
-{
+class Clustering {
 public:
-	GenesOfInterest(std::string data_root, YAML::Node genes_of_interest);
-	const std::vector<std::string>& get_genes() const;
+	Clustering(std::string name, std::string path);
+
 	std::string get_name() const;
+	std::string get_path() const;
 
 private:
 	std::string name;
-	std::vector<std::string> genes;
+	std::string path;
 };
 
 }}

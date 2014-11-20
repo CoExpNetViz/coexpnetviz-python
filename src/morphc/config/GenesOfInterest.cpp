@@ -28,8 +28,12 @@ GenesOfInterest::GenesOfInterest(string data_root, YAML::Node node)
 		});
 	}
 }
-const vector<std::string>& GenesOfInterest::get_genes() {
+const vector<std::string>& GenesOfInterest::get_genes() const {
 	return genes;
+}
+
+std::string GenesOfInterest::get_name() const {
+	return name;
 }
 
 }}

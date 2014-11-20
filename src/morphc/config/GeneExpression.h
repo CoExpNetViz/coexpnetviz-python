@@ -5,23 +5,24 @@
 #include <string>
 #include <vector>
 #include <yaml-cpp/yaml.h>
+#include "Clustering.h"
 
 namespace MORPHC {
 namespace CONFIG {
-
 
 // A species
 class GeneExpression {
 public:
 	GeneExpression(std::string data_root, YAML::Node expression_matrix);
 
-	std::string get_path();
-	const std::vector<std::string> get_clusterings();
+	std::string get_name() const;
+	std::string get_path() const;
+	const std::vector<Clustering>& get_clusterings() const;
 
 private:
 	std::string name;
 	std::string gene_expression_path;
-	std::vector<std::string> clustering_paths;
+	std::vector<Clustering> clusterings;
 };
 
 }}

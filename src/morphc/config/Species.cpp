@@ -32,7 +32,7 @@ void Species::run_jobs() {
 		MORPHC::GeneExpression gene_expression(gene_expression_.get_path());
 
 		// translate gene names to indices; and drop genes missing from the gene expression data
-		std::vector<std::vector<size_type>> goi_sets; // TODO could try sets
+		std::vector<std::vector<size_type>> goi_sets;
 		for (auto& goi : genes_of_interest_sets) {
 			goi_sets.emplace_back();
 			for (auto gene : goi.get_genes()) {
@@ -53,32 +53,25 @@ void Species::run_jobs() {
 		gene_expression.generate_gene_correlations(all_goi);
 
 		// clustering
-		for (auto clustering_path : gene_expression_.get_clusterings()) {
-			Clustering clustering(clustering_path, gene_expression);
-			cout << gene_expression_.get_path() << endl;
-			cout << clustering_path << endl;
+		for (auto clustering_ : gene_expression_.get_clusterings()) {
+			MORPHC::Clustering clustering(clustering_, gene_expression);
 			int goi_index=0;
-			for (auto& goi : goi_sets) {
-				cout << "goi: ";
-				for (auto g : goi) {
-					cout << gene_expression.get_gene_name(g) << " ";
-				}
-				cout << endl;
-
+			for (int i=0; i < goi_sets.size(); i++) {
+				auto& goi = goi_sets.at(i);
+				string name = (make_string() << get_name() << "__" << gene_expression_.get_name() << "__" << clustering.get_name() << "__" << genes_of_interest_sets.at(i).get_name() << ".txt").str();
+				replace(begin(name), end(name), ' ', '_');
+				cout << "Current job: " << name << endl;
 				if (goi.empty()) {
 					throw runtime_error("Not implemented");// TODO return empty result with warning
 				}
 				else {
 					// Rank genes
 					Ranking ranking(goi, clustering);
-					string name = gene_expression.get_name() + "__" + clustering_path;
-					replace(name.begin(), name.end(), '/', '_');
-					ranking.save((make_string() << "output/" << name << "__GOI" << goi_index << ".txt").str());
+					ranking.save("output/" + name);
 				}
 				goi_index++;
 			}
 		}
-		cout << endl;
 	}
 }
 
