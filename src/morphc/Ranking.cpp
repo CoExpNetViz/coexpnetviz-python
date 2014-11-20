@@ -51,7 +51,7 @@ void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, boost:
 		auto sub_matrix = project(gene_correlations, candidates, interesting_genes);
 		auto goi_count = interesting_genes.size();
 		auto sub_rankings = project(rankings, candidates);
-		noalias(sub_rankings) = prod(sub_matrix, ublas::scalar_vector<double>(goi_count)) / goi_count; // TODO there's some business of covariance and stuff that need be applied to results here
+		noalias(sub_rankings) = prod(sub_matrix, ublas::scalar_vector<double>(goi_count)) / goi_count;
 
 		// normalise scores within this cluster (TODO this implementation may be numerically unsound )
 		// Note: it's different from R's output, either it's inaccurate or it's more accurate TODO (prolly the former; try gsl)
@@ -89,7 +89,6 @@ void Ranking::rank_self() {
 			size_type count = count_if(rankings.begin(), rankings.end(), [rank](double val){return val > rank;});
 			rank_indices.emplace_back(count);
 		}
-		cout << "." << endl;
 	}
 	sort(rank_indices.begin(), rank_indices.end());
 
