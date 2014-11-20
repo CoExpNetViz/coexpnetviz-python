@@ -11,8 +11,8 @@ using namespace ublas;
 
 namespace MORPHC {
 
-Application::Application(std::string job_list_path)
-:	job_list_path(job_list_path)
+Application::Application(string job_list_path, string output_path)
+:	job_list_path(job_list_path), output_path(output_path)
 {
 }
 
@@ -21,7 +21,7 @@ void Application::run() {
 	load_jobs();
 
 	for (auto& species_ : species) {
-		species_.run_jobs();
+		species_.run_jobs(output_path);
 	}
 }
 

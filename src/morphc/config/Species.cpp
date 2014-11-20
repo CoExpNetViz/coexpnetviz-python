@@ -26,7 +26,7 @@ void Species::add_job(std::string data_root, YAML::Node node) {
 	genes_of_interest_sets.emplace_back(data_root, node);
 }
 
-void Species::run_jobs() {
+void Species::run_jobs(string output_path) {
 	// run jobs
 	for (auto& gene_expression_ : gene_expressions) {
 		MORPHC::GeneExpression gene_expression(gene_expression_.get_path());
@@ -67,7 +67,7 @@ void Species::run_jobs() {
 				else {
 					// Rank genes
 					Ranking ranking(goi, clustering);
-					ranking.save("output/" + name);
+					ranking.save(output_path + "/" + name);
 				}
 				goi_index++;
 			}

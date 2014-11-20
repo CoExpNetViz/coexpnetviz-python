@@ -17,7 +17,7 @@ public:
 	Species(std::string data_root, YAML::Node species);
 
 	void add_job(std::string data_root, YAML::Node job);
-	void run_jobs();
+	void run_jobs(std::string output_path);
 
 	std::string get_name() const;
 
