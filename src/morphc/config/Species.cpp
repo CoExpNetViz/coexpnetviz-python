@@ -58,7 +58,7 @@ void Species::run_jobs(string output_path) {
 			int goi_index=0;
 			for (int i=0; i < goi_sets.size(); i++) {
 				auto& goi = goi_sets.at(i);
-				string name = (make_string() << get_name() << "__" << gene_expression_.get_name() << "__" << clustering.get_name() << "__" << genes_of_interest_sets.at(i).get_name() << ".txt").str();
+				string name = (make_string() << get_name() << "__" << genes_of_interest_sets.at(i).get_name() << "__" << gene_expression_.get_name() << "__" << clustering.get_name() << ".txt").str();
 				replace(begin(name), end(name), ' ', '_');
 				cout << "Current job: " << name << endl;
 				if (goi.empty()) {
