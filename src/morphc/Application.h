@@ -12,7 +12,7 @@ namespace MORPHC {
 class Application
 {
 public:
-	Application(std::string job_list_path, std::string output_path);
+	Application(std::string config_path, std::string job_list_path, std::string output_path);
 	void run();
 
 private:
@@ -21,6 +21,7 @@ private:
 
 private:
 	std::vector<CONFIG::Species> species; // list of species that need to be mined
+	std::string config_path;
 	std::string job_list_path;
 	std::string output_path;
 };

@@ -11,8 +11,8 @@ using namespace ublas;
 
 namespace MORPHC {
 
-Application::Application(string job_list_path, string output_path)
-:	job_list_path(job_list_path), output_path(output_path)
+Application::Application(string config_path, string job_list_path, string output_path)
+:	config_path(config_path), job_list_path(job_list_path), output_path(output_path)
 {
 }
 
@@ -26,7 +26,6 @@ void Application::run() {
 }
 
 void Application::load_config() {
-	string config_path = "config.yaml"; // TODO should be relative to installation dir (basedir(argv[0])/config.yaml should do the trick)
 	YAML::Node config = YAML::LoadFile(config_path);
 	string data_root = config["species_data_path"].as<string>(".");
 

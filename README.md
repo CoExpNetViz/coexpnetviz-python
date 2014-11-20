@@ -4,6 +4,8 @@ TODO short description
 
 TODO longer description
 
+Supported platforms: Linux
+
 # Compilation
 
 Dependencies:
