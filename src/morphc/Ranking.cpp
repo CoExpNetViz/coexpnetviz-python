@@ -5,6 +5,7 @@
 #include "gsl/gsl_statistics_double.h"
 #include <fstream>
 #include <iomanip>
+#include <cmath>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
@@ -15,7 +16,7 @@ namespace MORPHC {
 size_type K = 1000;
 
 Ranking::Ranking(const std::vector<size_type>& goi, Clustering& clustering, std::string name)
-:	genes_of_interest(goi), clustering(clustering), rankings(clustering.get_source().get_gene_correlations().size1(), -99.0), ausr(-1.0) // TODO use NaN instead
+:	genes_of_interest(goi), clustering(clustering), rankings(clustering.get_source().get_gene_correlations().size1(), nan("undefined")), ausr(-1.0)
 {
 	rank_genes(goi, rankings);
 	rank_self();
@@ -76,12 +77,12 @@ void Ranking::rank_self() {
 	boost::numeric::ublas::vector<double> rankings;
 	for (auto gene : genes_of_interest) {
 		// TODO could also copy original rankings and recalc only the cluster of the gene we removed
-		rankings = ublas::vector<double>(this->rankings.size(), -99);
+		rankings = ublas::vector<double>(this->rankings.size(), nan("undefined"));
 		auto goi = genes_of_interest;
 		goi.erase(find(goi.begin(), goi.end(), gene));
 		rank_genes(goi, rankings);
 		double rank = rankings(gene);
-		if (rank == -99.0) {
+		if (std::isnan(rank)) {
 			// gene undetected, give penalty
 			rank_indices.emplace_back(2*K-1);
 		}
@@ -117,7 +118,7 @@ void Ranking::save(std::string path, int top_k) {
 	out << "AUSR: " << ausr << "\n";
 	for (int i=0; i<results.size() && i<top_k; i++) {
 		auto& r = results.at(i);
-		if (r.first == -99)
+		if (std::isnan(r.first))
 			break;
 		out << r.second << " " << r.first << "\n";
 	}
