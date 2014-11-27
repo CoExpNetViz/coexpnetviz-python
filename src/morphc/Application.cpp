@@ -2,6 +2,8 @@
 
 #include "Application.h"
 #include <iostream>
+#include <iomanip>
+#include <libgen.h>
 #include "ublas.h"
 #include "util.h"
 
@@ -11,9 +13,25 @@ using namespace ublas;
 
 namespace MORPHC {
 
-Application::Application(string config_path, string job_list_path, string output_path)
-:	config_path(config_path), job_list_path(job_list_path), output_path(output_path)
+Application::Application(int argc, char** argv)
 {
+	cout << setprecision(9);
+
+	if (argc != 3) {
+		cerr << "USAGE: morphc path/to/joblist.yaml path/to/output_directory top_k" << endl
+				<< endl
+				<< "top_k = max number of candidate genes to save in outputted rankings" << endl
+				<< endl << endl;
+		throw runtime_error("Invalid argument count");
+	}
+
+	string install_directory = dirname(argv[0]);
+	config_path = install_directory + "/config.yaml";
+	job_list_path = argv[1];
+	output_path = argv[2];
+	istringstream str(argv[3]);
+	str >> top_k;
+	// TODO look for asserts and see whether they should perhaps be needed at release as well
 }
 
 void Application::run() {
@@ -21,7 +39,7 @@ void Application::run() {
 	load_jobs();
 
 	for (auto& species_ : species) {
-		species_.run_jobs(output_path);
+		species_.run_jobs(output_path, top_k);
 	}
 }
 

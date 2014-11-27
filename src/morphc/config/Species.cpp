@@ -26,7 +26,7 @@ void Species::add_job(std::string data_root, YAML::Node node) {
 	genes_of_interest_sets.emplace_back(data_root, node);
 }
 
-void Species::run_jobs(string output_path) {
+void Species::run_jobs(string output_path, int top_k) {
 	if (genes_of_interest_sets.empty())
 		return;
 
@@ -55,25 +55,28 @@ void Species::run_jobs(string output_path) {
 		gene_expression.generate_gene_correlations(all_goi);
 
 		// clustering
+		unique_ptr<Ranking> best_ranking;
 		for (auto clustering_ : gene_expression_.get_clusterings()) {
 			MORPHC::Clustering clustering(clustering_, gene_expression);
 			int goi_index=0;
 			for (int i=0; i < goi_sets.size(); i++) {
 				auto& goi = goi_sets.at(i);
-				string name = (make_string() << get_name() << "__" << genes_of_interest_sets.at(i).get_name() << "__" << gene_expression_.get_name() << "__" << clustering.get_name() << ".txt").str();
-				replace(begin(name), end(name), ' ', '_');
-				cout << "Current job: " << name << endl;
+				cout << get_name() << ", " << genes_of_interest_sets.at(i).get_name() << ", " << gene_expression_.get_name() << ", " << clustering.get_name() << endl;
 				if (goi.empty()) {
 					throw runtime_error("Not implemented");// TODO return empty result with warning
 				}
 				else {
 					// Rank genes
-					Ranking ranking(goi, clustering);
-					ranking.save(output_path + "/" + name);
+					string name = (make_string() << get_name() << "__" << genes_of_interest_sets.at(i).get_name() << ".txt").str();
+					replace(begin(name), end(name), ' ', '_');
+					auto ranking = make_unique<Ranking>(goi, clustering, name);
+					if (ranking > best_ranking)
+						best_ranking = std::move(ranking);
 				}
 				goi_index++;
 			}
 		}
+		best_ranking->save(output_path, top_k);
 	}
 }
 

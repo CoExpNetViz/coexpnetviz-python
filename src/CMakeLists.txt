@@ -20,7 +20,7 @@ include_directories(${YAMLCPP_INCLUDE_DIR})
 include_directories(BEFORE ${CMAKE_SOURCE_DIR})
 
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
-set(CMAKE_CXX_FLAGS "-Wall -Wno-sign-compare -std=c++11 ${SDL_CFLAGS}")
+set(CMAKE_CXX_FLAGS "-Wall -Wno-sign-compare -std=c++14 ${SDL_CFLAGS}")
 
 file(GLOB_RECURSE Sources morphc/*.cpp)
 add_executable(morph ${Sources})

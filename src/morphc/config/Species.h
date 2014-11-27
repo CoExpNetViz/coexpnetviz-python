@@ -17,7 +17,11 @@ public:
 	Species(std::string data_root, YAML::Node species);
 
 	void add_job(std::string data_root, YAML::Node job);
-	void run_jobs(std::string output_path);
+
+	/**
+	 * Run jobs, save best rankings in output_path, save at most top_k genes of each ranking
+	 */
+	void run_jobs(std::string output_path, int top_k);
 
 	std::string get_name() const;
 

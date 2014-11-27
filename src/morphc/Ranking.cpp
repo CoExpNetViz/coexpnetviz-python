@@ -14,7 +14,7 @@ namespace MORPHC {
 
 size_type K = 1000;
 
-Ranking::Ranking(const std::vector<size_type>& goi, Clustering& clustering)
+Ranking::Ranking(const std::vector<size_type>& goi, Clustering& clustering, std::string name)
 :	genes_of_interest(goi), clustering(clustering), rankings(clustering.get_source().get_gene_correlations().size1(), -99.0), ausr(-1.0) // TODO use NaN instead
 {
 	rank_genes(goi, rankings);
@@ -103,7 +103,7 @@ void Ranking::rank_self() {
 	ausr = auc / K;
 }
 
-void Ranking::save(std::string path) {
+void Ranking::save(std::string path, int top_k) {
 	// sort results
 	std::vector<pair<double, string>> results;
 	for (int i=0; i<rankings.size(); i++) {
@@ -112,10 +112,11 @@ void Ranking::save(std::string path) {
 	sort(results.rbegin(), results.rend());
 
 	// output results
-	ofstream out(path);
+	ofstream out(path + "/" + name);
 	out << setprecision(9) << scientific;
 	out << "AUSR: " << ausr << "\n";
-	for (auto r : results) {
+	for (int i=0; i<results.size() && i<top_k; i++) {
+		auto& r = results.at(i);
 		if (r.first == -99)
 			break;
 		out << r.second << " " << r.first << "\n";

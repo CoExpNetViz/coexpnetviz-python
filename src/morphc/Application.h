@@ -12,7 +12,7 @@ namespace MORPHC {
 class Application
 {
 public:
-	Application(std::string config_path, std::string job_list_path, std::string output_path);
+	Application(int argc, char** argv);
 	void run();
 
 private:
@@ -24,6 +24,7 @@ private:
 	std::string config_path;
 	std::string job_list_path;
 	std::string output_path;
+	int top_k;
 };
 
 }
