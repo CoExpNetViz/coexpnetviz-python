@@ -17,7 +17,7 @@ Application::Application(int argc, char** argv)
 {
 	cout << setprecision(9);
 
-	if (argc != 3) {
+	if (argc != 4) {
 		cerr << "USAGE: morphc path/to/joblist.yaml path/to/output_directory top_k" << endl
 				<< endl
 				<< "top_k = max number of candidate genes to save in outputted rankings" << endl

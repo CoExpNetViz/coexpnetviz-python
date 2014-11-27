@@ -20,6 +20,8 @@ public:
 	 */
 	void save(std::string directory, int top_k);
 
+	bool operator>(const Ranking&) const;
+
 private:
 	void rank_genes(const std::vector<size_type>& genes_of_interest, boost::numeric::ublas::vector<double>& rankings);
 	void rank_self();

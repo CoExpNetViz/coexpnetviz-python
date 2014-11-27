@@ -30,6 +30,7 @@ void Species::run_jobs(string output_path, int top_k) {
 	if (genes_of_interest_sets.empty())
 		return;
 
+	map<int, unique_ptr<Ranking>> best_ranking_by_goi; // goi index -> best ranking
 	for (auto& gene_expression_ : gene_expressions) {
 		MORPHC::GeneExpression gene_expression(gene_expression_.get_path());
 
@@ -55,7 +56,6 @@ void Species::run_jobs(string output_path, int top_k) {
 		gene_expression.generate_gene_correlations(all_goi);
 
 		// clustering
-		unique_ptr<Ranking> best_ranking;
 		for (auto clustering_ : gene_expression_.get_clusterings()) {
 			MORPHC::Clustering clustering(clustering_, gene_expression);
 			int goi_index=0;
@@ -70,13 +70,15 @@ void Species::run_jobs(string output_path, int top_k) {
 					string name = (make_string() << get_name() << "__" << genes_of_interest_sets.at(i).get_name() << ".txt").str();
 					replace(begin(name), end(name), ' ', '_');
 					auto ranking = make_unique<Ranking>(goi, clustering, name);
-					if (ranking > best_ranking)
-						best_ranking = std::move(ranking);
+					if (ranking > best_ranking_by_goi[i])
+						best_ranking_by_goi[i] = std::move(ranking);
 				}
 				goi_index++;
 			}
 		}
-		best_ranking->save(output_path, top_k);
+	}
+	for (auto& p : best_ranking_by_goi) {
+		p.second->save(output_path, top_k);
 	}
 }
 

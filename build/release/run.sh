@@ -1,2 +1,2 @@
 #!/bin/sh
-./morph ../../joblist.yaml output
+./morph ../../joblist.yaml output 100
