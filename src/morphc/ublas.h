@@ -2,6 +2,7 @@
 
 #pragma once
 
+#define BOOST_UBLAS_NDEBUG  // comment this line for massive ublas assertions (slows down debug a lot)
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/numeric/ublas/matrix.hpp>

@@ -13,7 +13,7 @@ namespace MORPHC {
 class Ranking
 {
 public:
-	Ranking(const std::vector<size_type>& genes_of_interest, Clustering&, std::string name);
+	Ranking(std::vector<size_type> genes_of_interest, std::shared_ptr<Clustering>, std::string name);
 
 	/**
 	 * Save top k results in given directory
@@ -27,8 +27,8 @@ private:
 	void rank_self();
 
 private:
-	const std::vector<size_type>& genes_of_interest; // genes_of_interest
-	Clustering& clustering;
+	std::vector<size_type> genes_of_interest; // genes_of_interest
+	std::shared_ptr<Clustering> clustering;
 	boost::numeric::ublas::vector<double> rankings; // size = genes.size(), gene_index -> ranking
 	double ausr;
 	std::string name;

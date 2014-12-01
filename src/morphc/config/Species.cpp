@@ -32,15 +32,15 @@ void Species::run_jobs(string output_path, int top_k) {
 
 	map<int, unique_ptr<Ranking>> best_ranking_by_goi; // goi index -> best ranking
 	for (auto& gene_expression_ : gene_expressions) {
-		MORPHC::GeneExpression gene_expression(gene_expression_.get_path());
+		auto gene_expression = make_shared<MORPHC::GeneExpression>(gene_expression_.get_path());
 
 		// translate gene names to indices; and drop genes missing from the gene expression data
 		std::vector<std::vector<size_type>> goi_sets;
 		for (auto& goi : genes_of_interest_sets) {
 			goi_sets.emplace_back();
 			for (auto gene : goi.get_genes()) {
-				if (gene_expression.has_gene(gene)) {
-					goi_sets.back().emplace_back(gene_expression.get_gene_index(gene));
+				if (gene_expression->has_gene(gene)) {
+					goi_sets.back().emplace_back(gene_expression->get_gene_index(gene));
 				}
 			}
 		}
@@ -53,15 +53,15 @@ void Species::run_jobs(string output_path, int top_k) {
 		sort(all_goi.begin(), all_goi.end());
 		all_goi.erase(unique(all_goi.begin(), all_goi.end()), all_goi.end());
 
-		gene_expression.generate_gene_correlations(all_goi);
+		gene_expression->generate_gene_correlations(all_goi);
 
 		// clustering
 		for (auto clustering_ : gene_expression_.get_clusterings()) {
-			MORPHC::Clustering clustering(clustering_, gene_expression);
+			auto clustering = make_shared<MORPHC::Clustering>(clustering_, gene_expression);
 			int goi_index=0;
 			for (int i=0; i < goi_sets.size(); i++) {
 				auto& goi = goi_sets.at(i);
-				cout << get_name() << ", " << genes_of_interest_sets.at(i).get_name() << ", " << gene_expression_.get_name() << ", " << clustering.get_name() << endl;
+				cout << get_name() << ", " << genes_of_interest_sets.at(i).get_name() << ", " << gene_expression_.get_name() << ", " << clustering->get_name() << endl;
 				if (goi.empty()) {
 					throw runtime_error("Not implemented");// TODO return empty result with warning
 				}

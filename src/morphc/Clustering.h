@@ -16,7 +16,7 @@ namespace MORPHC {
 class Clustering
 {
 public:
-	Clustering(CONFIG::Clustering, GeneExpression&);
+	Clustering(CONFIG::Clustering, std::shared_ptr<GeneExpression>);
 
 	const std::vector<Cluster>& get_clusters() const;
 	GeneExpression& get_source() const;
@@ -28,7 +28,7 @@ public:
 private:
 	std::string name;
 	std::vector<Cluster> clusters;  // mutually disjunct clusters
-	GeneExpression& gene_expression; // gene expression data we clustered
+	std::shared_ptr<GeneExpression> gene_expression; // gene expression data we clustered
 }; // TODO consider sorted vectors instead of sets
 
 }

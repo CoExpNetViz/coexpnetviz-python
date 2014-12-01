@@ -15,17 +15,17 @@ namespace MORPHC {
 
 size_type K = 1000;
 
-Ranking::Ranking(const std::vector<size_type>& goi, Clustering& clustering, std::string name)
-:	genes_of_interest(goi), clustering(clustering), rankings(clustering.get_source().get_gene_correlations().size1(), nan("undefined")), ausr(-1.0)
+Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> clustering, std::string name)
+:	genes_of_interest(goi), clustering(clustering), rankings(clustering->get_source().get_gene_correlations().size1(), nan("undefined")), ausr(-1.0)
 {
 	rank_genes(goi, rankings);
 	rank_self();
 }
 
 void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, boost::numeric::ublas::vector<double>& rankings) {
-	auto& gene_expression = clustering.get_source();
+	auto& gene_expression = clustering->get_source();
 	auto& gene_correlations = gene_expression.get_gene_correlations();
-	for (auto& cluster : clustering.get_clusters()) {
+	for (auto& cluster : clustering->get_clusters()) {
 		auto& cluster_genes = cluster.get_genes();
 
 		// interesting_genes array
@@ -108,7 +108,7 @@ void Ranking::save(std::string path, int top_k) {
 	// sort results
 	std::vector<pair<double, string>> results;
 	for (int i=0; i<rankings.size(); i++) {
-		results.push_back(make_pair(rankings(i), clustering.get_source().get_gene_name(i)));
+		results.push_back(make_pair(rankings(i), clustering->get_source().get_gene_name(i)));
 	}
 	sort(results.rbegin(), results.rend());
 
