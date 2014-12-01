@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <unordered_map>
 #include "GeneExpression.h"
 #include "Cluster.h"
 #include "config/Clustering.h"
@@ -16,9 +17,18 @@ namespace MORPHC {
 class Clustering
 {
 public:
+	typedef std::unordered_map<std::string, Cluster> ClusterMap;
+	typedef ClusterMap::const_iterator const_iterator;
+
+public:
 	Clustering(CONFIG::Clustering, std::shared_ptr<GeneExpression>);
 
-	const std::vector<Cluster>& get_clusters() const;
+	/**
+	 * Get iterator to first cluster
+	 */
+	const_iterator begin() const;
+	const_iterator end() const;
+
 	GeneExpression& get_source() const;
 
 	std::string get_name() const {
@@ -27,7 +37,7 @@ public:
 
 private:
 	std::string name;
-	std::vector<Cluster> clusters;  // mutually disjunct clusters
+	ClusterMap clusters;  // mutually disjunct clusters
 	std::shared_ptr<GeneExpression> gene_expression; // gene expression data we clustered
 }; // TODO consider sorted vectors instead of sets
 

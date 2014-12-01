@@ -30,12 +30,12 @@ species:
           - name: 'Seedlings'
             path: data_sets/SeedlingsDataSet.txt
             clusterings:
-                - name: 'IsEnzyme'
-                  path: cluster_solution/Seedlings_IsEnzymeClusteringSol.txt
-                - name: 'Metabolic matisse'
-                  path: cluster_solution/Seedlings_Metabolic_Network_ClusteringSol.txt
-                - name: 'PPI matisse'
-                  path: cluster_solution/Seedlings_PPI_Network_ClusteringSol.txt
+                #- name: 'IsEnzyme'
+                #  path: cluster_solution/Seedlings_IsEnzymeClusteringSol.txt
+                #- name: 'Metabolic matisse'
+                #  path: cluster_solution/Seedlings_Metabolic_Network_ClusteringSol.txt
+                #- name: 'PPI matisse'
+                #  path: cluster_solution/Seedlings_PPI_Network_ClusteringSol.txt
                 - name: 'CLICK'
                   path: cluster_solution/Seedlings_CLICK_ClusteringSol.txt
     - name: 'Potato - ITAG'

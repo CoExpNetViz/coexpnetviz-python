@@ -25,8 +25,8 @@ Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> cluster
 void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, boost::numeric::ublas::vector<double>& rankings) {
 	auto& gene_expression = clustering->get_source();
 	auto& gene_correlations = gene_expression.get_gene_correlations();
-	for (auto& cluster : clustering->get_clusters()) {
-		auto& cluster_genes = cluster.get_genes();
+	for (auto& p : *clustering) {
+		auto& cluster_genes = p.second.get_genes();
 
 		// interesting_genes array
 		MORPHC::array interesting_genes_(genes_of_interest.size());
