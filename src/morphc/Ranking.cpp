@@ -16,7 +16,7 @@ namespace MORPHC {
 size_type K = 1000;
 
 Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> clustering, std::string name)
-:	genes_of_interest(goi), clustering(clustering), rankings(clustering->get_source().get_gene_correlations().size1(), nan("undefined")), ausr(-1.0)
+:	genes_of_interest(goi), clustering(clustering), rankings(clustering->get_source().get_gene_correlations().size1(), nan("undefined")), ausr(-1.0), name(name)
 {
 	rank_genes(goi, rankings);
 	rank_self();
@@ -114,6 +114,7 @@ void Ranking::save(std::string path, int top_k) {
 
 	// output results
 	ofstream out(path + "/" + name);
+	cout << "saving to " << path + "/" + name << endl;
 	out << setprecision(9) << scientific;
 	out << "AUSR: " << ausr << "\n\n"; // Note: "\n" is faster than std::endl
 	for (int i=0; i<results.size() && i<top_k; i++) {
@@ -122,6 +123,7 @@ void Ranking::save(std::string path, int top_k) {
 			break;
 		out << r.second << " " << r.first << "\n";
 	}
+	// TODO ensure out in good state at end of writing
 }
 
 bool Ranking::operator>(const Ranking& other) const {
