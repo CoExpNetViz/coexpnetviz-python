@@ -3,13 +3,14 @@
 #include "Application.h"
 #include <iostream>
 #include <iomanip>
-#include <libgen.h>
+#include <boost/filesystem.hpp>
 #include "ublas.h"
 #include "util.h"
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
 using namespace ublas;
+namespace fs = boost::filesystem;
 
 namespace MORPHC {
 
@@ -20,7 +21,7 @@ Application::Application(int argc, char** argv)
 	try {
 		ensure(argc == 4, "Invalid argument count");
 
-		string install_directory = dirname(argv[0]);
+		string install_directory(boost::filesystem::path(argv[0]).remove_filename().native());
 		config_path = install_directory + "/config.yaml";
 		job_list_path = argv[1];
 		output_path = argv[2];

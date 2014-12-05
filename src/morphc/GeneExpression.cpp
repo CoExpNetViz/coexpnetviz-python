@@ -4,6 +4,7 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <boost/spirit/include/qi.hpp>
+#include <boost/filesystem.hpp>
 #include <gsl/gsl_statistics.h>
 #include <cmath>
 #include <iomanip>
@@ -15,7 +16,7 @@ namespace ublas = boost::numeric::ublas;
 namespace MORPHC {
 
 GeneExpression::GeneExpression(std::string path)
-:	name(path)
+:	name(boost::filesystem::path(path).filename().native())
 {
 	// load expression_matrix
 	read_file(path, [this](const char* begin, const char* end) {

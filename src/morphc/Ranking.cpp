@@ -87,7 +87,8 @@ void Ranking::rank_self() {
 			rank_indices.emplace_back(2*K-1);
 		}
 		else {
-			size_type count = count_if(rankings.begin(), rankings.end(), [rank](double val){return val > rank;});
+			// TODO currently we do len(GOI) passes on the whole ranking, a sort + single pass is probably faster
+			size_type count = count_if(rankings.begin(), rankings.end(), [rank](double val){return val > rank && !std::isnan(val);});
 			rank_indices.emplace_back(count);
 		}
 	}
@@ -105,26 +106,29 @@ void Ranking::rank_self() {
 }
 
 void Ranking::save(std::string path, int top_k) {
-	// sort results
-	std::vector<pair<double, string>> results;
+	// Sort results
+	std::vector<pair<double, string>> results; // vec<(rank, gene)>
+	auto& gene_expression = clustering->get_source();
 	for (int i=0; i<rankings.size(); i++) {
-		results.push_back(make_pair(rankings(i), clustering->get_source().get_gene_name(i)));
+		if (std::isnan(rankings(i)))
+			continue; // don't include unranked genes in results
+		results.push_back(make_pair(rankings(i), gene_expression.get_gene_name(i)));
 	}
 	sort(results.rbegin(), results.rend());
 
-	// output results
+	// Out put results
 	ofstream out(path + "/" + name);
-	cout << "saving to " << path + "/" + name << endl;
 	out.exceptions(ofstream::failbit | ofstream::badbit);
+	out << setprecision(9) << fixed;
+	out << "AUSR: " << ausr << "\n\n"; // Note: "\n" is faster to out put than std::endl
 	out << setprecision(9) << scientific;
-	out << "AUSR: " << ausr << "\n\n"; // Note: "\n" is faster than std::endl
+	out << "Gene expression data: " << clustering->get_source().get_name() << "\n";
+	out << "Clustering: " << clustering->get_name() << "\n";
 	for (int i=0; i<results.size() && i<top_k; i++) {
 		auto& r = results.at(i);
-		if (std::isnan(r.first))
-			break;
+		assert(!std::isnan(r.first));
 		out << r.second << " " << r.first << "\n";
 	}
-	// TODO ensure out in good state at end of writing
 }
 
 bool Ranking::operator>(const Ranking& other) const {
