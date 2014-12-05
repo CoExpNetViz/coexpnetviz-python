@@ -20,6 +20,7 @@ public:
 	 */
 	void save(std::string directory, int top_k);
 
+	double get_ausr() const;
 	bool operator>(const Ranking&) const;
 
 private:

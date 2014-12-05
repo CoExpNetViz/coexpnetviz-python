@@ -120,10 +120,11 @@ void Ranking::save(std::string path, int top_k) {
 	ofstream out(path + "/" + name);
 	out.exceptions(ofstream::failbit | ofstream::badbit);
 	out << setprecision(9) << fixed;
-	out << "AUSR: " << ausr << "\n\n"; // Note: "\n" is faster to out put than std::endl
+	out << "AUSR: " << ausr << "\n"; // Note: "\n" is faster to out put than std::endl
 	out << setprecision(9) << scientific;
 	out << "Gene expression data: " << clustering->get_source().get_name() << "\n";
 	out << "Clustering: " << clustering->get_name() << "\n";
+	out << "\n";
 	for (int i=0; i<results.size() && i<top_k; i++) {
 		auto& r = results.at(i);
 		assert(!std::isnan(r.first));
@@ -133,6 +134,10 @@ void Ranking::save(std::string path, int top_k) {
 
 bool Ranking::operator>(const Ranking& other) const {
 	return ausr > other.ausr;
+}
+
+double Ranking::get_ausr() const {
+	return ausr;
 }
 
 }

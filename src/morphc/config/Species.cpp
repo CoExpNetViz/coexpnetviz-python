@@ -5,6 +5,7 @@
 #include <morphc/Clustering.h>
 #include <morphc/Ranking.h>
 #include <morphc/util.h>
+#include <iomanip>
 
 using namespace std;
 using namespace MORPHC;
@@ -61,15 +62,18 @@ void Species::run_jobs(string output_path, int top_k) {
 			int goi_index=0;
 			for (int i=0; i < goi_sets.size(); i++) {
 				auto& goi = goi_sets.at(i);
-				cout << get_name() << ", " << genes_of_interest_sets.at(i).get_name() << ", " << gene_expression_.get_name() << ", " << clustering->get_name() << endl;
+				cout << get_name() << ", " << genes_of_interest_sets.at(i).get_name() << ", " << gene_expression_.get_name() << ", " << clustering->get_name();
+				cout.flush();
 				if (goi.empty()) {
-					throw runtime_error("Not implemented");// TODO return empty result with warning
+					cout << "Skipping: None of the gene of interests are in the dataset" << endl;
+					throw runtime_error("Encountered empty GOI");// TODO this could legitimately occur when specifying a GOI of genes that don't appear in the gene-expression dataset.
 				}
 				else {
 					// Rank genes
 					string name = (make_string() << get_name() << "__" << genes_of_interest_sets.at(i).get_name() << ".txt").str();
 					replace(begin(name), end(name), ' ', '_');
 					auto ranking = make_unique<Ranking>(goi, clustering, name);
+					cout << ": AUSR=" << setprecision(9) << fixed << ranking->get_ausr() << endl;
 					if (ranking > best_ranking_by_goi[i])
 						best_ranking_by_goi[i] = std::move(ranking);
 				}
