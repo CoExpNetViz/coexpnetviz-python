@@ -59,4 +59,9 @@ string prepend_path(string prefix, string path) {
 		return prefix + "/" + path;
 }
 
+void ensure(bool condition, std::string error_message) {
+	if (!condition)
+		throw std::runtime_error(error_message);
+}
+
 }

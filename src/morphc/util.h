@@ -90,4 +90,10 @@ bool contains(const Container& container, const T& value) {
  */
 std::string prepend_path(std::string prefix, std::string path);
 
+/**
+ * Like assert, but is included in release versions as well
+ */
+void ensure(bool condition, std::string error_message);
+
 }
+

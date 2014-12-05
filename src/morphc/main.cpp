@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
 		app.run();
 	}
 	catch (const exception& e) {
-		cerr << "Unrecoverable error: " << e.what() << endl;
+		cerr << "Exception: " << e.what() << endl;
 		return 1;
 	}
 	return 0;

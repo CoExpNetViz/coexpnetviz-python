@@ -17,20 +17,25 @@ Application::Application(int argc, char** argv)
 {
 	cout << setprecision(9);
 
-	if (argc != 4) {
-		cerr << "USAGE: morphc path/to/joblist.yaml path/to/output_directory top_k" << endl
-				<< endl
-				<< "top_k = max number of candidate genes to save in outputted rankings" << endl
-				<< endl << endl;
-		throw runtime_error("Invalid argument count");
-	}
+	try {
+		ensure(argc == 4, "Invalid argument count");
 
-	string install_directory = dirname(argv[0]);
-	config_path = install_directory + "/config.yaml";
-	job_list_path = argv[1];
-	output_path = argv[2];
-	istringstream str(argv[3]);
-	str >> top_k;
+		string install_directory = dirname(argv[0]);
+		config_path = install_directory + "/config.yaml";
+		job_list_path = argv[1];
+		output_path = argv[2];
+		istringstream str(argv[3]);
+		str >> top_k;
+		ensure(!str.fail(), "top_k argument must be an integer");
+		ensure(top_k > 0, "top_k must be >0");
+	}
+	catch (const exception& e) {
+		cerr << "USAGE: morphc path/to/joblist.yaml path/to/output_directory top_k" << endl
+			<< endl
+			<< "top_k = max number of candidate genes to save in outputted rankings" << endl
+			<< endl << endl;
+		throw;
+	}
 	// TODO look for asserts and see whether they should perhaps be needed at release as well
 }
 

@@ -115,6 +115,7 @@ void Ranking::save(std::string path, int top_k) {
 	// output results
 	ofstream out(path + "/" + name);
 	cout << "saving to " << path + "/" + name << endl;
+	out.exceptions(ofstream::failbit | ofstream::badbit);
 	out << setprecision(9) << scientific;
 	out << "AUSR: " << ausr << "\n\n"; // Note: "\n" is faster than std::endl
 	for (int i=0; i<results.size() && i<top_k; i++) {
