@@ -105,7 +105,7 @@ void Ranking::rank_self() {
 	ausr = auc / K;
 }
 
-void Ranking::save(std::string path, int top_k) {
+void Ranking::save(std::string path, int top_k, const GeneDescriptions& descriptions) {
 	// Sort results
 	std::vector<pair<double, string>> results; // vec<(rank, gene)>
 	auto& gene_expression = clustering->get_source();
@@ -127,8 +127,9 @@ void Ranking::save(std::string path, int top_k) {
 	out << "\n";
 	for (int i=0; i<results.size() && i<top_k; i++) {
 		auto& r = results.at(i);
+		auto& gene = r.second;
 		assert(!std::isnan(r.first));
-		out << r.second << " " << r.first << "\n";
+		out << gene << "\t" << r.first << "\t" << descriptions.get(gene) << "\n";
 	}
 }
 

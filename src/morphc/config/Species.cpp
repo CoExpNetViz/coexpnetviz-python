@@ -17,6 +17,7 @@ Species::Species(string parent_data_root, YAML::Node node)
 :	name(node["name"].as<string>())
 {
 	string data_root = prepend_path(parent_data_root, node["data_path"].as<string>("."));
+	gene_descriptions_path = prepend_path(data_root, node["gene_descriptions"].as<string>());
 
 	for (auto expression_matrix : node["expression_matrices"]) {
 		gene_expressions.emplace_back(data_root, expression_matrix);
@@ -81,8 +82,10 @@ void Species::run_jobs(string output_path, int top_k) {
 			}
 		}
 	}
+
+	GeneDescriptions gene_descriptions(gene_descriptions_path);
 	for (auto& p : best_ranking_by_goi) {
-		p.second->save(output_path, top_k);
+		p.second->save(output_path, top_k, gene_descriptions);
 	}
 }
 

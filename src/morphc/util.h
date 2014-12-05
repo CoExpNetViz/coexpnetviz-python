@@ -22,6 +22,7 @@
 #include <sstream>
 #include <map>
 #include <functional>
+#include <boost/spirit/include/qi.hpp>
 
 namespace MORPHC {
 
@@ -95,5 +96,15 @@ std::string prepend_path(std::string prefix, std::string path);
  */
 void ensure(bool condition, std::string error_message);
 
-}
+/**
+ * Format exception to string
+ *
+ * Named after exception.what()
+ */
+std::string exception_what(const boost::spirit::qi::expectation_failure<const char*>& e);
+std::string exception_what(const std::exception& e);
 
+
+
+
+}

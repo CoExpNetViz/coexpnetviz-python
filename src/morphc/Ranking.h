@@ -4,6 +4,7 @@
 
 #include "ublas.h"
 #include "Clustering.h"
+#include "GeneDescriptions.h"
 
 namespace MORPHC {
 
@@ -18,7 +19,7 @@ public:
 	/**
 	 * Save top k results in given directory
 	 */
-	void save(std::string directory, int top_k);
+	void save(std::string directory, int top_k, const GeneDescriptions&);
 
 	double get_ausr() const;
 	bool operator>(const Ranking&) const;

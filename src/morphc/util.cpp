@@ -37,8 +37,13 @@ void read_file(std::string path, std::function<const char* (const char*, const c
 				end--;
 		}
 
-		auto current = reader(begin, end);
-
+		const char* current = nullptr;
+		try {
+			current = reader(begin, end);
+		}
+		catch (const boost::spirit::qi::expectation_failure<const char*>& e) {
+			throw runtime_error(exception_what(e)); // get error message here, as outside the outer try block it'd segfault when reading from file (which this one does)
+		}
 		if (current != end) {
 			ostringstream out;
 			out << "Trailing characters at end of file: '";
@@ -48,7 +53,7 @@ void read_file(std::string path, std::function<const char* (const char*, const c
 		}
 	}
 	catch (const exception& e) {
-		throw runtime_error((make_string() << "Error while reading '" << path << "': " << e.what()).str());
+		throw runtime_error((make_string() << "Error while reading '" << path << "': " << exception_what(e)).str());
 	}
 }
 
@@ -62,6 +67,58 @@ string prepend_path(string prefix, string path) {
 void ensure(bool condition, std::string error_message) {
 	if (!condition)
 		throw std::runtime_error(error_message);
+}
+
+/**
+ * Prints something of boost spirit
+ *
+ * Source: http://www.boost.org/doc/libs/1_57_0/libs/spirit/doc/html/spirit/qi/reference/basics.html#spirit.qi.reference.basics.examples
+ */
+class SpiritPrinter
+{
+public:
+    typedef boost::spirit::utf8_string string;
+
+    SpiritPrinter(ostream& out)
+    :	out(out)
+    {
+    }
+
+    void element(string const& tag, string const& value, int depth) const
+    {
+        for (int i = 0; i < (depth*4); ++i) // indent to depth
+            out << ' ';
+
+        out << "tag: " << tag;
+        if (value != "")
+            out << ", value: " << value;
+        out << "\n";
+    }
+
+private:
+    ostream& out;
+};
+
+std::string exception_what(const boost::spirit::qi::expectation_failure<const char*>& e) {
+	ostringstream str;
+	str << e.what() << ": \n";
+
+	str << "Expected: \n";
+	SpiritPrinter printer(str);
+	boost::spirit::basic_info_walker<SpiritPrinter> walker(printer, e.what_.tag, 0);
+	boost::apply_visitor(walker, e.what_.value);
+
+	str << "Got: \"" << std::string(e.first, e.last) << '"' << endl;
+
+	return str.str();
+}
+
+std::string exception_what(const exception& e) {
+	auto expectation_failure_ex = dynamic_cast<const boost::spirit::qi::expectation_failure<const char*>*>(&e);
+	if (expectation_failure_ex)
+		return exception_what(*expectation_failure_ex);
+
+	return e.what();
 }
 
 }

@@ -23,7 +23,7 @@ GenesOfInterest::GenesOfInterest(string data_root, YAML::Node node)
 	else {
 		read_file(prepend_path(data_root, node["path"].as<string>()), [this](const char* begin, const char* end) {
 			using namespace boost::spirit::qi;
-			phrase_parse(begin, end, +as_string[lexeme[+(char_-space)]], space+char_(","), genes);
+			phrase_parse(begin, end, +as_string[lexeme[+(char_-space)]], space | char_(","), genes);
 			return begin;
 		});
 	}
