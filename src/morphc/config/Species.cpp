@@ -75,8 +75,9 @@ void Species::run_jobs(string output_path, int top_k) {
 					replace(begin(name), end(name), ' ', '_');
 					auto ranking = make_unique<Ranking>(goi, clustering, name);
 					cout << ": AUSR=" << setprecision(9) << fixed << ranking->get_ausr() << endl;
-					if (ranking > best_ranking_by_goi[i])
+					if (!best_ranking_by_goi[i].get() || *ranking > *best_ranking_by_goi[i]) {
 						best_ranking_by_goi[i] = std::move(ranking);
+					}
 				}
 				goi_index++;
 			}
