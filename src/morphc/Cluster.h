@@ -25,14 +25,21 @@ public:
 	 */
 	bool empty() const;
 
-	const std::unordered_set<size_type>& get_genes() const;
+	/**
+	 * Get iterator to first gene
+	 */
+	std::vector<size_type>::const_iterator begin() const;
+	std::vector<size_type>::const_iterator end() const;
+	std::vector<size_type>::iterator begin();
+	std::vector<size_type>::iterator end();
+
 	std::string get_name() const;
 
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version);
 
 private:
-	std::unordered_set<size_type> genes;
+	std::vector<size_type> genes;
 	std::string name;
 };
 

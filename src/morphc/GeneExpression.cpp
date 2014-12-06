@@ -97,7 +97,7 @@ void GeneExpression::generate_gene_correlations(const std::vector<size_type>& al
 	noalias(project(gene_correlations, MORPHC::indirect_array::all(), goi_indices)) = element_div(sum_cross, outer_prod(sum_sq, project(sum_sq, goi_indices)));
 }
 
-GeneCorrelations& GeneExpression::get_gene_correlations() {
+const GeneCorrelations& GeneExpression::get_gene_correlations() const {
 	return gene_correlations;
 }
 

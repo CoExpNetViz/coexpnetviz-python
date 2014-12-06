@@ -2,6 +2,7 @@
 
 #include "Cluster.h"
 #include <morphc/serialization.h>
+#include <morphc/util.h>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
@@ -14,15 +15,28 @@ Cluster::Cluster(string name)
 }
 
 void Cluster::add(size_type gene_index) {
-	assert(find(genes.begin(), genes.end(),gene_index) == genes.end());
-	genes.emplace(gene_index);
+	assert(!contains(genes, gene_index));
+	genes.emplace_back(gene_index);
 }
 
 bool Cluster::empty() const {
 	return genes.empty();
 }
-const unordered_set<size_type>& Cluster::get_genes() const {
-	return genes;
+
+std::vector<size_type>::const_iterator Cluster::begin() const {
+	return genes.begin();
+}
+
+std::vector<size_type>::const_iterator Cluster::end() const {
+	return genes.end();
+}
+
+std::vector<size_type>::iterator Cluster::begin() {
+	return genes.begin();
+}
+
+std::vector<size_type>::iterator Cluster::end() {
+	return genes.end();
 }
 
 string Cluster::get_name() const {

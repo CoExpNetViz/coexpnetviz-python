@@ -28,7 +28,7 @@ public:
 	 * mat(i,j) = correlation between gene with index i and gene with index j.
 	 * mat(i,j) only has a valid value if j refers to a gene of interest.
 	 */
-	GeneCorrelations& get_gene_correlations(); // TODO only fill the correlation columns corresponding to a gene of interest
+	const GeneCorrelations& get_gene_correlations() const; // TODO only fill the correlation columns corresponding to a gene of interest
 
 	size_type get_gene_index(std::string name) const;
 	std::string get_gene_name(size_type index) const;

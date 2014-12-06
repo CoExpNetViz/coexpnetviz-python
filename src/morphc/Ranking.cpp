@@ -16,81 +16,117 @@ namespace MORPHC {
 
 size_type K = 1000;
 
-Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> clustering, std::string name)
-:	genes_of_interest(goi), clustering(clustering), rankings(clustering->get_source().get_gene_correlations().size1(), nan("undefined")), ausr(-1.0), name(name)
+Ranking_ClusterInfo::Ranking_ClusterInfo(const std::vector<size_type>& genes_of_interest, const Cluster& c)
 {
+	auto& cluster = const_cast<Cluster&>(c);
+	auto is_goi = [&genes_of_interest](size_type gene) {
+		return contains(genes_of_interest, gene);
+	};
+	auto candidates_begin = partition(cluster.begin(), cluster.end(), is_goi); // Note: modifying the order of cluster genes doesn't really change the cluster
+
+	goi = MORPHC::indirect_array(&*cluster.begin(), &*candidates_begin); // Note: ublas indirect_array is making me do ugly things
+	candidates = MORPHC::indirect_array(&*candidates_begin, &*cluster.end());
+	genes = MORPHC::indirect_array(&*cluster.begin(), &*cluster.end());
+}
+
+Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> clustering, std::string name)
+:	genes_of_interest(goi), clustering(clustering), ausr(-1.0), name(name)
+{
+	Rankings rankings(clustering->get_source().get_gene_correlations().size1(), nan("undefined"));
+
+	// fill rankings with intermediary values
 	rank_genes(goi, rankings);
-	rank_self();
+
+	// finish calculation of rankings
+	final_rankings = Rankings(rankings.size(), nan("undefined"));
+	finalise_ranking(rankings);
+
+	// calculate ausr
+	rank_self(rankings);
 }
 
 void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, boost::numeric::ublas::vector<double>& rankings) {
-	auto& gene_expression = clustering->get_source();
-	auto& gene_correlations = gene_expression.get_gene_correlations();
 	for (auto& p : *clustering) {
-		auto& cluster_genes = p.second.get_genes();
+		auto& cluster = p.second;
 
-		// interesting_genes array
-		MORPHC::array interesting_genes_(genes_of_interest.size());
-		auto in_cluster = [&cluster_genes](size_type gene) {
-			return contains(cluster_genes, gene);
-		};
-		auto it = copy_if(genes_of_interest.begin(), genes_of_interest.end(), interesting_genes_.begin(), in_cluster);
-		MORPHC::indirect_array interesting_genes(distance(interesting_genes_.begin(), it), interesting_genes_);
-		if (interesting_genes.size() == 0)
-			continue;
+		auto& info = cluster_info.emplace(piecewise_construct, make_tuple(&cluster), make_tuple(genes_of_interest, cluster)).first->second;
 
-		// candidate genes array
-		MORPHC::array candidates_(cluster_genes.size());
-		auto is_not_gene_of_interest = [&genes_of_interest](size_type gene) {
-			return !contains(genes_of_interest, gene);
-		};
-		auto it2 = copy_if(cluster_genes.begin(), cluster_genes.end(), candidates_.begin(), is_not_gene_of_interest);
-		MORPHC::indirect_array candidates(distance(candidates_.begin(), it2), candidates_);
-		if (candidates.size() == 0)
+		// skip if no goi or candidates in this cluster
+		if (info.get_goi_count() == 0 || info.candidates.size() == 0)
 			continue;
 
 		// compute rankings
-		auto sub_matrix = project(gene_correlations, candidates, interesting_genes);
-		auto goi_count = interesting_genes.size();
-		auto sub_rankings = project(rankings, candidates);
-		noalias(sub_rankings) = prod(sub_matrix, ublas::scalar_vector<double>(goi_count)) / goi_count;
-
-		// normalise scores within this cluster (TODO this implementation may be numerically unsound )
-		// Note: it's different from R's output, either it's inaccurate or it's more accurate TODO (prolly the former; try gsl)
-		/*auto mean = ublas::inner_prod(sub_rankings, ublas::scalar_vector<double>(sub_rankings.size())) / sub_rankings.size();
-		cout << mean << endl;
-		sub_rankings = sub_rankings - ublas::scalar_vector<double>(sub_rankings.size(), mean);
-		auto standard_deviation = ublas::norm_2(sub_rankings) / sqrt(sub_rankings.size()-1); // TODO could we pass the iterator to gsl_stats_sd and such?. If not at least use gsl_*sqrt
-		//sub_rankings = sub_rankings / standard_deviation;*/
-		std::vector<double> sub_ranks(sub_rankings.begin(), sub_rankings.end()); // TODO really no way around this copy? could like... use ublas. inspect gsl source for correctness
-		double mean_ = gsl_stats_mean(sub_ranks.data(), 1, sub_ranks.size());
-		//cout << mean_ << endl;
-		//cout << standard_deviation << endl;
-		double standard_deviation_ = gsl_stats_sd_m(sub_ranks.data(), 1, sub_ranks.size(), mean_);
-		//cout << standard_deviation_ << endl;
-		sub_rankings = (sub_rankings - ublas::scalar_vector<double>(sub_rankings.size(), mean_)) / standard_deviation_;
+		auto sub_matrix = project(get_gene_correlations(), info.genes, info.goi);
+		auto sub_rankings = project(rankings, info.genes);
+		noalias(sub_rankings) = prod(sub_matrix, ublas::scalar_vector<double>(info.get_goi_count())); // TODO might want to consider more numerically stable kind of mean
 	}
 }
 
-void Ranking::rank_self() {
+void Ranking::finalise_ranking(boost::numeric::ublas::vector<double>& rankings) {
+	for (auto& p : *clustering) {
+		auto& info = cluster_info.at(&p.second);
+		finalise_sub_ranking(rankings, final_rankings, info.candidates, info);
+	}
+}
+
+void Ranking::finalise_sub_ranking(boost::numeric::ublas::vector<double>& rankings, boost::numeric::ublas::vector<double>& final_rankings, const MORPHC::indirect_array& sub_indices, Ranking_ClusterInfo& info, long excluded_goi) {
+	if (info.get_goi_count() == 0 || info.candidates.size() == 0) {
+		return; // in this case, all values in these ranking will (and should) be NaN
+	}
+
+	auto sub_rankings = project(rankings, sub_indices);
+	auto final_sub_rankings = project(final_rankings, sub_indices);
+	if (excluded_goi > 0) {
+		auto sub_matrix = project(column(get_gene_correlations(), excluded_goi), info.candidates);
+		noalias(final_sub_rankings) = (sub_rankings - sub_matrix) / (info.get_goi_count() - 1);
+	}
+	else {
+		noalias(final_sub_rankings) = sub_rankings / info.get_goi_count();
+	}
+
+	// unset partial ranking of goi genes in final ranking
+	for (auto gene : info.goi) {
+		if (gene != excluded_goi)
+			final_rankings(gene) = nan("undefined");
+	}
+
+	// Normalise scores within this cluster: uses GSL => numerically stable
+	std::vector<double> sub_ranks(sub_rankings.begin(), sub_rankings.end());
+	double mean_ = gsl_stats_mean(sub_ranks.data(), 1, sub_ranks.size());
+	double standard_deviation_ = gsl_stats_sd_m(sub_ranks.data(), 1, sub_ranks.size(), mean_);
+	sub_rankings = (sub_rankings - ublas::scalar_vector<double>(sub_rankings.size(), mean_)) / standard_deviation_;
+
+	// Normalise scores within this cluster: perhaps numerically unstable TODO
+	/*auto mean = ublas::inner_prod(sub_rankings, ublas::scalar_vector<double>(sub_rankings.size())) / sub_rankings.size();
+	sub_rankings = sub_rankings - ublas::scalar_vector<double>(sub_rankings.size(), mean);
+	auto standard_deviation = ublas::norm_2(sub_rankings) / sqrt(sub_rankings.size()-1); // TODO could we pass the iterator to gsl_stats_sd and such?. If not at least use gsl_*sqrt
+	//sub_rankings = sub_rankings / standard_deviation;*/
+}
+
+void Ranking::rank_self(boost::numeric::ublas::vector<double>& rankings) {
 	// find rank_indices of leaving out a gene of interest one by one
 	std::vector<size_type> rank_indices;
-	boost::numeric::ublas::vector<double> rankings;
-	for (auto gene : genes_of_interest) {
-		// TODO could also copy original rankings and recalc only the cluster of the gene we removed
-		rankings = ublas::vector<double>(this->rankings.size(), nan("undefined"));
-		auto goi = genes_of_interest;
-		goi.erase(find(goi.begin(), goi.end(), gene));
-		rank_genes(goi, rankings);
-		double rank = rankings(gene);
-		if (std::isnan(rank)) {
-			// gene undetected, give penalty
-			rank_indices.emplace_back(2*K-1);
-		}
-		else {
-			// TODO currently we do len(GOI) passes on the whole ranking, a sort + single pass is probably faster
-			size_type count = count_if(rankings.begin(), rankings.end(), [rank](double val){return val > rank && !std::isnan(val);});
-			rank_indices.emplace_back(count);
+	boost::numeric::ublas::vector<double> final_rankings = this->final_rankings;
+	for (auto p : cluster_info) {
+		auto& cluster = *p.first;
+		auto& info = p.second;
+		MORPHC::array candidates_and_gene_(info.candidates.size() + 1);
+		copy(info.candidates.begin(), info.candidates.end(), candidates_and_gene_.begin());
+		for (auto gene : info.goi) {
+			candidates_and_gene_[candidates_and_gene_.size()-1] = gene;
+			MORPHC::indirect_array candidates_and_gene(candidates_and_gene_.size(), candidates_and_gene_);
+			finalise_sub_ranking(rankings, final_rankings, candidates_and_gene, info, gene);
+
+			double rank = final_rankings(gene);
+			if (std::isnan(rank)) {
+				// gene undetected, give penalty
+				rank_indices.emplace_back(2*K-1);
+			}
+			else {
+				// TODO currently we do len(GOI) passes on the whole ranking, a sort + single pass is probably faster
+				size_type count = count_if(final_rankings.begin(), final_rankings.end(), [rank](double val){return val > rank && !std::isnan(val);});
+				rank_indices.emplace_back(count);
+			}
 		}
 	}
 	sort(rank_indices.begin(), rank_indices.end());
@@ -110,10 +146,10 @@ void Ranking::save(std::string path, int top_k, const GeneDescriptions& descript
 	// Sort results
 	std::vector<pair<double, string>> results; // vec<(rank, gene)>
 	auto& gene_expression = clustering->get_source();
-	for (int i=0; i<rankings.size(); i++) {
-		if (std::isnan(rankings(i)))
+	for (int i=0; i<final_rankings.size(); i++) {
+		if (std::isnan(final_rankings(i)))
 			continue; // don't include unranked genes in results
-		results.push_back(make_pair(rankings(i), gene_expression.get_gene_name(i)));
+		results.push_back(make_pair(final_rankings(i), gene_expression.get_gene_name(i)));
 	}
 	sort(results.rbegin(), results.rend());
 
@@ -142,6 +178,10 @@ bool Ranking::operator>(const Ranking& other) const {
 
 double Ranking::get_ausr() const {
 	return ausr;
+}
+
+const GeneCorrelations& Ranking::get_gene_correlations() {
+	return clustering->get_source().get_gene_correlations();
 }
 
 }

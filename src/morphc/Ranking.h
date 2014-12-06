@@ -9,11 +9,31 @@
 namespace MORPHC {
 
 /**
+ * Private class of Ranking
+ */
+class Ranking_ClusterInfo { // TODO this could be tidier
+public:
+	Ranking_ClusterInfo(const std::vector<size_type>& genes_of_interest, const Cluster& cluster);
+
+	size_type get_goi_count() {
+		return goi.size();
+	}
+
+	MORPHC::indirect_array goi; // genes of interest in cluster
+	MORPHC::indirect_array candidates; // candidates in cluster (i.e. not goi)
+	MORPHC::indirect_array genes; // all genes in cluster
+
+private:
+};
+
+// TODO refactor
+/**
  * Note: A negative ranking value for a gene means it wasn't ranked
  */
-class Ranking
+class Ranking // TODO this is not a single ranking, it's a set of rankings (but we've already used the name Rankings/rankings internally)
 {
 public:
+
 	Ranking(std::vector<size_type> genes_of_interest, std::shared_ptr<Clustering>, std::string name);
 
 	/**
@@ -24,16 +44,32 @@ public:
 	double get_ausr() const;
 	bool operator>(const Ranking&) const;
 
+	const GeneCorrelations& get_gene_correlations();
+
 private:
-	void rank_genes(const std::vector<size_type>& genes_of_interest, boost::numeric::ublas::vector<double>& rankings);
-	void rank_self();
+	typedef boost::numeric::ublas::vector<double> Rankings;
+
+	void rank_genes(const std::vector<size_type>& genes_of_interest, Rankings& rankings);
+	void rank_self(Rankings& rankings);
+	void finalise_ranking(Rankings& rankings);
+
+	/**
+	 * Finalise part of ranking
+	 *
+	 * Said part is: project(final_rankings, sub_indices)
+	 * cluster info must be of the cluster it belongs to
+	 *
+	 * Note: this func is highly specialised, not very reusable
+	 */
+	void finalise_sub_ranking(Rankings& rankings, Rankings& final_rankings, const MORPHC::indirect_array& sub_indices, Ranking_ClusterInfo&, long excluded_goi = -1);
 
 private:
 	std::vector<size_type> genes_of_interest; // genes_of_interest
 	std::shared_ptr<Clustering> clustering;
-	boost::numeric::ublas::vector<double> rankings; // size = genes.size(), gene_index -> ranking
+	Rankings final_rankings; // finalised rankings, after ctor has finished
 	double ausr;
 	std::string name;
+	std::unordered_map<const Cluster*, Ranking_ClusterInfo> cluster_info;
 };
 
 }
