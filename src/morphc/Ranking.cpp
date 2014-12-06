@@ -91,10 +91,10 @@ void Ranking::finalise_sub_ranking(boost::numeric::ublas::vector<double>& rankin
 	}
 
 	// Normalise scores within this cluster: uses GSL => numerically stable
-	std::vector<double> sub_ranks(sub_rankings.begin(), sub_rankings.end());
+	std::vector<double> sub_ranks(final_sub_rankings.begin(), final_sub_rankings.end());
 	double mean_ = gsl_stats_mean(sub_ranks.data(), 1, sub_ranks.size());
 	double standard_deviation_ = gsl_stats_sd_m(sub_ranks.data(), 1, sub_ranks.size(), mean_);
-	sub_rankings = (sub_rankings - ublas::scalar_vector<double>(sub_rankings.size(), mean_)) / standard_deviation_;
+	final_sub_rankings = (final_sub_rankings - ublas::scalar_vector<double>(final_sub_rankings.size(), mean_)) / standard_deviation_;
 
 	// Normalise scores within this cluster: perhaps numerically unstable TODO
 	/*auto mean = ublas::inner_prod(sub_rankings, ublas::scalar_vector<double>(sub_rankings.size())) / sub_rankings.size();
