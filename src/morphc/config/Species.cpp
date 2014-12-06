@@ -14,7 +14,7 @@ namespace MORPHC {
 namespace CONFIG {
 
 Species::Species(string parent_data_root, YAML::Node node)
-:	name(node["name"].as<string>())
+:	name(node["name"].as<string>()), gene_webpage_template(node["gene_web_page"].as<string>())
 {
 	string data_root = prepend_path(parent_data_root, node["data_path"].as<string>("."));
 	gene_descriptions_path = prepend_path(data_root, node["gene_descriptions"].as<string>());
@@ -85,7 +85,7 @@ void Species::run_jobs(string output_path, int top_k) {
 
 	GeneDescriptions gene_descriptions(gene_descriptions_path);
 	for (auto& p : best_ranking_by_goi) {
-		p.second->save(output_path, top_k, gene_descriptions);
+		p.second->save(output_path, top_k, gene_descriptions, gene_webpage_template);
 	}
 }
 

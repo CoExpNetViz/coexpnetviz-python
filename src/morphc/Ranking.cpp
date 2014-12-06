@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iomanip>
 #include <cmath>
+#include <boost/algorithm/string.hpp>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
@@ -105,7 +106,7 @@ void Ranking::rank_self() {
 	ausr = auc / K;
 }
 
-void Ranking::save(std::string path, int top_k, const GeneDescriptions& descriptions) {
+void Ranking::save(std::string path, int top_k, const GeneDescriptions& descriptions, std::string gene_web_page_template) {
 	// Sort results
 	std::vector<pair<double, string>> results; // vec<(rank, gene)>
 	auto& gene_expression = clustering->get_source();
@@ -129,7 +130,9 @@ void Ranking::save(std::string path, int top_k, const GeneDescriptions& descript
 		auto& r = results.at(i);
 		auto& gene = r.second;
 		assert(!std::isnan(r.first));
-		out << gene << "\t" << r.first << "\t" << descriptions.get(gene) << "\n";
+		std::string web_page = gene_web_page_template;
+		boost::replace_all(web_page, "$name", gene);
+		out << gene << "\t" << r.first << "\t" << descriptions.get(gene) << "\t" << web_page << "\n";
 	}
 }
 

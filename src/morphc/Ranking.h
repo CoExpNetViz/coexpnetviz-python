@@ -19,7 +19,7 @@ public:
 	/**
 	 * Save top k results in given directory
 	 */
-	void save(std::string directory, int top_k, const GeneDescriptions&);
+	void save(std::string directory, int top_k, const GeneDescriptions&, std::string gene_webpage_template);
 
 	double get_ausr() const;
 	bool operator>(const Ranking&) const;

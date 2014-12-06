@@ -30,6 +30,7 @@ private:
 	std::vector<GeneExpression> gene_expressions;
 	std::vector<GenesOfInterest> genes_of_interest_sets; // are treated as jobs
 	std::string gene_descriptions_path;
+	std::string gene_webpage_template;
 };
 
 }}
