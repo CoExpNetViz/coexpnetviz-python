@@ -1,7 +1,7 @@
 #!/bin/bash
 make
 rm callgrind.out*
-valgrind --tool=callgrind --instr-atstart=yes --callgrind-out-file=callgrind.out ./morph < input.txt
+valgrind --tool=callgrind --instr-atstart=yes --callgrind-out-file=callgrind.out ./morph ../../joblist.yaml output 100
 callgrind_pid=$!
 #sleep 300
 #kill $callgrind_pid

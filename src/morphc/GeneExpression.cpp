@@ -9,6 +9,7 @@
 #include <cmath>
 #include <iomanip>
 #include "util.h"
+#include <morphc/TabGrammarRules.h>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
@@ -19,7 +20,8 @@ GeneExpression::GeneExpression(std::string path)
 :	name(boost::filesystem::path(path).filename().native())
 {
 	// load expression_matrix
-	read_file(path, [this](const char* begin, const char* end) {
+	int j;
+	read_file(path, [this, &j](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
 
 		auto current = begin;
@@ -37,7 +39,7 @@ GeneExpression::GeneExpression(std::string path)
 
 		// parse gene lines
 		int i=-1;
-		int j=-1;
+		j=-1;
 		auto on_new_gene = [this, &i, &j](std::string name) { // start new line
 			if (i>=0 && j!=expression_matrix.size2()-1) {
 				throw runtime_error("Incomplete line");
@@ -54,12 +56,13 @@ GeneExpression::GeneExpression(std::string path)
 			j++;
 			expression_matrix(i, j) = value;
 		};
-		phrase_parse(current, end, (as_string[lexeme[+(char_ - space)]][on_new_gene] > (+double_[on_gene_value])) % eol, blank);
-		if (j!=expression_matrix.size2()-1) {
-			throw runtime_error("Incomplete line");
-		}
+
+		TabGrammarRules rules;
+		parse(current, end, (rules.field[on_new_gene] > rules.separator > (double_[on_gene_value] % rules.separator)) % eol);
+
 		return current;
 	});
+	ensure(j == expression_matrix.size2()-1, (make_string() << "Error while reading " << path << ": Incomplete line: " << j+1 << " values instead of " << expression_matrix.size2()).str());
 }
 
 void GeneExpression::generate_gene_correlations(const std::vector<size_type>& all_goi) {

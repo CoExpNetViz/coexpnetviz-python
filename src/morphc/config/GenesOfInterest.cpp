@@ -23,7 +23,17 @@ GenesOfInterest::GenesOfInterest(string data_root, YAML::Node node)
 	else {
 		read_file(prepend_path(data_root, node["path"].as<string>()), [this](const char* begin, const char* end) {
 			using namespace boost::spirit::qi;
-			phrase_parse(begin, end, +as_string[lexeme[+(char_-space)]], space | char_(","), genes);
+			typedef const char* Iterator;
+
+			rule<Iterator> separator = space | lit(",");
+			rule<Iterator, std::string()> gene;
+
+			gene %= as_string[lexeme[+(char_-separator)]];
+
+			separator.name("gene separator");
+			gene.name("gene");
+
+			parse(begin, end, gene % separator, genes);
 			return begin;
 		});
 	}
