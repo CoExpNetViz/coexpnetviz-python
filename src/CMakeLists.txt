@@ -6,7 +6,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake_modules)
 ############################################
 # find dependencies
 
-find_package(Boost REQUIRED COMPONENTS filesystem iostreams system)
+find_package(Boost REQUIRED COMPONENTS filesystem iostreams system serialization)
 include_directories(${Boost_INCLUDE_DIRS})
 
 find_package(GSL REQUIRED COMPONENTS)

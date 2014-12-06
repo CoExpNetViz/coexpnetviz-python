@@ -6,6 +6,7 @@
 #include <boost/function_output_iterator.hpp>
 #include <utility>
 #include <morphc/TabGrammarRules.h>
+#include <morphc/serialization.h>
 
 using namespace std;
 
@@ -14,10 +15,14 @@ namespace MORPHC {
 Clustering::Clustering(CONFIG::Clustering clustering_, shared_ptr<GeneExpression> gene_expression_)
 :	name(clustering_.get_name()), gene_expression(gene_expression_)
 {
+	load_bin_or_plain(clustering_.get_path(), *this);
+}
+
+void Clustering::load_plain(std::string path) {
 	std::vector<size_type> genes;
 
 	// Load
-	read_file(clustering_.get_path(), [this, &genes](const char* begin, const char* end) {
+	read_file(path, [this, &genes](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
 
 		auto on_cluster_item = [this, &genes](const std::vector<std::string>& line) {

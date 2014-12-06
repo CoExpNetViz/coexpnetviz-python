@@ -6,6 +6,7 @@
 #include "GeneExpression.h"
 #include "Cluster.h"
 #include "config/Clustering.h"
+#include <morphc/serialization.h>
 
 namespace MORPHC {
 
@@ -35,10 +36,25 @@ public:
 		return name;
 	}
 
+	void load_plain(std::string path);
+
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version);
+
 private:
 	std::string name;
 	ClusterMap clusters;  // mutually disjunct clusters
 	std::shared_ptr<GeneExpression> gene_expression; // gene expression data we clustered
 }; // TODO consider sorted vectors instead of sets
+
+
+/////////////////////
+// hpp
+
+template<class Archive>
+void Clustering::serialize(Archive& ar, const unsigned int version) {
+	ar & clusters;
+}
+
 
 }

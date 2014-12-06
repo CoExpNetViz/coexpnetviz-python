@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include "ublas.h"
+#include <morphc/serialization.h>
 
 namespace MORPHC {
 
@@ -40,8 +41,13 @@ public:
 	 */
 	const std::vector<size_type>& get_genes() const;
 
-private:
-	void load_correlations(const std::vector<std::string>& all_genes_of_interest);
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version);
+
+	/**
+	 * Load gene expression from plain text file
+	 */
+	void load_plain(std::string path);
 
 private:
 	std::string name; // name of dataset
@@ -53,5 +59,17 @@ private:
 	std::map<std::string, size_type> gene_indices; // all genes, name -> index of gene in matrices
 	std::map<size_type, std::string> gene_names; // TODO unordered_map may speed up things
 };
+
+
+/////////////////////
+// hpp
+
+template<class Archive>
+void GeneExpression::serialize(Archive& ar, const unsigned int version) {
+	ar & expression_matrix;
+	ar & genes;
+	ar & gene_indices;
+	ar & gene_names;
+}
 
 }

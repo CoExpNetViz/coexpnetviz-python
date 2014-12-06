@@ -4,11 +4,11 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <boost/spirit/include/qi.hpp>
-#include <boost/filesystem.hpp>
 #include <gsl/gsl_statistics.h>
 #include <cmath>
 #include <iomanip>
 #include "util.h"
+#include <morphc/serialization.h>
 #include <morphc/TabGrammarRules.h>
 
 using namespace std;
@@ -20,6 +20,10 @@ GeneExpression::GeneExpression(std::string path)
 :	name(boost::filesystem::path(path).filename().native())
 {
 	// load expression_matrix
+	load_bin_or_plain(path, *this);
+}
+
+void GeneExpression::load_plain(std::string path) {
 	int j;
 	read_file(path, [this, &j](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
@@ -45,9 +49,7 @@ GeneExpression::GeneExpression(std::string path)
 				throw runtime_error("Incomplete line");
 			}
 			i++;
-			if (!gene_indices.emplace(name, i).second) {
-				throw runtime_error("Duplicate gene");
-			}
+			ensure(gene_indices.emplace(name, i).second, "Duplicate gene");
 			gene_names.emplace(i, name);
 			genes.push_back(i);
 			j=-1;
