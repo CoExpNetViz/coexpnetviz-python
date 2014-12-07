@@ -24,14 +24,18 @@ Ranking_ClusterInfo::Ranking_ClusterInfo(const GeneExpression& gene_expression, 
 	};
 	auto candidates_begin = partition(cluster.begin(), cluster.end(), is_goi); // Note: modifying the order of cluster genes doesn't really change the cluster
 
-	goi = MORPHC::indirect_array(&*cluster.begin(), &*candidates_begin); // Note: ublas indirect_array is making me do ugly things
+	goi_ = MORPHC::array(distance(cluster.begin(), candidates_begin));
+	copy(cluster.begin(), candidates_begin, goi_.begin());
+	goi = MORPHC::indirect_array(goi_.size(), goi_); // Note: ublas indirect_array is making me do ugly things
+
 	candidates = MORPHC::indirect_array(&*candidates_begin, &*cluster.end());
 	genes = MORPHC::indirect_array(&*cluster.begin(), &*cluster.end());
 
-	for (auto g : goi) {
-		goi_columns_.emplace_back(gene_expression.get_gene_column_index(g));
+	goi_columns_ = MORPHC::array(goi.size());
+	for (size_type i=0; i<goi.size(); i++) {
+		goi_columns_[i] = gene_expression.get_gene_column_index(goi_[i]);
 	}
-	goi_columns = MORPHC::indirect_array(&*goi_columns_.begin(), &*goi_columns_.end());
+	goi_columns = MORPHC::indirect_array(goi_columns_.size(), goi_columns_);
 }
 
 Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> clustering, std::string name)
@@ -51,10 +55,8 @@ Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> cluster
 }
 
 void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, Rankings& rankings) {
-	for (auto& p : *clustering) {
-		auto& cluster = p.second;
-
-		auto& info = cluster_info.emplace(piecewise_construct, make_tuple(&cluster), make_tuple(get_gene_expression(), genes_of_interest, cluster)).first->second;
+	for (auto& cluster : *clustering) {
+		auto& info = cluster_info.emplace(piecewise_construct, make_tuple(&cluster), make_tuple(std::ref(get_gene_expression()), genes_of_interest, std::ref(cluster))).first->second;
 
 		// skip if no goi or candidates in this cluster
 		if (info.get_goi_count() == 0 || info.candidates.size() == 0)
@@ -68,8 +70,8 @@ void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, Rankin
 }
 
 void Ranking::finalise_ranking(const Rankings& rankings) {
-	for (auto& p : *clustering) {
-		auto& info = cluster_info.at(&p.second);
+	for (auto& cluster : *clustering) {
+		auto& info = cluster_info.at(&cluster);
 		finalise_sub_ranking(rankings, final_rankings, info.candidates, info);
 	}
 }
@@ -113,7 +115,7 @@ void Ranking::rank_self(const Rankings& rankings) {
 	// find rank_indices of leaving out a gene of interest one by one
 	std::vector<size_type> rank_indices;
 	Rankings final_rankings = this->final_rankings;
-	for (auto p : cluster_info) {
+	for (auto& p : cluster_info) {
 		auto& cluster = *p.first;
 		auto& info = p.second;
 		MORPHC::array candidates_and_gene_(info.candidates.size() + 1);

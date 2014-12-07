@@ -5,13 +5,14 @@
 #include "ublas.h"
 #include "Clustering.h"
 #include "GeneDescriptions.h"
+#include <boost/noncopyable.hpp>
 
-namespace MORPHC {
+namespace MORPHC{
 
 /**
  * Private class of Ranking
  */
-class Ranking_ClusterInfo { // TODO this could be tidier
+class Ranking_ClusterInfo : public boost::noncopyable { // TODO this could be tidier
 public:
 	Ranking_ClusterInfo(const GeneExpression& gene_expression, const std::vector<size_type>& genes_of_interest, const Cluster& cluster);
 
@@ -25,7 +26,8 @@ public:
 	MORPHC::indirect_array genes; // all genes in cluster
 
 private:
-	std::vector<size_type> goi_columns_;
+	MORPHC::array goi_;
+	MORPHC::array goi_columns_;
 };
 
 // TODO refactor

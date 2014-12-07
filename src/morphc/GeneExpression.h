@@ -6,12 +6,13 @@
 #include <map>
 #include "ublas.h"
 #include <morphc/serialization.h>
+#include <boost/noncopyable.hpp>
 
 namespace MORPHC {
 
 typedef matrix GeneCorrelations;
 
-class GeneExpression
+class GeneExpression : public boost::noncopyable
 {
 public:
 	/**

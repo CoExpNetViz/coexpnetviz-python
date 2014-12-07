@@ -7,6 +7,7 @@
 #include "Cluster.h"
 #include "config/Clustering.h"
 #include <morphc/serialization.h>
+#include <boost/noncopyable.hpp>
 
 namespace MORPHC {
 
@@ -15,11 +16,11 @@ namespace MORPHC {
  *
  * Contains exactly all genes of its corresponding gene expression
  */
-class Clustering
+class Clustering : public boost::noncopyable
 {
 public:
-	typedef std::unordered_map<std::string, Cluster> ClusterMap;
-	typedef ClusterMap::const_iterator const_iterator;
+	typedef std::vector<Cluster> Clusters;
+	typedef Clusters::const_iterator const_iterator;
 
 public:
 	Clustering(CONFIG::Clustering, std::shared_ptr<GeneExpression>);
@@ -43,7 +44,7 @@ public:
 
 private:
 	std::string name;
-	ClusterMap clusters;  // mutually disjunct clusters
+	Clusters clusters;  // mutually disjunct clusters
 	std::shared_ptr<GeneExpression> gene_expression; // gene expression data we clustered
 }; // TODO consider sorted vectors instead of sets
 

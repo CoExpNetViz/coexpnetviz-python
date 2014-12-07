@@ -9,13 +9,14 @@
 #include "config/GenesOfInterest.h"
 #include "ublas.h"
 #include <morphc/serialization.h>
+#include <boost/noncopyable.hpp>
 
 namespace MORPHC {
 
-class Cluster
+class Cluster //TODO: public boost::noncopyable
 {
 public:
-	Cluster() {} // needed for serialization
+	Cluster() {}  // boost::serialization uses this to construct an invalid Cluster before loading it
 	Cluster(std::string name);
 
 	void add(size_type index);
@@ -41,6 +42,9 @@ public:
 private:
 	std::vector<size_type> genes;
 	std::string name;
+
+private:
+	friend class boost::serialization::access;
 };
 
 
@@ -53,4 +57,4 @@ void Cluster::serialize(Archive& ar, const unsigned int version) {
 	ar & genes;
 }
 
-}
+} // end MORPHC

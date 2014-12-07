@@ -4,10 +4,11 @@
 
 #include <string>
 #include <unordered_map>
+#include <boost/noncopyable.hpp>
 
 namespace MORPHC {
 
-class GeneDescriptions {
+class GeneDescriptions : public boost::noncopyable {
 public:
 	GeneDescriptions(std::string path);
 
