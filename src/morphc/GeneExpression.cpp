@@ -69,9 +69,12 @@ void GeneExpression::load_plain(std::string path) {
 
 void GeneExpression::generate_gene_correlations(const std::vector<size_type>& all_goi) {
 	using namespace ublas;
-	MORPHC::indirect_array goi_indices(const_cast<size_type*>(all_goi.data()), const_cast<size_type*>(all_goi.data() + all_goi.size())); // TODO use this style everywhere instead of clumsily copying into unbounded array first
+	MORPHC::indirect_array goi_indices(const_cast<size_type*>(&*all_goi.begin()), const_cast<size_type*>(&*all_goi.end()));
 
-	gene_correlations = GeneCorrelations(expression_matrix.size1(), expression_matrix.size1(), expression_matrix.size1() * all_goi.size());
+	for (size_type i=0; i<all_goi.size(); i++) {
+		gene_column_indices[all_goi.at(i)] = i;
+	}
+	gene_correlations = GeneCorrelations(expression_matrix.size1(), all_goi.size());
 
 	// calculate Pearson's correlation
 	// This is gsl_stats_correlation's algorithm, but in matrix form.
@@ -81,12 +84,11 @@ void GeneExpression::generate_gene_correlations(const std::vector<size_type>& al
 	ublas::vector<long double> sum_sq(expression_matrix.size1(), 0.0); // sum of squares
 	ublas::matrix<long double> sum_cross(expression_matrix.size1(), goi_indices.size(), 0.0);
 
-	long double ratio;
 	mean = column(expression_matrix, 0);
 
 	for (i = 1; i < expression_matrix.size2(); ++i)
 	{
-		ratio = i / (i + 1.0);
+		long double ratio = i / (i + 1.0);
 		noalias(delta) = column(expression_matrix, i) - mean;
 		sum_sq += element_prod(delta, delta) * ratio;
 		sum_cross += outer_prod(delta, project(delta, goi_indices)) * ratio;
@@ -94,7 +96,7 @@ void GeneExpression::generate_gene_correlations(const std::vector<size_type>& al
 	}
 
 	transform(sum_sq.begin(), sum_sq.end(), sum_sq.begin(), ::sqrt);
-	noalias(project(gene_correlations, MORPHC::indirect_array::all(), goi_indices)) = element_div(sum_cross, outer_prod(sum_sq, project(sum_sq, goi_indices)));
+	gene_correlations = element_div(sum_cross, outer_prod(sum_sq, project(sum_sq, goi_indices)));
 }
 
 const GeneCorrelations& GeneExpression::get_gene_correlations() const {
@@ -113,6 +115,10 @@ std::string GeneExpression::get_gene_name(size_type index) const {
 
 bool GeneExpression::has_gene(string gene) const {
 	return gene_indices.find(gene) != gene_indices.end();
+}
+
+size_type GeneExpression::get_gene_column_index(size_type gene_row_index) const {
+	return gene_column_indices.at(gene_row_index);
 }
 
 string GeneExpression::get_name() const {

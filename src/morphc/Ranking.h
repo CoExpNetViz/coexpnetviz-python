@@ -13,17 +13,19 @@ namespace MORPHC {
  */
 class Ranking_ClusterInfo { // TODO this could be tidier
 public:
-	Ranking_ClusterInfo(const std::vector<size_type>& genes_of_interest, const Cluster& cluster);
+	Ranking_ClusterInfo(const GeneExpression& gene_expression, const std::vector<size_type>& genes_of_interest, const Cluster& cluster);
 
 	size_type get_goi_count() {
 		return goi.size();
 	}
 
-	MORPHC::indirect_array goi; // genes of interest in cluster
+	MORPHC::indirect_array goi; // row indices of genes of interest in cluster
+	MORPHC::indirect_array goi_columns; // column indices of genes of interest in cluster
 	MORPHC::indirect_array candidates; // candidates in cluster (i.e. not goi)
 	MORPHC::indirect_array genes; // all genes in cluster
 
 private:
+	std::vector<size_type> goi_columns_;
 };
 
 // TODO refactor
@@ -44,11 +46,11 @@ public:
 	double get_ausr() const;
 	bool operator>(const Ranking&) const;
 
-	const GeneCorrelations& get_gene_correlations();
-
 private:
 	typedef boost::numeric::ublas::vector<double> Rankings;
 
+	const GeneCorrelations& get_gene_correlations();
+	const GeneExpression& get_gene_expression();
 	void rank_genes(const std::vector<size_type>& genes_of_interest, Rankings& rankings);
 	void rank_self(const Rankings& rankings);
 	void finalise_ranking(const Rankings& rankings);
@@ -69,7 +71,7 @@ private:
 	Rankings final_rankings; // finalised rankings, after ctor has finished
 	double ausr;
 	std::string name;
-	std::unordered_map<const Cluster*, Ranking_ClusterInfo> cluster_info;
+	std::unordered_map<const Cluster*, Ranking_ClusterInfo> cluster_info; // TODO could use vector instead, uses just iterate over all of it
 };
 
 }

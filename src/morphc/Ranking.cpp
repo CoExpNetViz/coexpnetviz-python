@@ -16,7 +16,7 @@ namespace MORPHC {
 
 size_type K = 1000;
 
-Ranking_ClusterInfo::Ranking_ClusterInfo(const std::vector<size_type>& genes_of_interest, const Cluster& c)
+Ranking_ClusterInfo::Ranking_ClusterInfo(const GeneExpression& gene_expression, const std::vector<size_type>& genes_of_interest, const Cluster& c)
 {
 	auto& cluster = const_cast<Cluster&>(c);
 	auto is_goi = [&genes_of_interest](size_type gene) {
@@ -27,6 +27,11 @@ Ranking_ClusterInfo::Ranking_ClusterInfo(const std::vector<size_type>& genes_of_
 	goi = MORPHC::indirect_array(&*cluster.begin(), &*candidates_begin); // Note: ublas indirect_array is making me do ugly things
 	candidates = MORPHC::indirect_array(&*candidates_begin, &*cluster.end());
 	genes = MORPHC::indirect_array(&*cluster.begin(), &*cluster.end());
+
+	for (auto g : goi) {
+		goi_columns_.emplace_back(gene_expression.get_gene_column_index(g));
+	}
+	goi_columns = MORPHC::indirect_array(&*goi_columns_.begin(), &*goi_columns_.end());
 }
 
 Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> clustering, std::string name)
@@ -49,14 +54,14 @@ void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, Rankin
 	for (auto& p : *clustering) {
 		auto& cluster = p.second;
 
-		auto& info = cluster_info.emplace(piecewise_construct, make_tuple(&cluster), make_tuple(genes_of_interest, cluster)).first->second;
+		auto& info = cluster_info.emplace(piecewise_construct, make_tuple(&cluster), make_tuple(get_gene_expression(), genes_of_interest, cluster)).first->second;
 
 		// skip if no goi or candidates in this cluster
 		if (info.get_goi_count() == 0 || info.candidates.size() == 0)
 			continue;
 
 		// compute rankings
-		auto sub_matrix = project(get_gene_correlations(), info.genes, info.goi);
+		auto sub_matrix = project(get_gene_correlations(), info.genes, info.goi_columns);
 		auto sub_rankings = project(rankings, info.genes);
 		noalias(sub_rankings) = prod(sub_matrix, ublas::scalar_vector<double>(info.get_goi_count())); // TODO might want to consider more numerically stable kind of mean
 	}
@@ -77,7 +82,7 @@ void Ranking::finalise_sub_ranking(const Rankings& rankings, Rankings& final_ran
 	auto sub_rankings = project(rankings, sub_indices);
 	auto final_sub_rankings = project(final_rankings, sub_indices);
 	if (excluded_goi > 0) {
-		auto sub_matrix = project(column(get_gene_correlations(), excluded_goi), sub_indices);
+		auto sub_matrix = project(column(get_gene_correlations(), get_gene_expression().get_gene_column_index(excluded_goi)), sub_indices);
 		noalias(final_sub_rankings) = (sub_rankings - sub_matrix) / (info.get_goi_count() - 1);
 	}
 	else {
@@ -184,7 +189,11 @@ double Ranking::get_ausr() const {
 }
 
 const GeneCorrelations& Ranking::get_gene_correlations() {
-	return clustering->get_source().get_gene_correlations();
+	return get_gene_expression().get_gene_correlations();
+}
+
+const GeneExpression& Ranking::get_gene_expression() {
+	return clustering->get_source();
 }
 
 }

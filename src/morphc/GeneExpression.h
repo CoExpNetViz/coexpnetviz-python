@@ -9,7 +9,7 @@
 
 namespace MORPHC {
 
-typedef boost::numeric::ublas::mapped_matrix<double> GeneCorrelations;
+typedef matrix GeneCorrelations;
 
 class GeneExpression
 {
@@ -30,9 +30,17 @@ public:
 	 */
 	const GeneCorrelations& get_gene_correlations() const; // TODO only fill the correlation columns corresponding to a gene of interest
 
+	/**
+	 * Get row index of gene in gene_correlations matrix
+	 */
 	size_type get_gene_index(std::string name) const;
 	std::string get_gene_name(size_type index) const;
 	bool has_gene(std::string name) const;
+
+	/**
+	 * Get column index of gene in gene_correlations matrix
+	 */
+	size_type get_gene_column_index(size_type gene_row_index) const;
 
 	std::string get_name() const;
 
@@ -56,8 +64,9 @@ private:
 	GeneCorrelations gene_correlations;
 
 	std::vector<size_type> genes;
-	std::map<std::string, size_type> gene_indices; // all genes, name -> index of gene in matrices
-	std::map<size_type, std::string> gene_names; // TODO unordered_map may speed up things
+	std::unordered_map<std::string, size_type> gene_indices; // all genes, name -> row index of gene in gene_correlations
+	std::unordered_map<size_type, std::string> gene_names;
+	std::unordered_map<size_type, size_type> gene_column_indices; // gene row index -> columng index of gene in gene_correlations
 };
 
 
@@ -70,6 +79,7 @@ void GeneExpression::serialize(Archive& ar, const unsigned int version) {
 	ar & genes;
 	ar & gene_indices;
 	ar & gene_names;
+	ar & gene_column_indices;
 }
 
 }
