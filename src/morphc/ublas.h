@@ -2,7 +2,7 @@
 
 #pragma once
 
-#define BOOST_UBLAS_NDEBUG  // comment this line for massive ublas assertions (slows down debug a lot)
+#define BOOST_UBLAS_NDEBUG  // comment this line for massive ublas assertions (slows down debug a lot. You should do it at least once after changing matrix/vector computations though, with a very small joblist + 1 dataset + 1clusterings)
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/numeric/ublas/matrix.hpp>

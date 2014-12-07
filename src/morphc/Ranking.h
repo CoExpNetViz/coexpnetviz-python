@@ -50,8 +50,8 @@ private:
 	typedef boost::numeric::ublas::vector<double> Rankings;
 
 	void rank_genes(const std::vector<size_type>& genes_of_interest, Rankings& rankings);
-	void rank_self(Rankings& rankings);
-	void finalise_ranking(Rankings& rankings);
+	void rank_self(const Rankings& rankings);
+	void finalise_ranking(const Rankings& rankings);
 
 	/**
 	 * Finalise part of ranking
@@ -61,7 +61,7 @@ private:
 	 *
 	 * Note: this func is highly specialised, not very reusable
 	 */
-	void finalise_sub_ranking(Rankings& rankings, Rankings& final_rankings, const MORPHC::indirect_array& sub_indices, Ranking_ClusterInfo&, long excluded_goi = -1);
+	void finalise_sub_ranking(const Rankings& rankings, Rankings& final_rankings, const MORPHC::indirect_array& sub_indices, Ranking_ClusterInfo&, long excluded_goi = -1);
 
 private:
 	std::vector<size_type> genes_of_interest; // genes_of_interest

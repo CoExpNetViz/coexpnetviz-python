@@ -45,7 +45,7 @@ Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> cluster
 	rank_self(rankings);
 }
 
-void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, boost::numeric::ublas::vector<double>& rankings) {
+void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, Rankings& rankings) {
 	for (auto& p : *clustering) {
 		auto& cluster = p.second;
 
@@ -62,14 +62,14 @@ void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, boost:
 	}
 }
 
-void Ranking::finalise_ranking(boost::numeric::ublas::vector<double>& rankings) {
+void Ranking::finalise_ranking(const Rankings& rankings) {
 	for (auto& p : *clustering) {
 		auto& info = cluster_info.at(&p.second);
 		finalise_sub_ranking(rankings, final_rankings, info.candidates, info);
 	}
 }
 
-void Ranking::finalise_sub_ranking(boost::numeric::ublas::vector<double>& rankings, boost::numeric::ublas::vector<double>& final_rankings, const MORPHC::indirect_array& sub_indices, Ranking_ClusterInfo& info, long excluded_goi) {
+void Ranking::finalise_sub_ranking(const Rankings& rankings, Rankings& final_rankings, const MORPHC::indirect_array& sub_indices, Ranking_ClusterInfo& info, long excluded_goi) {
 	if (info.get_goi_count() == 0 || info.candidates.size() == 0) {
 		return; // in this case, all values in these ranking will (and should) be NaN
 	}
@@ -77,7 +77,7 @@ void Ranking::finalise_sub_ranking(boost::numeric::ublas::vector<double>& rankin
 	auto sub_rankings = project(rankings, sub_indices);
 	auto final_sub_rankings = project(final_rankings, sub_indices);
 	if (excluded_goi > 0) {
-		auto sub_matrix = project(column(get_gene_correlations(), excluded_goi), info.candidates);
+		auto sub_matrix = project(column(get_gene_correlations(), excluded_goi), sub_indices);
 		noalias(final_sub_rankings) = (sub_rankings - sub_matrix) / (info.get_goi_count() - 1);
 	}
 	else {
@@ -86,8 +86,9 @@ void Ranking::finalise_sub_ranking(boost::numeric::ublas::vector<double>& rankin
 
 	// unset partial ranking of goi genes in final ranking
 	for (auto gene : info.goi) {
-		if (gene != excluded_goi)
+		if (gene != excluded_goi) {
 			final_rankings(gene) = nan("undefined");
+		}
 	}
 
 	// Normalise scores within this cluster: uses GSL => numerically stable
@@ -103,10 +104,10 @@ void Ranking::finalise_sub_ranking(boost::numeric::ublas::vector<double>& rankin
 	//sub_rankings = sub_rankings / standard_deviation;*/
 }
 
-void Ranking::rank_self(boost::numeric::ublas::vector<double>& rankings) {
+void Ranking::rank_self(const Rankings& rankings) {
 	// find rank_indices of leaving out a gene of interest one by one
 	std::vector<size_type> rank_indices;
-	boost::numeric::ublas::vector<double> final_rankings = this->final_rankings;
+	Rankings final_rankings = this->final_rankings;
 	for (auto p : cluster_info) {
 		auto& cluster = *p.first;
 		auto& info = p.second;
@@ -120,7 +121,7 @@ void Ranking::rank_self(boost::numeric::ublas::vector<double>& rankings) {
 			double rank = final_rankings(gene);
 			if (std::isnan(rank)) {
 				// gene undetected, give penalty
-				rank_indices.emplace_back(2*K-1);
+				rank_indices.emplace_back(2*K-1); // TODO shouldn't this be at least the amount of genes in the dataset? Or otherwise, shouldn't those that do appear be maxed out to 2K-1?
 			}
 			else {
 				// TODO currently we do len(GOI) passes on the whole ranking, a sort + single pass is probably faster
@@ -128,7 +129,9 @@ void Ranking::rank_self(boost::numeric::ublas::vector<double>& rankings) {
 				rank_indices.emplace_back(count);
 			}
 		}
+		project(final_rankings, info.genes) = project(this->final_rankings, info.genes); // restore what we changed
 	}
+	assert(rank_indices.size() == genes_of_interest.size());
 	sort(rank_indices.begin(), rank_indices.end());
 
 	// calculate ausr

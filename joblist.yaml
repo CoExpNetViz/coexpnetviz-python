@@ -6,12 +6,12 @@ jobs:
     - species_name: Arabidopsis  # references a species' name in morph's config
       data_path: ARABIDOBSIS
       genes_of_interest:
-          #- name: goi1
-          #  genes: [AT4G39350, AT5G09870, AT2G21770, AT3G29810, AT2G35620, AT5G22740]
-          #- name: goi2
-          #  path: gois/new.txt
-          #- name: 'carotenoids header'
-          #  path: gois/CarotenoidsHeader.txt
+          - name: goi1
+            genes: [AT4G39350, AT5G09870, AT2G21770, AT3G29810, AT2G35620, AT5G22740]
+          - name: goi2
+            path: gois/new.txt
+          - name: 'carotenoids header'
+            path: gois/CarotenoidsHeader.txt
           - name: 'MYB header 1'
             path: gois/MYB_header1.txt
     - species_name: 'Potato - ITAG'
