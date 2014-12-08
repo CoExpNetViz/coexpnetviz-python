@@ -36,19 +36,20 @@ void GeneExpression::load_plain(std::string path) {
 
 		// parse header
 		std::vector<std::string> header_items;
-		phrase_parse(current, end, *(lexeme[+(char_ - space)]) > eol, blank, header_items);
-		int column_count = header_items.size();
+		TabGrammarRules rules;
+		parse(current, end, rules.line > eol, header_items);
 
 		// resize matrix
-		expression_matrix.resize(line_count-1, column_count-1, false);
+		expression_matrix.resize(line_count-1, header_items.size()-1, false);
 
 		// parse gene lines
 		int i=-1;
 		j=-1;
 		auto on_new_gene = [this, &i, &j](std::string name) { // start new line
-			if (i>=0 && j!=expression_matrix.size2()-1) {
-				throw runtime_error("Incomplete line");
-			}
+			ensure(i<0 || j==expression_matrix.size2()-1, (
+					make_string() << "Line " << i+2 << " (1-based, header included): expected "
+					<< expression_matrix.size2() << " columns, got " << j+1).str()
+			);
 			i++;
 			ensure(gene_indices.emplace(name, i).second, "Duplicate gene");
 			gene_names.emplace(i, name);
@@ -60,7 +61,6 @@ void GeneExpression::load_plain(std::string path) {
 			expression_matrix(i, j) = value;
 		};
 
-		TabGrammarRules rules;
 		parse(current, end, (rules.field[on_new_gene] > rules.separator > (double_[on_gene_value] % rules.separator)) % eol);
 
 		return current;
