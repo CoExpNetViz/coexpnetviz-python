@@ -50,7 +50,7 @@ void Application::run() {
 }
 
 void Application::load_config() {
-	YAML::Node config = YAML::LoadFile(config_path);
+	static YAML::Node config = YAML::LoadFile(config_path);
 	string data_root = config["species_data_path"].as<string>(".");
 
 	for (auto species_ : config["species"]) {
@@ -59,7 +59,7 @@ void Application::load_config() {
 }
 
 void Application::load_jobs() {
-	YAML::Node job_list = YAML::LoadFile(job_list_path);
+	static YAML::Node job_list = YAML::LoadFile(job_list_path);
 	string data_root = job_list["data_path"].as<string>(".");
 
 	for (auto job_group : job_list["jobs"]) {

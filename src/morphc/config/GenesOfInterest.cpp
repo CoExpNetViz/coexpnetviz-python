@@ -9,8 +9,7 @@ using namespace std;
 namespace MORPHC {
 namespace CONFIG {
 
-// TODO only add data_root to relative paths
-GenesOfInterest::GenesOfInterest(string data_root, YAML::Node node)
+GenesOfInterest::GenesOfInterest(string data_root, const YAML::Node& node)
 :	name(node["name"].as<string>())
 {
 	// Load
@@ -38,12 +37,21 @@ GenesOfInterest::GenesOfInterest(string data_root, YAML::Node node)
 		});
 	}
 }
+
 const vector<std::string>& GenesOfInterest::get_genes() const {
 	return genes;
 }
 
 std::string GenesOfInterest::get_name() const {
 	return name;
+}
+
+void GenesOfInterest::apply_mapping(const GeneMapping& mapping) {
+	for (auto& gene : genes) {
+		if (mapping.has(gene)) {
+			gene = mapping.get(gene);
+		}
+	}
 }
 
 }}

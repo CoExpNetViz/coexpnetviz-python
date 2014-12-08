@@ -3,11 +3,11 @@
 #pragma once
 
 #include <unordered_map>
+#include <boost/noncopyable.hpp>
+#include <yaml-cpp/yaml.h>
+#include <morphc/serialization.h>
 #include "GeneExpression.h"
 #include "Cluster.h"
-#include "config/Clustering.h"
-#include <morphc/serialization.h>
-#include <boost/noncopyable.hpp>
 
 namespace MORPHC {
 
@@ -23,7 +23,7 @@ public:
 	typedef Clusters::const_iterator const_iterator;
 
 public:
-	Clustering(CONFIG::Clustering, std::shared_ptr<GeneExpression>);
+	Clustering(std::shared_ptr<GeneExpression>, std::string data_root, const YAML::Node&);
 
 	/**
 	 * Get iterator to first cluster

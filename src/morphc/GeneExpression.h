@@ -4,9 +4,10 @@
 
 #include <string>
 #include <map>
-#include "ublas.h"
 #include <morphc/serialization.h>
 #include <boost/noncopyable.hpp>
+#include <yaml-cpp/yaml.h>
+#include "ublas.h"
 
 namespace MORPHC {
 
@@ -18,7 +19,7 @@ public:
 	/**
 	 * Load gene expression from file
 	 */
-	GeneExpression(std::string path);
+	GeneExpression(std::string data_root, const YAML::Node&);
 
 	void generate_gene_correlations(const std::vector<size_type>& all_goi);
 

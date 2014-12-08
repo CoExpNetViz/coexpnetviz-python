@@ -12,10 +12,10 @@ using namespace std;
 
 namespace MORPHC {
 
-Clustering::Clustering(CONFIG::Clustering clustering_, shared_ptr<GeneExpression> gene_expression_)
-:	name(clustering_.get_name()), gene_expression(gene_expression_)
+Clustering::Clustering(shared_ptr<GeneExpression> gene_expression, string data_root, const YAML::Node& node)
+:	name(node["name"].as<string>()), gene_expression(gene_expression)
 {
-	load_bin_or_plain(clustering_.get_path(), *this);
+	load_bin_or_plain(prepend_path(data_root, node["path"].as<string>()), *this);
 }
 
 void Clustering::load_plain(std::string path) {

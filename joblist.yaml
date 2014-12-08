@@ -29,3 +29,13 @@ jobs:
       genes_of_interest:
           - name: 'glutathione S transferases'
             path: gois/Glutathione_S_transferases.txt
+
+
+## Specifies groups of goi to pass to morph
+#data_path: //group/biocomp/projects/morph/data  # all paths below are prefixed with this path
+#jobs:
+#    - species_name: Arabidopsis  # references a species' name in morph's config
+#      data_path: ARABIDOBSIS # each goi group file is prefixed with this
+#      genes_of_interest:
+#          - name: goi2  # a human friendly name, this will be part of the filename where the result will be stored
+#            path: gois/new.txt

@@ -16,11 +16,12 @@ namespace ublas = boost::numeric::ublas;
 
 namespace MORPHC {
 
-GeneExpression::GeneExpression(std::string path)
-:	name(boost::filesystem::path(path).filename().native())
+GeneExpression::GeneExpression(string data_root, const YAML::Node& node)
 {
+	name = node["name"].as<string>();
+
 	// load expression_matrix
-	load_bin_or_plain(path, *this);
+	load_bin_or_plain(prepend_path(data_root, node["path"].as<string>()), *this);
 }
 
 void GeneExpression::load_plain(std::string path) {

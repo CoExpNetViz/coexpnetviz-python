@@ -9,6 +9,7 @@ species:
       example_goi: ['AT5G17230', 'AT4G14210', 'AT1G10830', 'AT3G04870', 'AT1G06820', 'AT3G10230', 'AT5G57030', 'AT4G25700', 'AT5G52570', 'AT1G31800', 'AT3G53130', 'AT5G67030', 'AT1G08550']  # Example GOI to show in GUIs as placeholder
       gene_descriptions: gene_descriptions  # tab separated file mapping gene to gene-description
       gene_web_page: 'http://www.arabidopsis.org/servlets/TairObject?name=$name&type=locus'  # url to page of gene, use $name as placeholder for the gene name
+      #gene_mapping:
       expression_matrices:
           - name: 'Seed_GH'
             path: data_sets/Seed_GH_DataSet.txt

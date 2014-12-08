@@ -3,7 +3,7 @@
 #pragma once
 
 #include <string>
-#include <unordered_map>
+#include <morphc/StringMapping.h>
 #include <boost/noncopyable.hpp>
 
 namespace MORPHC {
@@ -18,7 +18,7 @@ public:
 	std::string get(std::string gene) const;
 
 private:
-	std::unordered_map<std::string, std::string> descriptions; // gene -> description
+	StringMapping mapping; // gene -> description
 };
 
 }

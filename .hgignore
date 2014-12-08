@@ -1,7 +1,5 @@
-
 syntax: regexp
+.*\.swp
 ^\.project$
-syntax: regexp
 ^\.cproject$
-syntax: regexp
 ^build$
