@@ -38,9 +38,9 @@ void Species::run_jobs(string output_path, int top_k) {
 
 		// translate gene names to indices; and drop genes missing from the gene expression data
 		std::vector<std::vector<size_type>> goi_sets;
-		for (auto& goi : genes_of_interest_sets) {
+		for (int i=0; i < genes_of_interest_sets.size(); i++) {
 			goi_sets.emplace_back();
-			for (auto gene : goi.get_genes()) {
+			for (auto gene : genes_of_interest_sets.at(i).get_genes()) {
 				if (gene_expression->has_gene(gene)) {
 					goi_sets.back().emplace_back(gene_expression->get_gene_index(gene));
 				}
@@ -86,7 +86,7 @@ void Species::run_jobs(string output_path, int top_k) {
 
 	GeneDescriptions gene_descriptions(gene_descriptions_path);
 	for (auto& p : best_ranking_by_goi) {
-		p.second->save(output_path, top_k, gene_descriptions, gene_webpage_template);
+		p.second->save(output_path, top_k, gene_descriptions, gene_webpage_template, genes_of_interest_sets.at(p.first));
 	}
 }
 

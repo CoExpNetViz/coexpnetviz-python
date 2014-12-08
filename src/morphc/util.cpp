@@ -99,24 +99,27 @@ private:
     ostream& out;
 };
 
-std::string exception_what(const boost::spirit::qi::expectation_failure<const char*>& e) {
-	ostringstream str;
-	str << e.what() << ": \n";
-
-	str << "Expected: \n";
-	SpiritPrinter printer(str);
-	boost::spirit::basic_info_walker<SpiritPrinter> walker(printer, e.what_.tag, 0);
-	boost::apply_visitor(walker, e.what_.value);
-
-	str << "Got: \"" << std::string(e.first, e.last) << '"' << endl;
-
-	return str.str();
-}
-
 std::string exception_what(const exception& e) {
 	auto expectation_failure_ex = dynamic_cast<const boost::spirit::qi::expectation_failure<const char*>*>(&e);
-	if (expectation_failure_ex)
-		return exception_what(*expectation_failure_ex);
+	if (expectation_failure_ex) {
+		auto& e = *expectation_failure_ex;
+		ostringstream str;
+		str << e.what() << ": \n";
+
+		str << "Expected: \n";
+		SpiritPrinter printer(str);
+		boost::spirit::basic_info_walker<SpiritPrinter> walker(printer, e.what_.tag, 0);
+		boost::apply_visitor(walker, e.what_.value);
+
+		str << "Got: \"" << std::string(e.first, e.last) << '"' << endl;
+
+		return str.str();
+	}
+
+	auto ios_clear_ex = dynamic_cast<const std::ios::failure*>(&e);
+	if (ios_clear_ex) {
+		return (make_string() << ios_clear_ex->what() << ": " << strerror(errno)).str();
+	}
 
 	return e.what();
 }

@@ -28,7 +28,14 @@ GeneDescriptions::GeneDescriptions(string path)
 }
 
 std::string GeneDescriptions::get(std::string gene) const {
-	return descriptions.at(gene);
+	auto it = descriptions.find(gene);
+	if (it == descriptions.end()) {
+		//cout << "Warning: description not found for gene: " << gene << "\n";
+		return "";
+	}
+	else {
+		return it->second;
+	}
 }
 
 }

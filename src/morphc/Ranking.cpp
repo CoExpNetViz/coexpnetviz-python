@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <cmath>
 #include <boost/algorithm/string.hpp>
+#include <errno.h>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
@@ -152,7 +153,7 @@ void Ranking::rank_self(const Rankings& rankings) {
 	ausr = auc / K;
 }
 
-void Ranking::save(std::string path, int top_k, const GeneDescriptions& descriptions, std::string gene_web_page_template) {
+void Ranking::save(std::string path, int top_k, const GeneDescriptions& descriptions, std::string gene_web_page_template, const CONFIG::GenesOfInterest& full_goi) {
 	// Sort results
 	std::vector<pair<double, string>> results; // vec<(rank, gene)>
 	auto& gene_expression = clustering->get_source();
@@ -169,8 +170,23 @@ void Ranking::save(std::string path, int top_k, const GeneDescriptions& descript
 	out << setprecision(9) << fixed;
 	out << "AUSR: " << ausr << "\n"; // Note: "\n" is faster to out put than std::endl
 	out << setprecision(9) << scientific;
-	out << "Gene expression data: " << clustering->get_source().get_name() << "\n";
+	out << "Gene expression data set: " << clustering->get_source().get_name() << "\n";
 	out << "Clustering: " << clustering->get_name() << "\n";
+
+	out << "Genes of interest present in data set: ";
+	for (auto g : genes_of_interest) {
+		out << get_gene_expression().get_gene_name(g) << " ";
+	}
+	out << "\n";
+
+	out << "Genes of interest missing in data set: ";
+	for (auto g : full_goi.get_genes()) {
+		if (!get_gene_expression().has_gene(g)) {
+			out << g << " ";
+		}
+	}
+	out << "\n";
+
 	out << "\n";
 	for (int i=0; i<results.size() && i<top_k; i++) {
 		auto& r = results.at(i);

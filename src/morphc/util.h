@@ -100,7 +100,6 @@ void ensure(bool condition, std::string error_message);
  *
  * Named after exception.what()
  */
-std::string exception_what(const boost::spirit::qi::expectation_failure<const char*>& e);
 std::string exception_what(const std::exception& e);
 
 

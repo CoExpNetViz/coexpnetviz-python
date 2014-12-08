@@ -34,7 +34,7 @@ private:
 /**
  * Note: A negative ranking value for a gene means it wasn't ranked
  */
-class Ranking // TODO this is not a single ranking, it's a set of rankings (but we've already used the name Rankings/rankings internally)
+class Ranking : public boost::noncopyable // TODO this is not a single ranking, it's a set of rankings (but we've already used the name Rankings/rankings internally)
 {
 public:
 
@@ -42,8 +42,10 @@ public:
 
 	/**
 	 * Save top k results in given directory
+	 *
+	 * Full goi: goi without genes missing in dataset removed
 	 */
-	void save(std::string directory, int top_k, const GeneDescriptions&, std::string gene_webpage_template);
+	void save(std::string directory, int top_k, const GeneDescriptions&, std::string gene_webpage_template, const CONFIG::GenesOfInterest& full_goi);
 
 	double get_ausr() const;
 	bool operator>(const Ranking&) const;
