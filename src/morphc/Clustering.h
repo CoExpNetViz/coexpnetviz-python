@@ -23,7 +23,7 @@ public:
 	typedef Clusters::const_iterator const_iterator;
 
 public:
-	Clustering(std::shared_ptr<GeneExpression>, std::string data_root, const YAML::Node&);
+	Clustering(std::shared_ptr<GeneExpression>, std::string data_root, const YAML::Node);
 
 	/**
 	 * Get iterator to first cluster

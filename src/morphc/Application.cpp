@@ -50,7 +50,7 @@ void Application::run() {
 }
 
 void Application::load_config() {
-	static YAML::Node config = YAML::LoadFile(config_path);
+	YAML::Node config = YAML::LoadFile(config_path);
 	string data_root = config["species_data_path"].as<string>(".");
 
 	for (auto species_ : config["species"]) {
@@ -59,12 +59,12 @@ void Application::load_config() {
 }
 
 void Application::load_jobs() {
-	static YAML::Node job_list = YAML::LoadFile(job_list_path);
+	YAML::Node job_list = YAML::LoadFile(job_list_path);
 	string data_root = job_list["data_path"].as<string>(".");
 
 	for (auto job_group : job_list["jobs"]) {
 		string species_name = job_group["species_name"].as<string>();
-		auto matches_name = [&species_name](const CONFIG::Species& s){
+		auto matches_name = [&species_name](const Species& s){
 			return s.get_name() == species_name;
 		};
 		auto it = find_if(species.begin(), species.end(), matches_name);

@@ -7,7 +7,6 @@
 using namespace std;
 
 namespace MORPHC {
-namespace CONFIG {
 
 GenesOfInterest::GenesOfInterest(string data_root, const YAML::Node& node)
 :	name(node["name"].as<string>())
@@ -54,4 +53,4 @@ void GenesOfInterest::apply_mapping(const GeneMapping& mapping) {
 	}
 }
 
-}}
+}

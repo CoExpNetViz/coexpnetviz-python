@@ -7,12 +7,11 @@
 #include <yaml-cpp/yaml.h>
 
 namespace MORPHC {
-namespace CONFIG {
 
 // A species
 class Species {
 public:
-	Species(std::string data_root, const YAML::Node& species);
+	Species(std::string data_root, const YAML::Node species);
 
 	void add_job(std::string data_root, const YAML::Node& job);
 
@@ -24,9 +23,9 @@ public:
 	std::string get_name() const;
 
 private:
-	const YAML::Node& species;
+	const YAML::Node species;
 	std::string data_root;
-	std::vector<std::pair<std::string, const YAML::Node*>> gois;
+	std::vector<std::pair<std::string, const YAML::Node>> gois;
 };
 
-}}
+}

@@ -8,6 +8,7 @@
 
 namespace MORPHC {
 
+// TODO binary serialize
 /**
  * Mapping of string to string
  */

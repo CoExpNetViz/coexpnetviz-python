@@ -19,7 +19,7 @@ public:
 	/**
 	 * Load gene expression from file
 	 */
-	GeneExpression(std::string data_root, const YAML::Node&);
+	GeneExpression(std::string data_root, const YAML::Node);
 
 	void generate_gene_correlations(const std::vector<size_type>& all_goi);
 

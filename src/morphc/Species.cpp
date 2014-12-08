@@ -10,19 +10,18 @@
 #include <iomanip>
 
 using namespace std;
-using namespace MORPHC;
 
 namespace MORPHC {
-namespace CONFIG {
 
-Species::Species(string parent_data_root, const YAML::Node& node)
+Species::Species(string parent_data_root, const YAML::Node node)
 :	species(node)
 {
+	get_name();
 	data_root = prepend_path(parent_data_root, node["data_path"].as<string>("."));
 }
 
 void Species::add_job(std::string data_root, const YAML::Node& node) { // TODO load later instead of right away
-	gois.emplace_back(data_root, &node);
+	gois.emplace_back(data_root, node);
 }
 
 void Species::run_jobs(string output_path, int top_k) {
@@ -38,7 +37,7 @@ void Species::run_jobs(string output_path, int top_k) {
 	// Load gois
 	std::vector<GenesOfInterest> gois;
 	for (auto& p : this->gois) {
-		gois.emplace_back(p.first, *p.second);
+		gois.emplace_back(p.first, p.second);
 		if (gene_mapping.get()) {
 			gois.back().apply_mapping(*gene_mapping);
 		}
@@ -46,8 +45,8 @@ void Species::run_jobs(string output_path, int top_k) {
 
 	// For each GeneExpression, ge.Cluster, GOI calculate the ranking and keep the best one per GOI
 	map<int, unique_ptr<Ranking>> best_ranking_by_goi; // goi index -> best ranking
-	for (auto& gene_expression_description : species["expression_matrices"]) {
-		auto gene_expression = make_shared<MORPHC::GeneExpression>(data_root, gene_expression_description);
+	for (auto gene_expression_description : species["expression_matrices"]) {
+		auto gene_expression = make_shared<GeneExpression>(data_root, gene_expression_description);
 
 		// translate gene names to indices; and drop genes missing from the gene expression data
 		std::vector<std::vector<size_type>> gois_indices; // gois, but specified by gene indices, not names
@@ -77,7 +76,7 @@ void Species::run_jobs(string output_path, int top_k) {
 
 		// clustering
 		for (auto clustering_ : gene_expression_description["clusterings"]) {
-			auto clustering = make_shared<MORPHC::Clustering>(gene_expression, data_root, clustering_);
+			auto clustering = make_shared<Clustering>(gene_expression, data_root, clustering_);
 			int goi_index=0;
 			for (int i=0; i < gois_indices.size(); i++) {
 				auto& goi = gois_indices.at(i);
@@ -112,4 +111,4 @@ string Species::get_name() const {
 	return species["name"].as<string>();
 }
 
-}}
+}

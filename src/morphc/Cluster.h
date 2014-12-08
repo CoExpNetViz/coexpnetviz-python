@@ -6,10 +6,10 @@
 #include <map>
 #include <utility>
 #include <unordered_set>
-#include "config/GenesOfInterest.h"
-#include "ublas.h"
-#include <morphc/serialization.h>
 #include <boost/noncopyable.hpp>
+#include <morphc/serialization.h>
+#include "GenesOfInterest.h"
+#include "ublas.h"
 
 namespace MORPHC {
 

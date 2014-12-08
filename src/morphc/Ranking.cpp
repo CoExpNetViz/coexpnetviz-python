@@ -153,7 +153,7 @@ void Ranking::rank_self(const Rankings& rankings) {
 	ausr = auc / K;
 }
 
-void Ranking::save(std::string path, int top_k, const GeneDescriptions& descriptions, std::string gene_web_page_template, const CONFIG::GenesOfInterest& full_goi) {
+void Ranking::save(std::string path, int top_k, const GeneDescriptions& descriptions, std::string gene_web_page_template, const GenesOfInterest& full_goi) {
 	// Sort results
 	std::vector<pair<double, string>> results; // vec<(rank, gene)>
 	auto& gene_expression = clustering->get_source();

@@ -8,7 +8,6 @@
 #include <morphc/GeneMapping.h>
 
 namespace MORPHC {
-namespace CONFIG {
 
 class GenesOfInterest
 {
@@ -27,4 +26,4 @@ private:
 	std::vector<std::string> genes;
 };
 
-}}
+}

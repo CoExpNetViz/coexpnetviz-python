@@ -16,7 +16,7 @@ namespace ublas = boost::numeric::ublas;
 
 namespace MORPHC {
 
-GeneExpression::GeneExpression(string data_root, const YAML::Node& node)
+GeneExpression::GeneExpression(string data_root, const YAML::Node node)
 {
 	name = node["name"].as<string>();
 
