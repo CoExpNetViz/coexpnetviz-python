@@ -1,4 +1,4 @@
 #!/bin/sh
 /bin/rm -rf output
 mkdir output
-./morph ../../config.yaml ../../joblist.yaml output 100
+./morph ~/doc/internship/midas_morph/data/morph_config.yaml ../../joblist.yaml output 100

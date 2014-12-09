@@ -1,4 +1,4 @@
 #!/bin/sh
 /bin/rm -rf output
 mkdir output
-gdb --args ./morph ../../joblist.yaml output 100
+gdb --args ./morph ~/doc/internship/midas_morph/data/morph_config.yaml ../../joblist.yaml output 100
