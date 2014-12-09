@@ -31,7 +31,7 @@ void Species::run_jobs(string output_path, int top_k) {
 	// Load gene mapping
 	unique_ptr<GeneMapping> gene_mapping;
 	if (species["gene_mapping"]) {
-		gene_mapping = make_unique<GeneMapping>(species["gene_mapping"].as<string>());
+		gene_mapping = make_unique<GeneMapping>(prepend_path(data_root, species["gene_mapping"].as<string>()));
 	}
 
 	// Load gois
