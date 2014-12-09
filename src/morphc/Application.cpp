@@ -19,19 +19,18 @@ Application::Application(int argc, char** argv)
 	cout << setprecision(9);
 
 	try {
-		ensure(argc == 4, "Invalid argument count");
+		ensure(argc == 5, "Invalid argument count");
 
-		string install_directory(boost::filesystem::path(argv[0]).remove_filename().native());
-		config_path = install_directory + "/config.yaml";
-		job_list_path = argv[1];
-		output_path = argv[2];
-		istringstream str(argv[3]);
+		config_path = argv[1];
+		job_list_path = argv[2];
+		output_path = argv[3];
+		istringstream str(argv[4]);
 		str >> top_k;
 		ensure(!str.fail(), "top_k argument must be an integer");
 		ensure(top_k > 0, "top_k must be >0");
 	}
 	catch (const exception& e) {
-		cerr << "USAGE: morphc path/to/joblist.yaml path/to/output_directory top_k" << endl
+		cerr << "USAGE: morphc path/to/config.yaml path/to/joblist.yaml path/to/output_directory top_k" << endl
 			<< endl
 			<< "top_k = max number of candidate genes to save in outputted rankings" << endl
 			<< endl << endl;
