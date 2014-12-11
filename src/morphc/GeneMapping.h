@@ -3,22 +3,30 @@
 #pragma once
 
 #include <string>
-#include <morphc/StringMapping.h>
+#include <vector>
+#include <unordered_map>
 #include <boost/noncopyable.hpp>
 
 namespace MORPHC {
 
 /**
  * Maps gene names to other gene names (for mapping between different naming schemes)
+ *
+ * Format of gene mapping file: tab-separated, first column = src gene, each other columns is a dst gene (for src -> dst mapping)
  */
 class GeneMapping : public boost::noncopyable {
 public:
+	/**
+	 * Load gene mapping
+	 */
 	GeneMapping(std::string path);
 
 	/**
-	 * Get mapped name of gene
+	 * Get mapped gene names
+	 *
+	 * @returns vector with size > 0
 	 */
-	std::string get(std::string gene) const;
+	const std::vector<std::string>& get(std::string gene) const;
 
 	/**
 	 * Whether mapping is present
@@ -26,7 +34,7 @@ public:
 	bool has(std::string gene) const;
 
 private:
-	StringMapping mapping; // ns1:gene -> ns2:gene
+	std::unordered_map<std::string, std::vector<std::string>> mapping; // ns1:gene -> ns2:gene+
 };
 
 }

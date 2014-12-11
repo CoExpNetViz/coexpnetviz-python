@@ -46,11 +46,19 @@ std::string GenesOfInterest::get_name() const {
 }
 
 void GenesOfInterest::apply_mapping(const GeneMapping& mapping) {
+	vector<string> new_genes;
 	for (auto& gene : genes) {
 		if (mapping.has(gene)) {
-			gene = mapping.get(gene);
+			auto genes = mapping.get(gene);
+			new_genes.insert(new_genes.end(), genes.begin(), genes.end());
+		}
+		else {
+			new_genes.emplace_back(gene);
 		}
 	}
+	genes.swap(new_genes);
+	copy(genes.begin(), genes.end(), ostream_iterator<std::string>(cout, " "));
+	cout << endl;
 }
 
 }
