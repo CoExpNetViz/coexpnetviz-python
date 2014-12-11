@@ -11,18 +11,25 @@ Supported platforms: Linux
 Dependencies:
 
 - CMake
-- boost
+- boost: filesystem iostreams system serialization
 - gsl
+- yamlcpp
 
 Compilation:
 
-  cd build/$desired_build
+  cd build/release
   ./cmake_
   make
+
+# Installation
+
+cp morph your/install/directory
   
 # Usage
 
-All supplied files must use unix line endings
+All supplied files must use unix line endings.
+
+./morph # to get a synopsis
 
 ## License
 
