@@ -57,6 +57,13 @@ void GenesOfInterest::apply_mapping(const GeneMapping& mapping) {
 		}
 	}
 	genes.swap(new_genes);
+
+	// Remove duplicates
+	sort(genes.begin(), genes.end());
+	auto unique_end = unique(genes.begin(), genes.end());
+	genes.erase(unique_end, genes.end());
+
+	// Debug
 	copy(genes.begin(), genes.end(), ostream_iterator<std::string>(cout, " "));
 	cout << endl;
 }
