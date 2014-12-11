@@ -15,7 +15,6 @@ Cluster::Cluster(string name)
 }
 
 void Cluster::add(size_type gene_index) {
-	assert(!contains(genes, gene_index));
 	genes.emplace_back(gene_index);
 }
 
