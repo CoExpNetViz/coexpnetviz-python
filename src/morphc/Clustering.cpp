@@ -15,7 +15,8 @@ namespace MORPHC {
 Clustering::Clustering(shared_ptr<GeneExpression> gene_expression, string data_root, const YAML::Node node)
 :	name(node["name"].as<string>()), gene_expression(gene_expression)
 {
-	load_bin_or_plain(prepend_path(data_root, node["path"].as<string>()), *this);
+	auto path = prepend_path(data_root, node["path"].as<string>());
+	load_bin_or_plain(path, path + gene_expression->get_name() + ".bin", *this); // Note: as long as we store indices in the bin file, we must save a bin per gene expression matrix
 }
 
 void Clustering::load_plain(std::string path) {
@@ -32,9 +33,7 @@ void Clustering::load_plain(std::string path) {
 			if (!gene_expression->has_gene(gene_name)) {
 				// Not all clusterings are generated from an expression matrix.
 				// So a clustering can contain genes that are not present in the expression matrix.
-#ifndef NDEBUG
-				cerr << "Warning: gene missing from expression matrix: " << gene_name << endl;
-#endif
+				cerr << "Warning: gene missing from expression matrix: " << gene_name << "\n";
 				return;
 			}
 			auto cluster_id = line.at(1);
@@ -71,6 +70,7 @@ void Clustering::load_plain(std::string path) {
 	auto add_to_cluster = boost::make_function_output_iterator([&cluster](const size_type& gene) {
 		cluster.add(gene);
 	});
+	assert(is_sorted(all_genes.begin(), all_genes.end()));
 	set_difference(all_genes.begin(), all_genes.end(), genes.begin(), genes.end(), add_to_cluster);
 	if (cluster.empty()) {
 		clusters.pop_back();

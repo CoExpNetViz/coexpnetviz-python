@@ -51,7 +51,8 @@ void GeneExpression::load_plain(std::string path) {
 					<< expression_matrix.size2() << " columns, got " << j+1).str()
 			);
 			i++;
-			ensure(gene_indices.emplace(name, i).second, "Duplicate gene");
+			ensure(gene_indices.emplace(name, i).second,
+					(make_string() << "Duplicate gene: " << name).str());
 			gene_names.emplace(i, name);
 			genes.push_back(i);
 			j=-1;

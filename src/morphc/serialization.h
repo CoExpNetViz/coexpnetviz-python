@@ -53,26 +53,31 @@ void save_to_binary(std::string path, const T& object) {
 	ar << object;
 }
 
+template <class T>
+void load_bin_or_plain(std::string path, T& object) {
+	load_bin_or_plain(path, path + ".bin", object);
+}
+
 /**
  * Loads bin if possible, else plain
  *
  * Very specialised function, limited reusability
  */
 template <class T>
-void load_bin_or_plain(std::string path, T& object) {
+void load_bin_or_plain(std::string path, std::string bin_path, T& object) {
 	using namespace std;
-	auto path_bin = path + ".bin";
-	if (boost::filesystem::exists(path_bin)) {
+
+	if (boost::filesystem::exists(bin_path)) {
 		// load from binary file
 		cout << "loading bin" << endl;
-		load_from_binary(path_bin, object);
+		load_from_binary(bin_path, object);
 	}
 	else {
 		cout << "plain+save" << endl;
 		object.load_plain(path);
 
 		// save bin so we can load file more quickly next time (reading formatted plain text takes longer than reading binary)
-		save_to_binary(path_bin, object);
+		save_to_binary(bin_path, object);
 	}
 }
 

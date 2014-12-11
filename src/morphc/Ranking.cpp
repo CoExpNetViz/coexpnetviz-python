@@ -57,7 +57,7 @@ Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> cluster
 
 void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, Rankings& rankings) {
 	for (auto& cluster : *clustering) {
-		auto& info = cluster_info.emplace(piecewise_construct, make_tuple(&cluster), make_tuple(std::ref(get_gene_expression()), genes_of_interest, std::ref(cluster))).first->second;
+		auto& info = cluster_info.emplace(piecewise_construct, make_tuple(&cluster), make_tuple(std::ref(get_gene_expression()), std::ref(genes_of_interest), std::ref(cluster))).first->second;
 
 		// skip if no goi or candidates in this cluster
 		if (info.get_goi_count() == 0 || info.candidates.size() == 0)
@@ -129,9 +129,10 @@ void Ranking::rank_self(const Rankings& rankings) {
 			double rank = final_rankings(gene);
 			if (std::isnan(rank)) {
 				// gene undetected, give penalty
-				rank_indices.emplace_back(2*K-1); // TODO shouldn't this be at least the amount of genes in the dataset? Or otherwise, shouldn't those that do appear be maxed out to 2K-1?
+				rank_indices.emplace_back(2*K-1); // Note: anything >=K doesn't count towards the AUSR
 			}
 			else {
+				// TODO you can stop if you notice it's >=K
 				// TODO currently we do len(GOI) passes on the whole ranking, a sort + single pass is probably faster
 				size_type count = count_if(final_rankings.begin(), final_rankings.end(), [rank](double val){return val > rank && !std::isnan(val);});
 				rank_indices.emplace_back(count);
@@ -139,7 +140,7 @@ void Ranking::rank_self(const Rankings& rankings) {
 		}
 		project(final_rankings, info.genes) = project(this->final_rankings, info.genes); // restore what we changed
 	}
-	assert(rank_indices.size() == genes_of_interest.size());
+	ensure(rank_indices.size() == genes_of_interest.size(), "Assertion failed: rank_indices.size() == genes_of_interest.size()");
 	sort(rank_indices.begin(), rank_indices.end());
 
 	// calculate ausr

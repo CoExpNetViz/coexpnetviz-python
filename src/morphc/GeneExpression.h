@@ -65,7 +65,7 @@ private:
 	matrix expression_matrix; // row_major
 	GeneCorrelations gene_correlations;
 
-	std::vector<size_type> genes;
+	std::vector<size_type> genes; // sorted list of genes
 	std::unordered_map<std::string, size_type> gene_indices; // all genes, name -> row index of gene in gene_correlations
 	std::unordered_map<size_type, std::string> gene_names;
 	std::unordered_map<size_type, size_type> gene_column_indices; // gene row index -> columng index of gene in gene_correlations
