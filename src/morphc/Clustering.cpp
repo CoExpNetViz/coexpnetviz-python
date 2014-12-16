@@ -6,17 +6,16 @@
 #include <boost/function_output_iterator.hpp>
 #include <utility>
 #include <morphc/TabGrammarRules.h>
-#include <morphc/serialization.h>
 
 using namespace std;
 
 namespace MORPHC {
 
-Clustering::Clustering(shared_ptr<GeneExpression> gene_expression, string data_root, const YAML::Node node)
+Clustering::Clustering(shared_ptr<GeneExpression> gene_expression, string data_root, const YAML::Node node, Cache& cache)
 :	name(node["name"].as<string>()), gene_expression(gene_expression)
 {
 	auto path = prepend_path(data_root, node["path"].as<string>());
-	load_bin_or_plain(path, path + gene_expression->get_name() + ".bin", *this); // Note: as long as we store indices in the bin file, we must save a bin per gene expression matrix
+	cache.load_bin_or_plain(path, path + gene_expression->get_name() + ".bin", *this); // Note: as long as we store indices in the bin file, we must save a bin per gene expression matrix
 }
 
 void Clustering::load_plain(std::string path) {

@@ -8,6 +8,8 @@
 
 namespace MORPHC {
 
+class Cache;
+
 // A species
 class Species {
 public:
@@ -18,7 +20,7 @@ public:
 	/**
 	 * Find best ranking for each goi, save best rankings in output_path, save at most top_k genes of each ranking
 	 */
-	void run_jobs(std::string output_path, int top_k);
+	void run_jobs(std::string output_path, int top_k, Cache&);
 
 	std::string get_name() const;
 

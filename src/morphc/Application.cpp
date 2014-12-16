@@ -44,13 +44,14 @@ void Application::run() {
 	load_jobs();
 
 	for (auto& species_ : species) {
-		species_.run_jobs(output_path, top_k);
+		species_.run_jobs(output_path, top_k, *cache.get());
 	}
 }
 
 void Application::load_config() {
 	YAML::Node config = YAML::LoadFile(config_path);
 	string data_root = config["species_data_path"].as<string>(".");
+	cache = make_unique<Cache>(config["cache_path"].as<string>());
 
 	for (auto species_ : config["species"]) {
 		species.emplace_back(data_root, species_);

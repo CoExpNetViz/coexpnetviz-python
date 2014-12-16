@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <boost/noncopyable.hpp>
 #include <yaml-cpp/yaml.h>
-#include <morphc/serialization.h>
+#include <morphc/Cache.h>
 #include "GeneExpression.h"
 #include "Cluster.h"
 
@@ -23,7 +23,7 @@ public:
 	typedef Clusters::const_iterator const_iterator;
 
 public:
-	Clustering(std::shared_ptr<GeneExpression>, std::string data_root, const YAML::Node);
+	Clustering(std::shared_ptr<GeneExpression>, std::string data_root, const YAML::Node, Cache&);
 
 	/**
 	 * Get iterator to first cluster

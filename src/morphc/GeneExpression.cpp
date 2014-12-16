@@ -8,7 +8,6 @@
 #include <cmath>
 #include <iomanip>
 #include "util.h"
-#include <morphc/serialization.h>
 #include <morphc/TabGrammarRules.h>
 
 using namespace std;
@@ -16,12 +15,12 @@ namespace ublas = boost::numeric::ublas;
 
 namespace MORPHC {
 
-GeneExpression::GeneExpression(string data_root, const YAML::Node node)
+GeneExpression::GeneExpression(string data_root, const YAML::Node node, Cache& cache)
 {
 	name = node["name"].as<string>();
 
 	// load expression_matrix
-	load_bin_or_plain(prepend_path(data_root, node["path"].as<string>()), *this);
+	cache.load_bin_or_plain(prepend_path(data_root, node["path"].as<string>()), *this);
 }
 
 void GeneExpression::load_plain(std::string path) {

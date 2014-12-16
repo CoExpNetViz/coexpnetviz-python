@@ -24,7 +24,7 @@ void Species::add_job(std::string data_root, const YAML::Node& node) { // TODO l
 	gois.emplace_back(data_root, node);
 }
 
-void Species::run_jobs(string output_path, int top_k) {
+void Species::run_jobs(string output_path, int top_k, Cache& cache) {
 	if (gois.empty())
 		return;
 
@@ -52,7 +52,7 @@ void Species::run_jobs(string output_path, int top_k) {
 	// For each GeneExpression, ge.Cluster, GOI calculate the ranking and keep the best one per GOI
 	map<int, unique_ptr<Ranking>> best_ranking_by_goi; // goi index -> best ranking
 	for (auto gene_expression_description : species["expression_matrices"]) {
-		auto gene_expression = make_shared<GeneExpression>(data_root, gene_expression_description);
+		auto gene_expression = make_shared<GeneExpression>(data_root, gene_expression_description, cache);
 
 		// translate gene names to indices; and drop genes missing from the gene expression data
 		std::vector<std::vector<size_type>> gois_indices; // gois, but specified by gene indices, not names
@@ -82,7 +82,7 @@ void Species::run_jobs(string output_path, int top_k) {
 
 		// clustering
 		for (auto clustering_ : gene_expression_description["clusterings"]) {
-			auto clustering = make_shared<Clustering>(gene_expression, data_root, clustering_);
+			auto clustering = make_shared<Clustering>(gene_expression, data_root, clustering_, cache);
 			int goi_index=0;
 			for (int i=0; i < gois_indices.size(); i++) {
 				auto& goi = gois_indices.at(i);

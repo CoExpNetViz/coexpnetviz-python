@@ -7,7 +7,7 @@
 #include <utility>
 #include <unordered_set>
 #include <boost/noncopyable.hpp>
-#include <morphc/serialization.h>
+#include <morphc/Cache.h>
 #include "GenesOfInterest.h"
 #include "ublas.h"
 

@@ -4,7 +4,7 @@
 
 #include <string>
 #include <map>
-#include <morphc/serialization.h>
+#include <morphc/Cache.h>
 #include <boost/noncopyable.hpp>
 #include <yaml-cpp/yaml.h>
 #include "ublas.h"
@@ -19,7 +19,7 @@ public:
 	/**
 	 * Load gene expression from file
 	 */
-	GeneExpression(std::string data_root, const YAML::Node);
+	GeneExpression(std::string data_root, const YAML::Node, Cache&);
 
 	void generate_gene_correlations(const std::vector<size_type>& all_goi);
 

@@ -1,7 +1,6 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
 #include "Cluster.h"
-#include <morphc/serialization.h>
 #include <morphc/util.h>
 
 using namespace std;

@@ -1,0 +1,271 @@
+# Default Morph config
+#
+# Specifies which species are available for finding pathways identified by
+# genes of interest in
+cache_path: /tmp/morph  # Path to directory with read-write access for morph to use as cache
+species_data_path: /mnt/midas/www/group/biocomp/extra/morph  # if provided, all paths are prefixed with this path
+species:
+    - name: Arabidopsis  # unique identifier (string)
+      data_path: ARABIDOBSIS
+      example_goi: ['AT5G17230', 'AT4G14210', 'AT1G10830', 'AT3G04870', 'AT1G06820', 'AT3G10230', 'AT5G57030', 'AT4G25700', 'AT5G52570', 'AT1G31800', 'AT3G53130', 'AT5G67030', 'AT1G08550']  # Example GOI to show in GUIs as placeholder
+      gene_descriptions: gene_descriptions  # tab separated file mapping gene to gene-description
+      gene_web_page: 'http://www.arabidopsis.org/servlets/TairObject?name=$name&type=locus'  # url to page of gene, use $name as placeholder for the gene name
+      expression_matrices:
+          - name: 'Seed_GH'
+            path: data_sets/Seed_GH_DataSet.txt
+            clusterings:
+                - name: 'PPI matisse'
+                  path: cluster_solution/Seed_GH_ppi_matisse_0.4.txt
+                - name: 'CLICK'
+                  path: cluster_solution/Seed_GH_CLICK_ClusteringSol.txt
+                - name: 'IsEnzyme'
+                  path: cluster_solution/Seed_GH_IsEnzymeClusteringSol.txt
+          - name: 'Tissues'
+            path: data_sets/TissuesData.txt
+            clusterings:
+                - name: 'IsEnzyme'
+                  path: cluster_solution/Tissues_IsEnzymeClusteringSol.txt
+                - name: 'Metabolic matisse'
+                  path: cluster_solution/Tissues_Metabolic_Network_ClusteringSol.txt
+                - name: 'PPI matisse'
+                  path: cluster_solution/Tissues_PPI_Network_ClusteringSol.txt
+                - name: 'CLICK'
+                  path: cluster_solution/Tissues_CLICK_ClusteringSol.txt
+          - name: 'Seedlings'
+            path: data_sets/SeedlingsDataSet.txt
+            clusterings:
+                - name: 'IsEnzyme'
+                  path: cluster_solution/Seedlings_IsEnzymeClusteringSol.txt
+                - name: 'Metabolic matisse'
+                  path: cluster_solution/Seedlings_Metabolic_Network_ClusteringSol.txt
+                - name: 'PPI matisse'
+                  path: cluster_solution/Seedlings_PPI_Network_ClusteringSol.txt
+                - name: 'CLICK'
+                  path: cluster_solution/Seedlings_CLICK_ClusteringSol.txt
+    - name: 'Potato - ITAG'
+      data_path: ITAG
+      example_goi: ['Sotub02g020720.1.1', 'Sotub02g020710.1.1', 'Sotub02g020130.1.1', 'Sotub07g023520.1.1', 'Sotub02g010840.1.1', 'Sotub11g008880.1.1', 'Sotub10g009720.1.1', 'Sotub05g026310.1.1', 'Sotub04g021880.1.1', 'Sotub07g025180.1.1', 'Sotub09g027860.1.1']
+      gene_descriptions: gene_descriptions
+      gene_web_page: 'http://bioinformatics.psb.ugent.be/orcae/annotation/Soltu/current/$name'
+      genes_of_interest:
+          - name: goi1
+            path: gois/ITAG.txt
+      expression_matrices:
+          - name: 'All tissues'
+            path: data_sets/All_TissuesDataSet_ITAG.txt	
+            clusterings:
+                - name: 'IsEnzyme'
+                  path: cluster_solution/IsEnzyme_ClusteringSol_ITAG.txt
+                - name: 'Metabolic matisse'
+                  path: cluster_solution/Metabolic Network_ClusteringSol_All_Tissues_ITAG.txt
+                - name: 'PPI matisse'
+                  path: cluster_solution/PPI_Network_ClusteringSol_All_Tissues_ITAG.txt
+                - name: 'CLICK'
+                  path: cluster_solution/ITAG_CLICK_ClusteringSol.txt
+          - name: 'Leafs'
+            path: data_sets/Leafs_ITAG.txt	
+            clusterings:
+                - name: 'IsEnzyme'
+                  path: cluster_solution/IsEnzyme_ClusteringSol_ITAG.txt
+                - name: 'Metabolic matisse'
+                  path: cluster_solution/Metabolic Network_ClusteringSol_Leafs_ITAG.txt
+                - name: 'PPI matisse'
+                  path: cluster_solution/PPI_Network_ClusteringSol_Leafs_ITAG.txt
+                - name: 'CLICK'
+                  path: cluster_solution/ITAG_leafs_CLICK_ClusteringSol.txt
+          - name: 'Roots'
+            path: data_sets/Root_ITAG.txt	
+            clusterings:
+                - name: 'IsEnzyme'
+                  path: cluster_solution/IsEnzyme_ClusteringSol_ITAG.txt
+                - name: 'Metabolic matisse'
+                  path: cluster_solution/Metabolic Network_ClusteringSol_Roots_ITAG.txt
+                - name: 'PPI matisse'
+                  path: cluster_solution/PPI_Network_ClusteringSol_Roots_ITAG.txt
+                - name: 'CLICK'
+                  path: cluster_solution/ITAG_roots_CLICK_ClusteringSol.txt
+          - name: 'Tuber'
+            path: data_sets/Tuber_ITAG.txt	
+            clusterings:
+                - name: 'IsEnzyme'
+                  path: cluster_solution/IsEnzyme_ClusteringSol_ITAG.txt
+                - name: 'Metabolic matisse'
+                  path: cluster_solution/Metabolic Network_ClusteringSol_Tuber_ITAG.txt
+                - name: 'PPI matisse'
+                  path: cluster_solution/PPI_Network_ClusteringSol_Tuber_ITAG.txt
+                - name: 'CLICK'
+                  path: cluster_solution/ITAG_tuber_CLICK_ClusteringSol.txt
+    - name: 'Potato - PGSC'
+      data_path: PGSC
+      example_goi: ['PGSC0003DMP400048099', 'PGSC0003DMP400033460', 'PGSC0003DMP400041818', 'PGSC0003DMP400023691', 'PGSC0003DMP400019953', 'PGSC0003DMP400039420', 'PGSC0003DMP400020813', 'PGSC0003DMP400027608', 'PGSC0003DMP400029983', 'PGSC0003DMP400010972', 'PGSC0003DMP400065555', 'PGSC0003DMP400023982', 'PGSC0003DMP400033908', 'PGSC0003DMP400020829']
+      gene_descriptions: gene_descriptions
+      gene_web_page: 'http://potato.plantbiology.msu.edu/cgi-bin/annotation_report.cgi?gene_id=$name'
+      expression_matrices:
+          - name: 'All tissues'
+            path: data_sets/All_TissuesDataSet_PGSC.txt
+            clusterings:
+                - name: 'IsEnzyme'
+                  path: cluster_solution/IsEnzyme_ClusteringSol.txt
+                - name: 'Metabolic matisse'
+                  path: cluster_solution/Metabolic Network_clusteringSol_All_Tissues_PGSC.txt
+                - name: 'PPI matisse'
+                  path: cluster_solution/PPI_Network_ClusteringSol_All_Tissues_PGSC.txt
+                - name: 'CLICK'
+                  path: cluster_solution/PGSC_CLICK_ClusteringSol.txt
+          - name: 'Leafs'
+            path: data_sets/LeafsDataSet_PGSC.txt
+            clusterings:
+                - name: 'IsEnzyme'
+                  path: cluster_solution/IsEnzyme_ClusteringSol.txt
+                - name: 'Metabolic matisse'
+                  path: cluster_solution/Metabolic Network_clusteringSol_Leafs_PGSC.txt
+                - name: 'PPI matisse'
+                  path: cluster_solution/PPI_Network_ClusteringSol_Leafs_PGSC.txt
+                - name: 'CLICK'
+                  path: cluster_solution/PGSC_leafs_CLICK_ClusteringSol.txt
+          - name: 'Roots'
+            path: data_sets/RootsDataSet_PGSC.txt
+            clusterings:
+                - name: 'IsEnzyme'
+                  path: cluster_solution/IsEnzyme_ClusteringSol.txt
+                - name: 'Metabolic matisse'
+                  path: cluster_solution/Metabolic Network_clusteringSol_Roots_PGSC.txt
+                - name: 'PPI matisse'
+                  path: cluster_solution/PPI_Network_ClusteringSol_Roots_PGSC.txt
+                - name: 'CLICK'
+                  path: cluster_solution/PGSC_roots_CLICK_ClusteringSol.txt
+          - name: 'Tuber'
+            path: data_sets/Tuber_PGSC.txt
+            clusterings:
+                - name: 'IsEnzyme'
+                  path: cluster_solution/IsEnzyme_ClusteringSol.txt
+                - name: 'Metabolic matisse'
+                  path: cluster_solution/Metabolic Network_clusteringSol_Tuber_PGSC.txt
+                - name: 'PPI matisse'
+                  path: cluster_solution/PPI_Network_ClusteringSol_Tuber_PGSC.txt
+                - name: 'CLICK'
+                  path: cluster_solution/PGSC_tuber_CLICK_ClusteringSol.txt
+    - name: Tomato
+      data_path: TOMATO
+      example_goi: ['Solyc10g084400', 'Solyc09g074850', 'Solyc09g011630', 'Solyc09g011540', 'Solyc09g011520', 'Solyc09g011510', 'Solyc09g007150', 'Solyc08g080910', 'Solyc08g080900', 'Solyc07g056500', 'Solyc07g056490', 'Solyc07g056480', 'Solyc07g056440', 'Solyc07g056420', 'Solyc06g009040', 'Solyc06g009020', 'Solyc05g006750', 'Solyc05g006740', 'Solyc02g081430', 'Solyc02g081340', 'Solyc02g068900', 'Solyc01g091330', 'Solyc01g086680', 'Solyc01g081310']
+      gene_descriptions: gene_descriptions
+      gene_web_page: 'http://solgenomics.net/search/locus_search.pl?w8e4_any_name_matchtype=exactly&w8e4_any_name=$name&w8e4_common_name=&w8e4_phenotype=&w8e4_locus_linkage_group=&w8e4_ontology_term=&w8e4_editor=&w8e4_genbank_accession='
+      expression_matrices:
+          - name: 'Root and leaf'
+            path: data_sets/RootAndLeafDataSet.txt
+            clusterings:
+                - name: 'IsEnzyme'
+                  path: cluster_solution/IsEnzymeTomatoClusteringSol.txt
+                - name: 'Metabolic matisse'
+                  path: cluster_solution/RootAndLeaf_MetabolicNetworkClusteringSol.txt
+                - name: 'Null clustering'
+                  path: cluster_solution/nullClusteringSol.txt
+                - name: 'PPI matisse'
+                  path: cluster_solution/RootAndLeaf_PPI_Network_ClusteringSol.txt
+                - name: 'MCL'
+                  path: cluster_solution/RootAndLeaf_MCL_ClusteringSol.txt
+                - name: 'CLICK'
+                  path: cluster_solution/RootAndLeaf_CLICK_clusteringSol.txt
+          - name: 'Fruit'
+            path: data_sets/FruitDataSet.txt
+            clusterings:
+                - name: 'IsEnzyme'
+                  path: cluster_solution/IsEnzymeTomatoClusteringSol.txt
+                - name: 'Metabolic matisse'
+                  path: cluster_solution/Fruit_MetabolicNetworkClusteringSol.txt
+                - name: 'Null clustering'
+                  path: cluster_solution/nullClusteringSol.txt
+                - name: 'PPI matisse'
+                  path: cluster_solution/Fruit_PPI_Network_ClusteringSo.txt
+                - name: 'MCL'
+                  path: cluster_solution/Fruit_MCL_ClusteringSol.txt
+                - name: 'CLICK'
+                  path: cluster_solution/Fruit_CLICK_clusteringSol.txt
+    - name: Rice
+      data_path: rice
+      example_goi: ['Os01g0323600', 'Os01g0719100', 'LOC_Os01g01030']
+      gene_descriptions: gene_descriptions  # tab separated file mapping gene to gene-description
+      gene_web_page: 'http://rapdb.dna.affrc.go.jp/viewer/gbrowse_details/irgsp1?name=$name;feature_id=2503361'
+      gene_mapping: msu_to_rap.mapping
+      expression_matrices:
+          - name: 'E-GEOD-14275'
+            path: 'data_sets/E-GEOD-14275.expression_matrix'
+            clusterings:
+                - name: 'PPI matisse'
+                  path: 'clusterings/E-GEOD-14275_ppi_mcl_matisse.clustering'
+                - name: 'CLICK'
+                  path: 'clusterings/E-GEOD-14275_click.clustering'
+                - name: 'IsEnzyme'
+                  path: 'clusterings/is_enzyme.clustering'
+          - name: 'E-GEOD-25073'
+            path: 'data_sets/E-GEOD-25073.expression_matrix'
+            clusterings:
+                - name: 'PPI matisse'
+                  path: 'clusterings/E-GEOD-25073_ppi_mcl_matisse.clustering'
+                - name: 'CLICK'
+                  path: 'clusterings/E-GEOD-25073_click.clustering'
+                - name: 'IsEnzyme'
+                  path: 'clusterings/is_enzyme.clustering'
+          - name: 'E-GEOD-31077'
+            path: 'data_sets/E-GEOD-31077.expression_matrix'
+            clusterings:
+                - name: 'PPI matisse'
+                  path: 'clusterings/E-GEOD-31077_ppi_mcl_matisse.clustering'
+                - name: 'CLICK'
+                  path: 'clusterings/E-GEOD-31077_click.clustering'
+                - name: 'IsEnzyme'
+                  path: 'clusterings/is_enzyme.clustering'
+          - name: 'E-GEOD-35984'
+            path: 'data_sets/E-GEOD-35984.expression_matrix'
+            clusterings:
+                - name: 'PPI matisse'
+                  path: 'clusterings/E-GEOD-35984_ppi_mcl_matisse.clustering'
+                - name: 'CLICK'
+                  path: 'clusterings/E-GEOD-35984_click.clustering'
+                - name: 'IsEnzyme'
+                  path: 'clusterings/is_enzyme.clustering'
+          - name: 'E-GEOD-39298'
+            path: 'data_sets/E-GEOD-39298.expression_matrix'
+            clusterings:
+                - name: 'PPI matisse'
+                  path: 'clusterings/E-GEOD-39298_ppi_mcl_matisse.clustering'
+                - name: 'CLICK'
+                  path: 'clusterings/E-GEOD-39298_click.clustering'
+                - name: 'IsEnzyme'
+                  path: 'clusterings/is_enzyme.clustering'
+          - name: 'E-GEOD-5167'
+            path: 'data_sets/E-GEOD-5167.expression_matrix'
+            clusterings:
+                - name: 'PPI matisse'
+                  path: 'clusterings/E-GEOD-5167_ppi_mcl_matisse.clustering'
+                - name: 'CLICK'
+                  path: 'clusterings/E-GEOD-5167_click.clustering'
+                - name: 'IsEnzyme'
+                  path: 'clusterings/is_enzyme.clustering'
+          - name: 'E-GEOD-8216'
+            path: 'data_sets/E-GEOD-8216.expression_matrix'
+            clusterings:
+                - name: 'PPI matisse'
+                  path: 'clusterings/E-GEOD-8216_ppi_mcl_matisse.clustering'
+                - name: 'CLICK'
+                  path: 'clusterings/E-GEOD-8216_click.clustering'
+                - name: 'IsEnzyme'
+                  path: 'clusterings/is_enzyme.clustering'
+          - name: 'E-MEXP-2267'
+            path: 'data_sets/E-MEXP-2267.expression_matrix'
+            clusterings:
+                - name: 'PPI matisse'
+                  path: 'clusterings/E-MEXP-2267_ppi_mcl_matisse.clustering'
+                - name: 'CLICK'
+                  path: 'clusterings/E-MEXP-2267_click.clustering'
+                - name: 'IsEnzyme'
+                  path: 'clusterings/is_enzyme.clustering'
+          - name: 'RiceGenomeDataSet'
+            path: 'data_sets/RiceGenomeDataSet.expression_matrix'
+            clusterings:
+                - name: 'PPI matisse'
+                  path: 'clusterings/RiceGenomeDataSet_ppi_mcl_matisse.clustering'
+                - name: 'CLICK'
+                  path: 'clusterings/RiceGenomeDataSet_click.clustering'
+                - name: 'IsEnzyme'
+                  path: 'clusterings/is_enzyme.clustering'

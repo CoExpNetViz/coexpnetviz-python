@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <yaml-cpp/yaml.h>
+#include "Cache.h"
 #include "Species.h"
 
 namespace MORPHC {
@@ -15,6 +16,8 @@ public:
 	Application(int argc, char** argv);
 	void run();
 
+	std::string get_cache();
+
 private:
 	void load_config();
 	void load_jobs();
@@ -24,6 +27,7 @@ private:
 	std::string config_path;
 	std::string job_list_path;
 	std::string output_path;
+	std::unique_ptr<Cache> cache;
 	int top_k;
 };
 
