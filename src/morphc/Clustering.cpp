@@ -27,13 +27,14 @@ void Clustering::load_plain(std::string path) {
 		using namespace boost::spirit::qi;
 
 		std::unordered_map<std::string, Cluster> clusters;
+		size_type genes_missing = 0;
 
-		auto on_cluster_item = [this, &clusters, &genes](const std::vector<std::string>& line) {
+		auto on_cluster_item = [this, &clusters, &genes, &genes_missing](const std::vector<std::string>& line) {
 			auto gene_name = line.at(0);
 			if (!gene_expression->has_gene(gene_name)) {
 				// Not all clusterings are generated from an expression matrix.
 				// So a clustering can contain genes that are not present in the expression matrix.
-				cerr << "Warning: genes missing from expression matrix: " << gene_name << "\n";
+				genes_missing++;
 				return;
 			}
 			auto cluster_id = line.at(1);
@@ -57,6 +58,10 @@ void Clustering::load_plain(std::string path) {
 		this->clusters.reserve(clusters.size());
 		for(auto& p : clusters) {
 			this->clusters.emplace_back(std::move(p.second));
+		}
+
+		if (genes_missing > 0) {
+			cerr << "Warning: " << genes_missing << " genes in clustering not present in expression matrix\n";
 		}
 
 		return begin;
