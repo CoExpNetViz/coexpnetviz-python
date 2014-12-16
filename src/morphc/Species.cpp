@@ -38,8 +38,14 @@ void Species::run_jobs(string output_path, int top_k) {
 	std::vector<GenesOfInterest> gois;
 	for (auto& p : this->gois) {
 		gois.emplace_back(p.first, p.second);
+		auto& goi = gois.back();
 		if (gene_mapping.get()) {
-			gois.back().apply_mapping(*gene_mapping);
+			goi.apply_mapping(*gene_mapping);
+		}
+		auto size = goi.get_genes().size();
+		if (size < 10) {
+			cout << "Dropping GOI " << goi.get_name() << ": too few genes: " << size << " < 10\n";
+			gois.pop_back();
 		}
 	}
 

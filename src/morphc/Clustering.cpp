@@ -33,7 +33,7 @@ void Clustering::load_plain(std::string path) {
 			if (!gene_expression->has_gene(gene_name)) {
 				// Not all clusterings are generated from an expression matrix.
 				// So a clustering can contain genes that are not present in the expression matrix.
-				cerr << "Warning: gene missing from expression matrix: " << gene_name << "\n";
+				cerr << "Warning: genes missing from expression matrix: " << gene_name << "\n";
 				return;
 			}
 			auto cluster_id = line.at(1);
