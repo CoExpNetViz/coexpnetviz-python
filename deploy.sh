@@ -10,4 +10,3 @@ dstdir=../website/bin/morph
 /bin/rm -rf $dstdir
 mkdir -m 0755 $dstdir
 install build/release/morph $dstdir
-install -m 0444 ~/doc/internship/midas_morph/tools/morph/config.yaml $dstdir

@@ -102,7 +102,11 @@ void ensure(bool condition, std::string error_message);
  */
 std::string exception_what(const std::exception& e);
 
-
-
-
 }
+
+template<typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args)
+{
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
