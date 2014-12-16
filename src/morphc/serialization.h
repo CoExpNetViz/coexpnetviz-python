@@ -28,7 +28,6 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/unordered_map.hpp>
-#include <boost/serialization/unordered_set.hpp>
 
 namespace MORPHC {
 
