@@ -69,11 +69,9 @@ void load_bin_or_plain(std::string path, std::string bin_path, T& object) {
 
 	if (boost::filesystem::exists(bin_path)) {
 		// load from binary file
-		cout << "loading bin" << endl;
 		load_from_binary(bin_path, object);
 	}
 	else {
-		cout << "plain+save" << endl;
 		object.load_plain(path);
 
 		// save bin so we can load file more quickly next time (reading formatted plain text takes longer than reading binary)

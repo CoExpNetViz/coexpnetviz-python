@@ -1,7 +1,7 @@
 # Example Morph job list
 #
 # Specifies sets of genes of interest to pass to morph
-data_path: /home/limyreth/doc/internship/data  # if provided, all paths are prefixed with this path
+data_path: /mnt/midas/www/group/biocomp/extra/morph  # if provided, all paths are prefixed with this path
 jobs:
     - species_name: Arabidopsis  # references a species' name in morph's config
       data_path: ARABIDOBSIS
