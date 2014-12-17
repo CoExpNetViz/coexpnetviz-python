@@ -20,14 +20,19 @@ GeneMapping::GeneMapping(string path)
 
 		auto on_line = [this](const std::vector<std::string>& line) {
 			auto gene_name = line.at(0);
+			vector<std::string> mapped_names(line.begin()+1, line.end());
+			for (auto& name : mapped_names) {
+				to_lower(gene_name);
+			}
+
 			auto it = mapping.find(gene_name);
 			if (it != mapping.end()) {
 				cerr << "Warning: Found mappings on multiple lines for: " << gene_name << "\n";
 				auto& genes = it->second;
-				genes.insert(genes.end(), line.begin()+1, line.end());
+				genes.insert(genes.end(), mapped_names.begin(), mapped_names.end());
 			}
 			else {
-				mapping.emplace(gene_name, vector<std::string>(line.begin()+1, line.end()));
+				mapping.emplace(gene_name, mapped_names);
 			}
 		};
 

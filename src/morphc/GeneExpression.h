@@ -59,6 +59,11 @@ public:
 	 */
 	void load_plain(std::string path);
 
+	/**
+	 * Dispose gene correlations data (frees memory)
+	 */
+	void dispose_correlations();
+
 private:
 	std::string name; // name of dataset
 

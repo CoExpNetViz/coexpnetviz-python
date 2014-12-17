@@ -45,6 +45,7 @@ void GeneExpression::load_plain(std::string path) {
 		int i=-1;
 		j=-1;
 		auto on_new_gene = [this, &i, &j](std::string name) { // start new line
+			to_lower(name);
 			ensure(i<0 || j==expression_matrix.size2()-1, (
 					make_string() << "Line " << i+2 << " (1-based, header included): expected "
 					<< expression_matrix.size2() << " columns, got " << j+1).str()
@@ -128,6 +129,10 @@ string GeneExpression::get_name() const {
 
 const std::vector<size_type>& GeneExpression::get_genes() const {
 	return genes;
+}
+
+void GeneExpression::dispose_correlations() {
+	gene_correlations.resize(0, 0);
 }
 
 }

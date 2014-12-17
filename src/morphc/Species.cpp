@@ -89,7 +89,7 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache) {
 				cout << get_name() << ", " << gois.at(i).get_name() << ", " << gene_expression->get_name() << ", " << clustering->get_name();
 				cout.flush();
 				if (goi.empty()) {
-					cout << "Skipping: None of the genes of interest are in the dataset" << endl;
+					cout << ": Skipping: None of the genes of interest are in the dataset" << endl;
 					continue;
 				}
 				else {

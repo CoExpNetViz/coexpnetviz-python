@@ -13,6 +13,8 @@ namespace MORPHC {
  * Maps gene names to other gene names (for mapping between different naming schemes)
  *
  * Format of gene mapping file: tab-separated, first column = src gene, each other columns is a dst gene (for src -> dst mapping)
+ *
+ * Gene names are matched in a case-insensitive manner.
  */
 class GeneMapping : public boost::noncopyable {
 public:
@@ -24,12 +26,15 @@ public:
 	/**
 	 * Get mapped gene names
 	 *
+	 * @param gene Lower case gene name
 	 * @returns vector with size > 0
 	 */
 	const std::vector<std::string>& get(std::string gene) const;
 
 	/**
 	 * Whether mapping is present
+	 *
+	 * @param gene Lower case gene name
 	 */
 	bool has(std::string gene) const;
 

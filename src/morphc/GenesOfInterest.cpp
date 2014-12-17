@@ -35,6 +35,10 @@ GenesOfInterest::GenesOfInterest(string data_root, const YAML::Node& node)
 			return begin;
 		});
 	}
+
+	for (auto& gene : genes) {
+		to_lower(gene);
+	}
 }
 
 const vector<std::string>& GenesOfInterest::get_genes() const {

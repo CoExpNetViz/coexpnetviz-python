@@ -30,6 +30,7 @@ void Clustering::load_plain(std::string path) {
 
 		auto on_cluster_item = [this, &clusters, &genes, &genes_missing](const std::vector<std::string>& line) {
 			auto gene_name = line.at(0);
+			to_lower(gene_name);
 			if (!gene_expression->has_gene(gene_name)) {
 				// Not all clusterings are generated from an expression matrix.
 				// So a clustering can contain genes that are not present in the expression matrix.

@@ -18,6 +18,7 @@
  */
 
 #include "util.h"
+#include <algorithm>
 #include <boost/iostreams/device/mapped_file.hpp>
 
 using namespace std;
@@ -122,6 +123,10 @@ std::string exception_what(const exception& e) {
 	}
 
 	return e.what();
+}
+
+void to_lower(std::string data) {
+	std::transform(data.begin(), data.end(), data.begin(), ::tolower);
 }
 
 }

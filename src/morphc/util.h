@@ -102,6 +102,8 @@ void ensure(bool condition, std::string error_message);
  */
 std::string exception_what(const std::exception& e);
 
+void to_lower(std::string data);
+
 }
 
 template<typename T, typename... Args>
