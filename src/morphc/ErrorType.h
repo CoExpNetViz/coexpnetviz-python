@@ -11,7 +11,8 @@ namespace MORPHC {
 // Note: when changing enum, be sure to update list in usage printing of Application.cpp
 enum class ErrorType : int {
 	NONE = 0,
-	GENERIC
+	GENERIC,
+	INVALID_GOI_GENE
 };
 
 // XXX in a normal world one'd use inheritance to add types..., derived types...

@@ -8,7 +8,7 @@ using namespace std;
 
 namespace MORPHC {
 
-GenesOfInterest::GenesOfInterest(string data_root, const YAML::Node& node)
+GenesOfInterest::GenesOfInterest(string data_root, const YAML::Node& node, const boost::regex& gene_pattern)
 :	name(node["name"].as<string>())
 {
 	// Load
@@ -38,6 +38,9 @@ GenesOfInterest::GenesOfInterest(string data_root, const YAML::Node& node)
 
 	for (auto& gene : genes) {
 		to_lower(gene);
+		ensure(regex_match(gene, gene_pattern),
+				(make_string() <<"Invalid gene name: " << gene).str(),
+				ErrorType::INVALID_GOI_GENE);
 	}
 }
 

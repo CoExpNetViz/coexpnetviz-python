@@ -44,9 +44,9 @@ Application::Application(int argc, char** argv)
 			<< "--output-yaml = when specified, rankings are saved in yaml format, otherwise they are saved in plain text format\n"
 			<< "\n"
 			<< "RETURN CODES:\n";
-		std::array<std::string, 2> error_descriptions = {"No error", "Generic error"};
+		std::array<std::string, 3> error_descriptions = {"No error", "Generic error", "GOI contains gene with invalid name"};
 		for (int i=0; i<error_descriptions.size(); i++) {
-			cerr << "- " << i << "\t" << error_descriptions.at(i) << "\n";
+			cerr << "  " << i << ": " << error_descriptions.at(i) << "\n";
 		}
 		cerr << "\n" << endl;
 		throw;

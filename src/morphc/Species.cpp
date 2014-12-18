@@ -1,6 +1,7 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
 #include "Species.h"
+#include <boost/regex.hpp>
 #include <morphc/GeneExpression.h>
 #include <morphc/Clustering.h>
 #include <morphc/GeneMapping.h>
@@ -34,10 +35,13 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache, bool output_
 		gene_mapping = make_unique<GeneMapping>(prepend_path(data_root, species["gene_mapping"].as<string>()));
 	}
 
+	// Regex for gene name validation
+	boost::regex gene_pattern(species["gene_pattern"].as<string>(), boost::regex::perl|boost::regex::icase);
+
 	// Load gois
 	std::vector<GenesOfInterest> gois;
 	for (auto& p : this->gois) {
-		gois.emplace_back(p.first, p.second);
+		gois.emplace_back(p.first, p.second, gene_pattern);
 		auto& goi = gois.back();
 		if (gene_mapping.get()) {
 			goi.apply_mapping(*gene_mapping);
