@@ -174,19 +174,21 @@ void Ranking::save(std::string path, int top_k, const GeneDescriptions& descript
 	out << "Gene expression data set: " << clustering->get_source().get_name() << "\n";
 	out << "Clustering: " << clustering->get_name() << "\n";
 
-	out << "Genes of interest present in data set: ";
+	out << "Genes of interest present in data set: "; // note: this is always non-empty
 	for (auto g : genes_of_interest) {
 		out << get_gene_expression().get_gene_name(g) << " ";
 	}
 	out << "\n";
 
-	out << "Genes of interest missing in data set: ";
-	for (auto g : full_goi.get_genes()) {
-		if (!get_gene_expression().has_gene(g)) {
-			out << g << " ";
+	if (full_goi.get_genes().size() > genes_of_interest.size()) {
+		out << "Genes of interest missing in data set: ";
+		for (auto g : full_goi.get_genes()) {
+			if (!get_gene_expression().has_gene(g)) {
+				out << g << " ";
+			}
 		}
+		out << "\n";
 	}
-	out << "\n";
 
 	out << "\n";
 	for (int i=0; i<results.size() && i<top_k; i++) {
