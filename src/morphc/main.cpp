@@ -10,19 +10,24 @@
 /**
  * General notes about the code:
  * - goi := genes of interest (always plural, thus not: gene of interest)
- * - gois := goi groups = a collection of genes of interest ~= vector<vector<gene of interest>>
+ * - gois := goi groups = a collection of goi ~= vector<vector<gene of interest>>
  */
 
 using namespace std;
 
 int main(int argc, char** argv) {
+	using namespace MORPHC;
 	try {
-		MORPHC::Application app(argc, argv);
+		Application app(argc, argv);
 		app.run();
 	}
+	catch (const TypedException& e) {
+		cerr << "Exception: " << e.what() << endl;
+		return e.get_exit_code();
+	}
 	catch (const exception& e) {
-		cerr << "Exception: " << MORPHC::exception_what(e) << endl;
-		return 1;
+		cerr << "Exception: " << exception_what(e) << endl;
+		return static_cast<int>(ErrorType::GENERIC);
 	}
 	return 0;
 }

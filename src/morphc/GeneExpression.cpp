@@ -48,11 +48,13 @@ void GeneExpression::load_plain(std::string path) {
 			to_lower(name);
 			ensure(i<0 || j==expression_matrix.size2()-1, (
 					make_string() << "Line " << i+2 << " (1-based, header included): expected "
-					<< expression_matrix.size2() << " columns, got " << j+1).str()
+					<< expression_matrix.size2() << " columns, got " << j+1).str(),
+					ErrorType::GENERIC
 			);
 			i++;
 			ensure(gene_indices.emplace(name, i).second,
-					(make_string() << "Duplicate gene: " << name).str());
+					(make_string() << "Duplicate gene: " << name).str(),
+					ErrorType::GENERIC);
 			gene_names.emplace(i, name);
 			genes.push_back(i);
 			j=-1;
@@ -66,7 +68,9 @@ void GeneExpression::load_plain(std::string path) {
 
 		return current;
 	});
-	ensure(j == expression_matrix.size2()-1, (make_string() << "Error while reading " << path << ": Incomplete line: " << j+1 << " values instead of " << expression_matrix.size2()).str());
+	ensure(j == expression_matrix.size2()-1,
+			(make_string() << "Error while reading " << path << ": Incomplete line: " << j+1 << " values instead of " << expression_matrix.size2()).str(),
+			ErrorType::GENERIC);
 }
 
 void GeneExpression::generate_gene_correlations(const std::vector<size_type>& all_goi) {

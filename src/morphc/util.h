@@ -23,6 +23,7 @@
 #include <map>
 #include <functional>
 #include <boost/spirit/include/qi.hpp>
+#include "ErrorType.h"
 
 namespace MORPHC {
 
@@ -93,7 +94,7 @@ std::string prepend_path(std::string prefix, std::string path);
 /**
  * Like assert, but is included in release versions as well
  */
-void ensure(bool condition, std::string error_message);
+void ensure(bool condition, std::string error_message, ErrorType);
 
 /**
  * Format exception to string

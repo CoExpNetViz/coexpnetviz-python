@@ -6,6 +6,7 @@
 #include <boost/filesystem.hpp>
 #include "ublas.h"
 #include "util.h"
+#include "ErrorType.h"
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
@@ -19,17 +20,17 @@ Application::Application(int argc, char** argv)
 	cout << setprecision(9);
 
 	try {
-		ensure(argc == 5 || argc == 6, "Invalid argument count");
+		ensure(argc == 5 || argc == 6, "Invalid argument count", ErrorType::GENERIC);
 
 		config_path = argv[1];
 		job_list_path = argv[2];
 		output_path = argv[3];
 		istringstream str(argv[4]);
 		str >> top_k;
-		ensure(!str.fail(), "top_k argument must be an integer");
-		ensure(top_k > 0, "top_k must be >0");
+		ensure(!str.fail(), "top_k argument must be an integer", ErrorType::GENERIC);
+		ensure(top_k > 0, "top_k must be >0", ErrorType::GENERIC);
 		if (argc == 6) {
-			ensure(string(argv[5]) == "--output-yaml", "Invalid 5th argument");
+			ensure(string(argv[5]) == "--output-yaml", "Invalid 5th argument", ErrorType::GENERIC);
 			output_yaml = true;
 		}
 		else {
@@ -37,11 +38,17 @@ Application::Application(int argc, char** argv)
 		}
 	}
 	catch (const exception& e) {
-		cerr << "USAGE: morphc path/to/config.yaml path/to/joblist.yaml path/to/output_directory top_k [--output-yaml]" << endl
-			<< endl
-			<< "top_k = max number of candidate genes to save in outputted rankings" << endl
-			<< "--output-yaml = when specified, rankings are saved in yaml format, otherwise they are saved in plain text format" << endl
-			<< endl << endl;
+		cerr << "USAGE: morphc path/to/config.yaml path/to/joblist.yaml path/to/output_directory top_k [--output-yaml]\n"
+			<< "\n"
+			<< "top_k = max number of candidate genes to save in outputted rankings\n"
+			<< "--output-yaml = when specified, rankings are saved in yaml format, otherwise they are saved in plain text format\n"
+			<< "\n"
+			<< "RETURN CODES:\n";
+		std::array<std::string, 2> error_descriptions = {"No error", "Generic error"};
+		for (int i=0; i<error_descriptions.size(); i++) {
+			cerr << "- " << i << "\t" << error_descriptions.at(i) << "\n";
+		}
+		cerr << "\n" << endl;
 		throw;
 	}
 	// TODO look for asserts and see whether they should perhaps be needed at release as well

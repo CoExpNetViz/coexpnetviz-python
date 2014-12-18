@@ -160,7 +160,7 @@ void Ranking::rank_self(const Rankings& rankings) {
 		}
 		project(final_rankings, info.genes) = project(this->final_rankings, info.genes); // restore what we changed
 	}
-	ensure(rank_indices.size() == genes_of_interest.size(), "Assertion failed: rank_indices.size() == genes_of_interest.size()");
+	ensure(rank_indices.size() == genes_of_interest.size(), "Assertion failed: rank_indices.size() == genes_of_interest.size()", ErrorType::GENERIC);
 	sort(rank_indices.begin(), rank_indices.end());
 
 	// calculate ausr

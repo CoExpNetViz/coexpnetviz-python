@@ -46,7 +46,8 @@ void Clustering::load_plain(std::string path) {
 			auto& cluster = it->second;
 			ensure(!contains(cluster, index),
 					(make_string() << "Clustering adds same gene to cluster twice: gene=" << gene_name <<
-							", cluster=" << cluster_id).str());
+							", cluster=" << cluster_id).str(),
+					ErrorType::GENERIC);
 			cluster.add(index);
 			genes.emplace_back(index);
 		};
