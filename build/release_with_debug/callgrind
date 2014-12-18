@@ -1,9 +1,12 @@
-#!/bin/bash
+#!/bin/sh
+set -e
+
+. ../command.sh
 make
 rm callgrind.out*
-valgrind --tool=callgrind --instr-atstart=yes --callgrind-out-file=callgrind.out ./morph ../../joblist.yaml output 100
+valgrind --tool=callgrind --instr-atstart=yes --callgrind-out-file=callgrind.out ${command[@]}
 callgrind_pid=$!
 #sleep 300
 #kill $callgrind_pid
-sleep 2
+#sleep 2
 kcachegrind callgrind.out &

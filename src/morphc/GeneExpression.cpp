@@ -73,8 +73,6 @@ void GeneExpression::generate_gene_correlations(const std::vector<size_type>& al
 	using namespace ublas;
 	MORPHC::indirect_array goi_indices(const_cast<size_type*>(&*all_goi.begin()), const_cast<size_type*>(&*all_goi.end()));
 
-	cout << expression_matrix.size1() << " * " << all_goi.size() << " = " << expression_matrix.size1() * all_goi.size() << endl;
-
 	for (size_type i=0; i<all_goi.size(); i++) {
 		gene_column_indices[all_goi.at(i)] = i;
 	}

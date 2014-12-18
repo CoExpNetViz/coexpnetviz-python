@@ -75,7 +75,6 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache) {
 			sort(all_genes_of_interest.begin(), all_genes_of_interest.end());
 			auto duplicate_begin = unique(all_genes_of_interest.begin(), all_genes_of_interest.end());
 			all_genes_of_interest.erase(duplicate_begin, all_genes_of_interest.end());
-			copy(all_genes_of_interest.begin(), all_genes_of_interest.end(), ostream_iterator<size_type>(cout, " ")); // TODO
 
 			// generate the correlations we need
 			gene_expression->generate_gene_correlations(all_genes_of_interest);
