@@ -192,13 +192,14 @@ void Ranking::save(std::string path, int top_k, const GeneDescriptions& descript
 
 	out << "\n";
 	out << "Candidates:\n";
+	out << "Rank\tGene ID\tScore\tAnnotation\tGene web page\n";
 	for (int i=0; i<results.size() && i<top_k; i++) {
 		auto& r = results.at(i);
 		auto& gene = r.second;
 		assert(!std::isnan(r.first));
 		std::string web_page = gene_web_page_template;
 		boost::replace_all(web_page, "$name", gene);
-		out << gene << "\t" << r.first << "\t" << descriptions.get(gene) << "\t" << web_page << "\n";
+		out << i+1 << gene << "\t" << r.first << "\t" << descriptions.get(gene) << "\t" << web_page << "\n";
 	}
 }
 
