@@ -24,7 +24,7 @@ void Species::add_job(std::string data_root, const YAML::Node& node) { // TODO l
 	gois.emplace_back(data_root, node);
 }
 
-void Species::run_jobs(string output_path, int top_k, Cache& cache) {
+void Species::run_jobs(string output_path, int top_k, Cache& cache, bool output_yaml) {
 	if (gois.empty())
 		return;
 
@@ -121,7 +121,7 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache) {
 	GeneDescriptions gene_descriptions(prepend_path(data_root, species["gene_descriptions"].as<string>()));
 	for (auto& p : results) {
 		auto& result = p.second;
-		result.best_ranking->save(output_path, top_k, gene_descriptions, species["gene_web_page"].as<string>(), gois.at(p.first), result.get_average_ausr());
+		result.best_ranking->save(output_path, top_k, gene_descriptions, species["gene_web_page"].as<string>(), gois.at(p.first), result.get_average_ausr(), output_yaml);
 	}
 }
 

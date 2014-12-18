@@ -19,7 +19,7 @@ Application::Application(int argc, char** argv)
 	cout << setprecision(9);
 
 	try {
-		ensure(argc == 5, "Invalid argument count");
+		ensure(argc == 5 || argc == 6, "Invalid argument count");
 
 		config_path = argv[1];
 		job_list_path = argv[2];
@@ -28,11 +28,19 @@ Application::Application(int argc, char** argv)
 		str >> top_k;
 		ensure(!str.fail(), "top_k argument must be an integer");
 		ensure(top_k > 0, "top_k must be >0");
+		if (argc == 6) {
+			ensure(string(argv[5]) == "--output-yaml", "Invalid 5th argument");
+			output_yaml = true;
+		}
+		else {
+			output_yaml = false;
+		}
 	}
 	catch (const exception& e) {
-		cerr << "USAGE: morphc path/to/config.yaml path/to/joblist.yaml path/to/output_directory top_k" << endl
+		cerr << "USAGE: morphc path/to/config.yaml path/to/joblist.yaml path/to/output_directory top_k [--output-yaml]" << endl
 			<< endl
 			<< "top_k = max number of candidate genes to save in outputted rankings" << endl
+			<< "--output-yaml = when specified, rankings are saved in yaml format, otherwise they are saved in plain text format" << endl
 			<< endl << endl;
 		throw;
 	}
@@ -44,7 +52,7 @@ void Application::run() {
 	load_jobs();
 
 	for (auto& species_ : species) {
-		species_.run_jobs(output_path, top_k, *cache.get());
+		species_.run_jobs(output_path, top_k, *cache.get(), output_yaml);
 	}
 }
 

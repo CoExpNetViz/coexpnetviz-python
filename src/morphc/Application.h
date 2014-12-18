@@ -29,6 +29,7 @@ private:
 	std::string output_path;
 	std::unique_ptr<Cache> cache;
 	int top_k;
+	bool output_yaml;
 };
 
 }

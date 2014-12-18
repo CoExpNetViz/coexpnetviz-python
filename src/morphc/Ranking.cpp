@@ -15,6 +15,26 @@ using namespace ublas;
 
 namespace MORPHC {
 
+/**
+ * One row of a ranking
+ */
+class Rank
+{
+public:
+	Rank(int rank, string gene, double score, string annotation, string gene_web_page)
+	:	rank(rank), gene(gene), score(score), annotation(annotation), gene_web_page(gene_web_page)
+	{
+	}
+
+public:
+	int rank; // row in ranking, 1-based
+	string gene;
+	double score;
+	string annotation;
+	string gene_web_page;
+};
+
+
 size_type K = 1000;
 
 Ranking_ClusterInfo::Ranking_ClusterInfo(const GeneExpression& gene_expression, const std::vector<size_type>& genes_of_interest, const Cluster& c)
@@ -154,7 +174,7 @@ void Ranking::rank_self(const Rankings& rankings) {
 	ausr = auc / K;
 }
 
-void Ranking::save(std::string path, int top_k, const GeneDescriptions& descriptions, std::string gene_web_page_template, const GenesOfInterest& full_goi, double average_ausr) {
+void Ranking::save(std::string path, int top_k, const GeneDescriptions& descriptions, std::string gene_web_page_template, const GenesOfInterest& full_goi, double average_ausr, bool output_yaml) {
 	// Sort results
 	std::vector<pair<double, string>> results; // vec<(rank, gene)>
 	auto& gene_expression = clustering->get_source();
@@ -165,41 +185,81 @@ void Ranking::save(std::string path, int top_k, const GeneDescriptions& descript
 	}
 	sort(results.rbegin(), results.rend());
 
-	// Out put results
-	ofstream out(path + "/" + name);
-	out.exceptions(ofstream::failbit | ofstream::badbit);
-	out << setprecision(2) << fixed;
-	out << "Best AUSR: " << ausr << "\n"; // Note: "\n" is faster to out put than std::endl
-	out << "Average AUSR: " << average_ausr << "\n";
-	out << "Gene expression data set: " << clustering->get_source().get_name() << "\n";
-	out << "Clustering: " << clustering->get_name() << "\n";
+	// Gather output data
+	string gene_expression_name = clustering->get_source().get_name();
+	string clustering_name = clustering->get_name();
 
-	out << "Genes of interest present in data set: "; // note: this is always non-empty
+	std::vector<string> goi_genes_present; // note: this is always non-empty
 	for (auto g : genes_of_interest) {
-		out << get_gene_expression().get_gene_name(g) << " ";
+		goi_genes_present.emplace_back(get_gene_expression().get_gene_name(g));
 	}
-	out << "\n";
 
-	if (full_goi.get_genes().size() > genes_of_interest.size()) {
-		out << "Genes of interest missing in data set: ";
-		for (auto g : full_goi.get_genes()) {
-			if (!get_gene_expression().has_gene(g)) {
-				out << g << " ";
-			}
+	std::vector<string> goi_genes_missing;
+	for (auto g : full_goi.get_genes()) {
+		if (!get_gene_expression().has_gene(g)) {
+			goi_genes_missing.emplace_back(g);
 		}
-		out << "\n";
 	}
 
-	out << "\n";
-	out << "Candidates:\n";
-	out << "Rank\tGene ID\tScore\tAnnotation\tGene web page\n";
+	std::vector<Rank> ranks;
 	for (int i=0; i<results.size() && i<top_k; i++) {
 		auto& r = results.at(i);
 		auto& gene = r.second;
 		assert(!std::isnan(r.first));
 		std::string web_page = gene_web_page_template;
 		boost::replace_all(web_page, "$name", gene);
-		out << i+1 << gene << "\t" << r.first << "\t" << descriptions.get(gene) << "\t" << web_page << "\n";
+		ranks.emplace_back(i+1, gene, r.first, descriptions.get(gene), web_page);
+	}
+
+	// Out put results
+	ofstream out(path + "/" + name);
+	out.exceptions(ofstream::failbit | ofstream::badbit);
+
+	if (output_yaml) {
+		YAML::Node ranking;
+		ranking["best_ausr"] = ausr;
+		ranking["average_ausr"] = average_ausr;
+		ranking["gene_expression_name"] = gene_expression_name;
+		ranking["clustering_name"] = clustering_name;
+		ranking["goi_genes_present"] = goi_genes_present;
+		ranking["goi_genes_missing"] = goi_genes_missing;
+		for (auto& rank : ranks) {
+			YAML::Node candidate;
+			candidate["rank"] = rank.rank;
+			candidate["gene"] = rank.gene;
+			candidate["score"] = rank.score;
+			candidate["annotation"] = rank.annotation;
+			candidate["gene_web_page"] = rank.gene_web_page;
+			ranking["candidates"].push_back(candidate);
+		}
+
+		YAML::Node root;
+		root["ranking"] = ranking;
+		out << YAML::Dump(root);
+	}
+	else { // plain text output
+		out << setprecision(2) << fixed;
+		out << "Best AUSR: " << ausr << "\n"; // Note: "\n" is faster to out put than std::endl
+		out << "Average AUSR: " << average_ausr << "\n";
+		out << "Gene expression data set: " << gene_expression_name << "\n";
+		out << "Clustering: " << clustering_name << "\n";
+
+		out << "Genes of interest present in data set: ";
+		copy(goi_genes_present.begin(), goi_genes_present.end(), ostream_iterator<string>(out, " "));
+		out << "\n";
+
+		if (!goi_genes_missing.empty()) {
+			out << "Genes of interest missing in data set: ";
+			copy(goi_genes_missing.begin(), goi_genes_missing.end(), ostream_iterator<string>(out, " "));
+			out << "\n";
+		}
+
+		out << "\n";
+		out << "Candidates:\n";
+		out << "Rank\tGene ID\tScore\tAnnotation\tGene web page\n";
+		for (auto& rank : ranks) {
+			out << rank.rank << "\t" << rank.gene << "\t" << rank.score << "\t" << rank.annotation << "\t" << rank.gene_web_page << "\n";
+		}
 	}
 }
 

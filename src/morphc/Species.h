@@ -22,7 +22,7 @@ public:
 	/**
 	 * Find best ranking for each goi, save best rankings in output_path, save at most top_k genes of each ranking
 	 */
-	void run_jobs(std::string output_path, int top_k, Cache&);
+	void run_jobs(std::string output_path, int top_k, Cache&, bool output_yaml);
 
 	std::string get_name() const;
 
