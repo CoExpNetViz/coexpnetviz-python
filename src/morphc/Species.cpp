@@ -43,8 +43,8 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache) {
 			goi.apply_mapping(*gene_mapping);
 		}
 		auto size = goi.get_genes().size();
-		if (size < 10) {
-			cout << "Dropping GOI " << goi.get_name() << ": too few genes: " << size << " < 10\n";
+		if (size < 5) {
+			cout << "Dropping GOI " << goi.get_name() << ": too few genes: " << size << " < 5\n";
 			gois.pop_back();
 		}
 	}
