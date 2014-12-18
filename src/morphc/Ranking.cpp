@@ -191,6 +191,7 @@ void Ranking::save(std::string path, int top_k, const GeneDescriptions& descript
 	}
 
 	out << "\n";
+	out << "Candidates:\n";
 	for (int i=0; i<results.size() && i<top_k; i++) {
 		auto& r = results.at(i);
 		auto& gene = r.second;
