@@ -10,7 +10,9 @@ namespace MORPHC {
 
 class Cache;
 
-// A species
+/**
+ * A species
+ */
 class Species {
 public:
 	Species(std::string data_root, const YAML::Node species);

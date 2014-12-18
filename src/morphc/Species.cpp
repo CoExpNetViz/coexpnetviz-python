@@ -4,8 +4,8 @@
 #include <morphc/GeneExpression.h>
 #include <morphc/Clustering.h>
 #include <morphc/GeneMapping.h>
-#include <morphc/Ranking.h>
 #include <morphc/util.h>
+#include <morphc/GOIResult.h>
 #include "GenesOfInterest.h"
 #include <iomanip>
 
@@ -50,7 +50,7 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache) {
 	}
 
 	// For each GeneExpression, ge.Cluster, GOI calculate the ranking and keep the best one per GOI
-	map<int, unique_ptr<Ranking>> best_ranking_by_goi; // goi index -> best ranking
+	map<int, GOIResult> results; // goi index -> result for goi
 	for (auto gene_expression_description : species["expression_matrices"]) {
 		auto gene_expression = make_shared<GeneExpression>(data_root, gene_expression_description, cache);
 
@@ -99,8 +99,16 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache) {
 					replace(begin(name), end(name), ' ', '_');
 					auto ranking = make_unique<Ranking>(goi, clustering, name);
 					cout << ": AUSR=" << setprecision(2) << fixed << ranking->get_ausr() << endl;
-					if (!best_ranking_by_goi[i].get() || *ranking > *best_ranking_by_goi[i]) {
-						best_ranking_by_goi[i] = std::move(ranking);
+
+					auto result_it = results.find(i);
+					if (result_it == results.end()) {
+						result_it = results.emplace(piecewise_construct, make_tuple(i), make_tuple()).first;
+					}
+
+					auto& result = result_it->second;
+					result.add_ausr(ranking->get_ausr());
+					if (!result.best_ranking.get() || *ranking > *result.best_ranking) {
+						result.best_ranking = std::move(ranking);
 					}
 				}
 				goi_index++;
@@ -111,8 +119,9 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache) {
 	}
 
 	GeneDescriptions gene_descriptions(prepend_path(data_root, species["gene_descriptions"].as<string>()));
-	for (auto& p : best_ranking_by_goi) {
-		p.second->save(output_path, top_k, gene_descriptions, species["gene_web_page"].as<string>(), gois.at(p.first));
+	for (auto& p : results) {
+		auto& result = p.second;
+		result.best_ranking->save(output_path, top_k, gene_descriptions, species["gene_web_page"].as<string>(), gois.at(p.first), result.get_average_ausr());
 	}
 }
 

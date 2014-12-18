@@ -45,7 +45,7 @@ public:
 	 *
 	 * Full goi: goi without genes missing in dataset removed
 	 */
-	void save(std::string directory, int top_k, const GeneDescriptions&, std::string gene_webpage_template, const GenesOfInterest& full_goi);
+	void save(std::string directory, int top_k, const GeneDescriptions&, std::string gene_webpage_template, const GenesOfInterest& full_goi, double average_ausr);
 
 	double get_ausr() const;
 	bool operator>(const Ranking&) const;
