@@ -59,6 +59,8 @@ public:
 	 */
 	void load_plain(std::string path);
 
+	void dispose_expression_data();
+
 	/**
 	 * Dispose gene correlations data (frees memory)
 	 */
