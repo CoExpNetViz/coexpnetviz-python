@@ -168,9 +168,8 @@ void Ranking::save(std::string path, int top_k, const GeneDescriptions& descript
 	// Out put results
 	ofstream out(path + "/" + name);
 	out.exceptions(ofstream::failbit | ofstream::badbit);
-	out << setprecision(9) << fixed;
+	out << setprecision(2) << fixed;
 	out << "AUSR: " << ausr << "\n"; // Note: "\n" is faster to out put than std::endl
-	out << setprecision(9) << scientific;
 	out << "Gene expression data set: " << clustering->get_source().get_name() << "\n";
 	out << "Clustering: " << clustering->get_name() << "\n";
 
