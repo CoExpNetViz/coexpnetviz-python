@@ -20,9 +20,10 @@ GeneMapping::GeneMapping(string path)
 
 		auto on_line = [this](const std::vector<std::string>& line) {
 			auto gene_name = line.at(0);
+			to_lower(gene_name);
 			vector<std::string> mapped_names(line.begin()+1, line.end());
 			for (auto& name : mapped_names) {
-				to_lower(gene_name);
+				to_lower(name);
 			}
 
 			auto it = mapping.find(gene_name);
