@@ -20,6 +20,7 @@
 #include "util.h"
 #include <algorithm>
 #include <boost/iostreams/device/mapped_file.hpp>
+#include <cctype>
 
 using namespace std;
 
@@ -45,6 +46,8 @@ void read_file(std::string path, std::function<const char* (const char*, const c
 		catch (const boost::spirit::qi::expectation_failure<const char*>& e) {
 			throw runtime_error(exception_what(e)); // get error message here, as outside the outer try block it'd segfault when reading from file (which this one does)
 		}
+
+		current = find_if_not(current, end, [](char c){ return isspace(c); }); // skip trailing whitespace
 		if (current != end) {
 			ostringstream out;
 			out << "Trailing characters at end of file: '";

@@ -68,7 +68,7 @@ Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> cluster
 	rank_genes(goi, rankings);
 
 	// finish calculation of rankings
-	final_rankings = Rankings(rankings.size(), nan("undefined"));
+	final_rankings = Rankings(rankings.size(), nan("undefined")); // TODO we might be able to drop the nan init and just have garble in it (everything gets assigned a new value I think)
 	finalise_ranking(rankings);
 
 	// calculate ausr

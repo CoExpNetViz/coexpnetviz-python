@@ -1,4 +1,4 @@
-# MORPH v1.0.5
+# MORPH v1.0.6
 
 TODO short description
 
@@ -7,6 +7,16 @@ TODO longer description
 Supported platforms: Linux
 
 # Compilation
+
+## For use at psb servers
+
+Run:
+
+  cd build/release
+  source compile_vampire.sh
+
+
+## For use elsewhere
 
 Dependencies:
 
