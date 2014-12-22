@@ -93,8 +93,8 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache, bool output_
 				auto& goi = gois_indices.at(i);
 				cout << get_name() << ", " << gois.at(i).get_name() << ", " << gene_expression->get_name() << ", " << clustering->get_name();
 				cout.flush();
-				if (goi.empty()) {
-					cout << ": Skipping: None of the genes of interest are in the dataset" << endl;
+				if (goi.size() < 5) {
+					cout << ": Skipping: Too few genes of interest found in the dataset: " << goi.size() << " < 5\n";
 					continue;
 				}
 				else {
@@ -102,7 +102,7 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache, bool output_
 					string name = (make_string() << get_name() << "__" << gois.at(i).get_name() << ".txt").str();
 					replace(begin(name), end(name), ' ', '_');
 					auto ranking = make_unique<Ranking>(goi, clustering, name);
-					cout << ": AUSR=" << setprecision(2) << fixed << ranking->get_ausr() << endl;
+					cout << ": AUSR=" << setprecision(2) << fixed << ranking->get_ausr() << "\n";
 
 					auto result_it = results.find(i);
 					if (result_it == results.end()) {
