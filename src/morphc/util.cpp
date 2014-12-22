@@ -20,6 +20,7 @@
 #include "util.h"
 #include <algorithm>
 #include <boost/iostreams/device/mapped_file.hpp>
+#include <boost/archive/archive_exception.hpp>
 #include <cctype>
 
 using namespace std;
@@ -123,6 +124,12 @@ std::string exception_what(const exception& e) {
 	auto ios_clear_ex = dynamic_cast<const std::ios::failure*>(&e);
 	if (ios_clear_ex) {
 		return (make_string() << ios_clear_ex->what() << ": " << strerror(errno)).str();
+	}
+
+
+	auto archive_ex = dynamic_cast<const boost::archive::archive_exception*>(&e);
+	if (archive_ex) {
+		return (make_string() << archive_ex->what() << ": " << strerror(errno)).str();
 	}
 
 	return e.what();

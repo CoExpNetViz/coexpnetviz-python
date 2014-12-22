@@ -28,6 +28,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/unordered_map.hpp>
+#include "util.h"
 
 namespace MORPHC {
 
@@ -59,7 +60,12 @@ public:
 		using namespace boost::iostreams;
 		stream_buffer<file_sink> out(path, ios::binary);
 		boost::archive::binary_oarchive ar(out);
-		ar << object;
+		try {
+			ar << object;
+		}
+		catch (const exception& e) {
+			throw runtime_error("Error while writing to " + path + ": " + exception_what(e));
+		}
 	}
 
 	template <class T>
