@@ -3,6 +3,11 @@
 # Specifies sets of genes of interest to pass to morph
 data_path: /mnt/midas/www/group/biocomp/extra/morph  # if provided, all paths are prefixed with this path
 jobs:
+    - species_name: Rice
+      data_path: rice
+      genes_of_interest:
+          - name: 'major_CHO_metabolism.degradation.sucrose.Susy'
+            path: 'gois/major_CHO_metabolism.degradation.sucrose.Susy'
     - species_name: Arabidopsis  # references a species' name in morph's config
       data_path: ARABIDOBSIS
       genes_of_interest:

@@ -15,6 +15,7 @@ StringMapping::StringMapping(string path)
 
 		auto on_line = [this](const std::vector<std::string>& line) {
 			auto gene_name = line.at(0);
+			to_lower(gene_name);
 			auto description = line.at(1);
 			if (!mapping.emplace(gene_name, description).second) {
 				cout << "Warning: Found multiple mappings for: " << gene_name << "\n";

@@ -9,6 +9,7 @@
 namespace MORPHC {
 
 // TODO binary serialize
+// TODO lower(gene) -> string* is what this really is
 /**
  * Mapping of string to string
  */

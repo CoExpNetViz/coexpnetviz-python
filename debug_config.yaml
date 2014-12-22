@@ -188,7 +188,7 @@ species:
     - name: Rice
       data_path: rice
       example_goi: ['Os01g0323600', 'Os01g0719100', 'LOC_Os01g01030']
-      gene_descriptions: gene_descriptions  # tab separated file mapping gene to gene-description
+      gene_descriptions: annotations  # tab separated file mapping gene to gene-description
       gene_web_page: 'http://rapdb.dna.affrc.go.jp/viewer/gbrowse_details/irgsp1?name=$name;feature_id=2503361'
       gene_mapping: msu_to_rap.mapping
       gene_pattern: 'Os[0-9]{2}g[0-9]{7}|LOC_Os[0-9]{2}g[0-9]{5}([.][0-9]+)?|.*[.]fgenesh[.]mrna[.][0-9]+'

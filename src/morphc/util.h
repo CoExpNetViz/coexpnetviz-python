@@ -103,7 +103,7 @@ void ensure(bool condition, std::string error_message, ErrorType);
  */
 std::string exception_what(const std::exception& e);
 
-void to_lower(std::string data);
+void to_lower(std::string& data);
 
 }
 

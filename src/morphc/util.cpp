@@ -135,7 +135,7 @@ std::string exception_what(const exception& e) {
 	return e.what();
 }
 
-void to_lower(std::string data) {
+void to_lower(std::string& data) {
 	std::transform(data.begin(), data.end(), data.begin(), ::tolower);
 }
 
