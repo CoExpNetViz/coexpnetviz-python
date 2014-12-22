@@ -94,7 +94,7 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache, bool output_
 				cout << get_name() << ", " << gois.at(i).get_name() << ", " << gene_expression->get_name() << ", " << clustering->get_name();
 				cout.flush();
 				if (goi.size() < 5) {
-					cout << ": Skipping: Too few genes of interest found in the dataset: " << goi.size() << " < 5\n";
+					cout << ": Skipping: Too few genes of interest found in dataset: " << goi.size() << " < 5\n";
 					continue;
 				}
 				else {
