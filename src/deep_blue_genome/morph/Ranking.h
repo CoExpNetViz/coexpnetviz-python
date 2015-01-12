@@ -2,10 +2,11 @@
 
 #pragma once
 
-#include "ublas.h"
-#include "Clustering.h"
-#include "GeneDescriptions.h"
 #include <boost/noncopyable.hpp>
+#include <deep_blue_genome/common/ublas.h>
+#include <deep_blue_genome/common/Clustering.h>
+#include <deep_blue_genome/common/GeneDescriptions.h>
+#include <deep_blue_genome/morph/GenesOfInterest.h>
 
 namespace MORPHC{
 

@@ -6,7 +6,7 @@
 #include <vector>
 #include <yaml-cpp/yaml.h>
 #include <boost/regex.hpp>
-#include <morphc/GeneMapping.h>
+#include <deep_blue_genome/common/GeneMapping.h>
 
 namespace MORPHC {
 

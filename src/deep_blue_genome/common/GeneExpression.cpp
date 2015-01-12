@@ -7,8 +7,8 @@
 #include <gsl/gsl_statistics.h>
 #include <cmath>
 #include <iomanip>
-#include "util.h"
-#include <morphc/TabGrammarRules.h>
+#include <deep_blue_genome/common/util.h>
+#include <deep_blue_genome/common/TabGrammarRules.h>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;

@@ -1,8 +1,8 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
 #include "GeneMapping.h"
-#include <morphc/util.h>
-#include <morphc/TabGrammarRules.h>
+#include <deep_blue_genome/common/util.h>
+#include <deep_blue_genome/common/TabGrammarRules.h>
 
 using namespace std;
 

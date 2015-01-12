@@ -7,9 +7,8 @@
 #include <utility>
 #include <unordered_set>
 #include <boost/noncopyable.hpp>
-#include <morphc/Cache.h>
-#include "GenesOfInterest.h"
-#include "ublas.h"
+#include <deep_blue_genome/common/Cache.h>
+#include <deep_blue_genome/common/ublas.h>
 
 namespace MORPHC {
 

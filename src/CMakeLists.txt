@@ -22,12 +22,21 @@ include_directories(BEFORE ${CMAKE_SOURCE_DIR})
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
 set(CMAKE_CXX_FLAGS "-Wall -Wno-sign-compare -std=c++11 ${SDL_CFLAGS}")
 
-file(GLOB_RECURSE Sources morphc/*.cpp)
-add_executable(morph ${Sources})
+# common.so 
+file(GLOB_RECURSE common_sources deep_blue_genome/common/*.cpp)
+add_library(common SHARED ${common_sources})
 
-target_link_libraries(morph
+target_link_libraries(common
 	${GSL_LIBRARIES}
 	${Boost_LIBRARIES}
 	${YAMLCPP_LIBRARY}
     ${LIBS})
+    
+   
+# morph
+file(GLOB_RECURSE morph_sources deep_blue_genome/morph/*.cpp)
+add_executable(morph ${morph_sources})
+
+target_link_libraries(morph
+	common)
 

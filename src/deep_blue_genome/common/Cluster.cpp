@@ -1,7 +1,7 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
 #include "Cluster.h"
-#include <morphc/util.h>
+#include <deep_blue_genome/common/util.h>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;

@@ -1,11 +1,11 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
 #include "Clustering.h"
-#include "util.h"
+#include <deep_blue_genome/common/util.h>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/function_output_iterator.hpp>
 #include <utility>
-#include <morphc/TabGrammarRules.h>
+#include <deep_blue_genome/common/TabGrammarRules.h>
 
 using namespace std;
 

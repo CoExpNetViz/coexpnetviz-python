@@ -1,13 +1,13 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
 #include "Ranking.h"
-#include "util.h"
 #include "gsl/gsl_statistics_double.h"
 #include <fstream>
 #include <iomanip>
 #include <cmath>
 #include <boost/algorithm/string.hpp>
 #include <errno.h>
+#include <deep_blue_genome/common/util.h>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;

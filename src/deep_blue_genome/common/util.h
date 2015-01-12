@@ -23,7 +23,7 @@
 #include <map>
 #include <functional>
 #include <boost/spirit/include/qi.hpp>
-#include "ErrorType.h"
+#include <deep_blue_genome/common/ErrorType.h>
 
 namespace MORPHC {
 

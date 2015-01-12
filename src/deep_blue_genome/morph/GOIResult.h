@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <morphc/Ranking.h>
+#include <deep_blue_genome/morph/Ranking.h>
 
 namespace MORPHC {
 

@@ -28,7 +28,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/unordered_map.hpp>
-#include "util.h"
+#include <deep_blue_genome/common/util.h>
 
 namespace MORPHC {
 

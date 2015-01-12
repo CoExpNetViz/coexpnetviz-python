@@ -4,9 +4,8 @@
 #include <iostream>
 #include <iomanip>
 #include <boost/filesystem.hpp>
-#include "ublas.h"
-#include "util.h"
-#include "ErrorType.h"
+#include <deep_blue_genome/common/ublas.h>
+#include <deep_blue_genome/common/util.h>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;

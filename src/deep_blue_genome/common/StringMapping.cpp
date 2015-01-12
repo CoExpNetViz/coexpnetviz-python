@@ -2,7 +2,7 @@
 
 #include "StringMapping.h"
 #include "util.h"
-#include <morphc/TabGrammarRules.h>
+#include <deep_blue_genome/common/TabGrammarRules.h>
 
 using namespace std;
 

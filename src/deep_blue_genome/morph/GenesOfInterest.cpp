@@ -1,8 +1,8 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
 #include "GenesOfInterest.h"
-#include <morphc/util.h>
 #include <boost/spirit/include/qi.hpp>
+#include <deep_blue_genome/common/util.h>
 
 using namespace std;
 

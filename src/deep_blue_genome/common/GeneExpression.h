@@ -4,10 +4,10 @@
 
 #include <string>
 #include <map>
-#include <morphc/Cache.h>
 #include <boost/noncopyable.hpp>
 #include <yaml-cpp/yaml.h>
-#include "ublas.h"
+#include <deep_blue_genome/common/ublas.h>
+#include <deep_blue_genome/common/Cache.h>
 
 namespace MORPHC {
 

@@ -5,9 +5,9 @@
 #include <unordered_map>
 #include <boost/noncopyable.hpp>
 #include <yaml-cpp/yaml.h>
-#include <morphc/Cache.h>
-#include "GeneExpression.h"
-#include "Cluster.h"
+#include <deep_blue_genome/common/Cache.h>
+#include <deep_blue_genome/common/GeneExpression.h>
+#include <deep_blue_genome/common/Cluster.h>
 
 namespace MORPHC {
 

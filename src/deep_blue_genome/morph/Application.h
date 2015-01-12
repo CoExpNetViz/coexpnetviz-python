@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <yaml-cpp/yaml.h>
-#include "Cache.h"
+#include <deep_blue_genome/common/Cache.h>
 #include "Species.h"
 
 namespace MORPHC {

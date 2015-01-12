@@ -3,11 +3,14 @@
 #pragma once
 
 #include <string>
-#include <morphc/StringMapping.h>
 #include <boost/noncopyable.hpp>
+#include <deep_blue_genome/common/StringMapping.h>
 
 namespace MORPHC {
 
+/**
+ * Functional annotations
+ */
 class GeneDescriptions : public boost::noncopyable {
 public:
 	GeneDescriptions(std::string path);

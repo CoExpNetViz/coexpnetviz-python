@@ -2,13 +2,13 @@
 
 #include "Species.h"
 #include <boost/regex.hpp>
-#include <morphc/GeneExpression.h>
-#include <morphc/Clustering.h>
-#include <morphc/GeneMapping.h>
-#include <morphc/util.h>
-#include <morphc/GOIResult.h>
-#include "GenesOfInterest.h"
 #include <iomanip>
+#include <deep_blue_genome/common/GeneExpression.h>
+#include <deep_blue_genome/common/Clustering.h>
+#include <deep_blue_genome/common/GeneMapping.h>
+#include <deep_blue_genome/common/util.h>
+#include <deep_blue_genome/morph/GOIResult.h>
+#include <deep_blue_genome/morph/GenesOfInterest.h>
 
 using namespace std;
 

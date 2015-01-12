@@ -1,8 +1,8 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
 #include <iostream>
+#include <deep_blue_genome/common/util.h>
 #include "Application.h"
-#include "util.h"
 
 // TODO fiddling with matrix orientation, would it help performance?
 // TODO perhaps not all asserts should be disabled at runtime (e.g. input checks may want to remain)
