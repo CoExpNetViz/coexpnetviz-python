@@ -91,10 +91,6 @@ string GeneExpression::get_name() const {
 	return name;
 }
 
-const std::vector<size_type>& GeneExpression::get_genes() const {
-	return genes;
-}
-
 void GeneExpression::dispose_expression_data() {
 	expression_matrix.resize(0, 0);
 }

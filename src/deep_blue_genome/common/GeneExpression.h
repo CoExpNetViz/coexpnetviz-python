@@ -36,11 +36,6 @@ public:
 
 	std::string get_name() const;
 
-	/**
-	 * Get all gene indices, sorted
-	 */
-	const std::vector<size_type>& get_genes() const;
-
 	void dispose_expression_data();
 
 	/**

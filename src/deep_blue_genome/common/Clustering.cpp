@@ -68,16 +68,23 @@ void Clustering::load_plain(std::string path) {
 		return begin;
 	});
 
+	////////////////////////////////////
 	// Group together unclustered genes
-	sort(genes.begin(), genes.end());
+	// Note: genes contains indices of all genes found in a cluster so far, any missing in range [0, expression_matrix.rows), will be added as unclusterd
 	clusters.emplace_back(" unclustered"); // the leading space is to avoid accidentally overwriting a cluster in the clustering file named 'unclustered'
 	auto& cluster = clusters.back();
-	auto& all_genes = gene_expression->get_genes(); // Note: must be ordered
-	auto add_to_cluster = boost::make_function_output_iterator([&cluster](const size_type& gene) {
-		cluster.add(gene);
-	});
-	assert(is_sorted(all_genes.begin(), all_genes.end()));
-	set_difference(all_genes.begin(), all_genes.end(), genes.begin(), genes.end(), add_to_cluster);
+
+	sort(genes.begin(), genes.end());
+	genes.emplace_back(gene_expression->get().size1());
+	size_type last_gene = 0;
+
+	for (auto gene : genes) {
+		for (size_type i=last_gene+1; i<gene; i++) {
+			cluster.add(i);
+		}
+		last_gene = gene;
+	}
+
 	if (cluster.empty()) {
 		clusters.pop_back();
 	}
