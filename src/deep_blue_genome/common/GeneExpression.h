@@ -13,6 +13,11 @@ namespace MORPHC {
 
 typedef matrix GeneCorrelations;
 
+/**
+ * Gene expression matrix
+ *
+ * Note: row indices are used as gene ids, and are available even without generating a correlations matrix
+ */
 class GeneExpression : public boost::noncopyable
 {
 public:
@@ -21,14 +26,19 @@ public:
 	 */
 	GeneExpression(std::string data_root, const YAML::Node, Cache&);
 
-	void generate_gene_correlations(const std::vector<size_type>& all_goi);
+	/**
+	 * Generate correlation matrix of all genes and the given genes.
+	 *
+	 * matrix(i,j) = pearson_r(genes[i], genes[j]), for i in this->gene_indices, j in given->gene_indices
+	 *
+	 * @param gene_indices row indices in this matrix of genes to use as column labels
+	 */
+	void generate_gene_correlations(const std::vector<size_type>& gene_indices);
 
 	/**
-	 * Get correlation matrix of genes (rows) and genes of interest (columns).
+	 * Get resulting correlation matrix of generate_gene_correlations
 	 *
-	 * Size of matrix: size(genes), size(genes)).
-	 * mat(i,j) = correlation between gene with index i and gene with index j.
-	 * mat(i,j) only has a valid value if j refers to a gene of interest.
+	 * Size of matrix: size(genes), size(indices passed to generate_gene_correlations)).
 	 */
 	const GeneCorrelations& get_gene_correlations() const; // TODO only fill the correlation columns corresponding to a gene of interest
 
@@ -36,11 +46,13 @@ public:
 	 * Get row index of gene in gene_correlations matrix
 	 */
 	size_type get_gene_index(std::string name) const;
-	std::string get_gene_name(size_type index) const;
+	std::string get_gene_name(size_type row_index) const;
 	bool has_gene(std::string name) const;
 
 	/**
 	 * Get column index of gene in gene_correlations matrix
+	 *
+	 * @param gene_row_index Row index of gene in gene_correlations. Must correspond to a gene passed to generate_gene_correlations
 	 */
 	size_type get_gene_column_index(size_type gene_row_index) const;
 
