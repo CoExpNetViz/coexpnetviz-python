@@ -16,8 +16,6 @@ public:
 	Application(int argc, char** argv);
 	void run();
 
-	std::string get_cache();
-
 private:
 	void load_config();
 	void load_jobs();

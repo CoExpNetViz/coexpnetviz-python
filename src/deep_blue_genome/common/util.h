@@ -88,6 +88,11 @@ std::string exception_what(const std::exception& e);
 
 void to_lower(std::string& data);
 
+/**
+ * Call graceful_main, exit gracefully after it returns/throws with pretty error output
+ */
+void graceful_main(std::function<void()> fragile_main);
+
 }
 
 template<typename T, typename... Args>
@@ -95,4 +100,6 @@ std::unique_ptr<T> make_unique(Args&&... args)
 {
     return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
+
+
 

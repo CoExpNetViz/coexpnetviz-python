@@ -139,4 +139,20 @@ void to_lower(std::string& data) {
 	std::transform(data.begin(), data.end(), data.begin(), ::tolower);
 }
 
+void graceful_main(std::function<void()> fragile_main) {
+	try {
+		fragile_main();
+	}
+	catch (const TypedException& e) {
+		cerr << "Exception: " << e.what() << endl;
+		exit(e.get_exit_code());
+	}
+	catch (const exception& e) {
+		cerr << "Exception: " << exception_what(e) << endl;
+		exit(static_cast<int>(ErrorType::GENERIC));
+	}
+
+	exit(EXIT_SUCCESS);
+}
+
 }
