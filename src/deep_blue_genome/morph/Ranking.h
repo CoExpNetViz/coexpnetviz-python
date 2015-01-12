@@ -5,6 +5,7 @@
 #include <boost/noncopyable.hpp>
 #include <deep_blue_genome/common/ublas.h>
 #include <deep_blue_genome/common/Clustering.h>
+#include <deep_blue_genome/common/GeneCorrelationMatrix.h>
 #include <deep_blue_genome/common/GeneDescriptions.h>
 #include <deep_blue_genome/morph/GenesOfInterest.h>
 
@@ -15,7 +16,7 @@ namespace MORPHC{
  */
 class Ranking_ClusterInfo : public boost::noncopyable { // TODO this could be tidier
 public:
-	Ranking_ClusterInfo(const GeneExpression& gene_expression, const std::vector<size_type>& genes_of_interest, const Cluster& cluster);
+	Ranking_ClusterInfo(const GeneCorrelationMatrix& gene_expression, const std::vector<size_type>& genes_of_interest, const Cluster& cluster);
 
 	size_type get_goi_count() {
 		return goi.size();
@@ -39,7 +40,7 @@ class Ranking : public boost::noncopyable // TODO this is not a single ranking, 
 {
 public:
 
-	Ranking(std::vector<size_type> genes_of_interest, std::shared_ptr<Clustering>, std::string name);
+	Ranking(std::vector<size_type> genes_of_interest, std::shared_ptr<Clustering>, const GeneCorrelationMatrix&, std::string name);
 
 	/**
 	 * Save top k results in given directory
@@ -54,7 +55,7 @@ public:
 private:
 	typedef boost::numeric::ublas::vector<double> Rankings;
 
-	const GeneCorrelations& get_gene_correlations();
+	const matrix& get_gene_correlations();
 	const GeneExpression& get_gene_expression();
 	void rank_genes(const std::vector<size_type>& genes_of_interest, Rankings& rankings);
 	void rank_self(const Rankings& rankings);
@@ -73,6 +74,7 @@ private:
 private:
 	std::vector<size_type> genes_of_interest; // genes_of_interest
 	std::shared_ptr<Clustering> clustering;
+	const GeneCorrelationMatrix& gene_correlations; // Note: only valid during construction
 	Rankings final_rankings; // finalised rankings, after ctor has finished
 	double ausr;
 	std::string name;

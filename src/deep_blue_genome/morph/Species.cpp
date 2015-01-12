@@ -70,6 +70,7 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache, bool output_
 		}
 
 		// generate correlations
+		unique_ptr<GeneCorrelationMatrix> gene_correlations;
 		{
 			// distinct union all left over genes of interest
 			std::vector<size_type> all_genes_of_interest;
@@ -81,7 +82,7 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache, bool output_
 			all_genes_of_interest.erase(duplicate_begin, all_genes_of_interest.end());
 
 			// generate the correlations we need
-			gene_expression->generate_gene_correlations(all_genes_of_interest);
+			gene_correlations = make_unique<GeneCorrelationMatrix>(*gene_expression, all_genes_of_interest);
 			gene_expression->dispose_expression_data();
 		}
 
@@ -101,7 +102,7 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache, bool output_
 					// Rank genes
 					string name = (make_string() << get_name() << "__" << gois.at(i).get_name() << ".txt").str();
 					replace(begin(name), end(name), ' ', '_');
-					auto ranking = make_unique<Ranking>(goi, clustering, name);
+					auto ranking = make_unique<Ranking>(goi, clustering, *gene_correlations, name);
 					cout << ": AUSR=" << setprecision(2) << fixed << ranking->get_ausr() << "\n";
 
 					auto result_it = results.find(i);
@@ -118,8 +119,6 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache, bool output_
 				goi_index++;
 			}
 		}
-
-		gene_expression->dispose_correlations();
 	}
 
 	GeneDescriptions gene_descriptions(prepend_path(data_root, species["gene_descriptions"].as<string>()));

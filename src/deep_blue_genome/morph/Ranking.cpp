@@ -37,7 +37,7 @@ public:
 
 size_type K = 1000;
 
-Ranking_ClusterInfo::Ranking_ClusterInfo(const GeneExpression& gene_expression, const std::vector<size_type>& genes_of_interest, const Cluster& c)
+Ranking_ClusterInfo::Ranking_ClusterInfo(const GeneCorrelationMatrix& gene_correlations, const std::vector<size_type>& genes_of_interest, const Cluster& c)
 {
 	auto& cluster = const_cast<Cluster&>(c);
 	auto is_goi = [&genes_of_interest](size_type gene) {
@@ -54,15 +54,15 @@ Ranking_ClusterInfo::Ranking_ClusterInfo(const GeneExpression& gene_expression, 
 
 	goi_columns_ = MORPHC::array(goi.size());
 	for (size_type i=0; i<goi.size(); i++) {
-		goi_columns_[i] = gene_expression.get_gene_column_index(goi_[i]);
+		goi_columns_[i] = gene_correlations.get_column_index(goi_[i]);
 	}
 	goi_columns = MORPHC::indirect_array(goi_columns_.size(), goi_columns_);
 }
 
-Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> clustering, std::string name)
-:	genes_of_interest(goi), clustering(clustering), ausr(-1.0), name(name)
+Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> clustering, const GeneCorrelationMatrix& gene_correlations, std::string name)
+:	genes_of_interest(goi), clustering(clustering), gene_correlations(gene_correlations), ausr(-1.0), name(name)
 {
-	Rankings rankings(clustering->get_source().get_gene_correlations().size1(), nan("undefined"));
+	Rankings rankings(gene_correlations.get().size1(), nan("undefined"));
 
 	// fill rankings with intermediary values
 	rank_genes(goi, rankings);
@@ -77,7 +77,7 @@ Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> cluster
 
 void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, Rankings& rankings) {
 	for (auto& cluster : *clustering) {
-		auto& info = cluster_info.emplace(piecewise_construct, make_tuple(&cluster), make_tuple(std::ref(get_gene_expression()), std::ref(genes_of_interest), std::ref(cluster))).first->second;
+		auto& info = cluster_info.emplace(piecewise_construct, make_tuple(&cluster), make_tuple(std::ref(gene_correlations), std::ref(genes_of_interest), std::ref(cluster))).first->second;
 
 		// skip if no goi or candidates in this cluster
 		if (info.get_goi_count() == 0 || info.candidates.size() == 0)
@@ -105,7 +105,7 @@ void Ranking::finalise_sub_ranking(const Rankings& rankings, Rankings& final_ran
 	auto sub_rankings = project(rankings, sub_indices);
 	auto final_sub_rankings = project(final_rankings, sub_indices);
 	if (excluded_goi > 0) {
-		auto sub_matrix = project(column(get_gene_correlations(), get_gene_expression().get_gene_column_index(excluded_goi)), sub_indices);
+		auto sub_matrix = project(column(get_gene_correlations(), gene_correlations.get_column_index(excluded_goi)), sub_indices);
 		noalias(final_sub_rankings) = (sub_rankings - sub_matrix) / (info.get_goi_count() - 1);
 	}
 	else {
@@ -271,8 +271,8 @@ double Ranking::get_ausr() const {
 	return ausr;
 }
 
-const GeneCorrelations& Ranking::get_gene_correlations() {
-	return get_gene_expression().get_gene_correlations();
+const matrix& Ranking::get_gene_correlations() {
+	return gene_correlations.get();
 }
 
 const GeneExpression& Ranking::get_gene_expression() {

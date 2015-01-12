@@ -73,44 +73,6 @@ void GeneExpression::load_plain(std::string path) {
 			ErrorType::GENERIC);
 }
 
-void GeneExpression::generate_gene_correlations(const std::vector<size_type>& all_goi) {
-	using namespace ublas;
-
-	gene_column_indices.clear();
-	MORPHC::indirect_array goi_indices(const_cast<size_type*>(&*all_goi.begin()), const_cast<size_type*>(&*all_goi.end()));
-
-	for (size_type i=0; i<all_goi.size(); i++) {
-		gene_column_indices[all_goi.at(i)] = i;
-	}
-	gene_correlations = GeneCorrelations(expression_matrix.size1(), all_goi.size());
-
-	// calculate Pearson's correlation
-	// This is gsl_stats_correlation's algorithm, but in matrix form.
-	size_type i;
-	ublas::vector<long double> mean(expression_matrix.size1());
-	ublas::vector<long double> delta(expression_matrix.size1());
-	ublas::vector<long double> sum_sq(expression_matrix.size1(), 0.0); // sum of squares
-	ublas::matrix<long double> sum_cross(expression_matrix.size1(), goi_indices.size(), 0.0);
-
-	mean = column(expression_matrix, 0);
-
-	for (i = 1; i < expression_matrix.size2(); ++i)
-	{
-		long double ratio = i / (i + 1.0);
-		noalias(delta) = column(expression_matrix, i) - mean;
-		sum_sq += element_prod(delta, delta) * ratio;
-		sum_cross += outer_prod(delta, project(delta, goi_indices)) * ratio;
-		mean += delta / (i + 1.0);
-	}
-
-	transform(sum_sq.begin(), sum_sq.end(), sum_sq.begin(), ::sqrt);
-	gene_correlations = element_div(sum_cross, outer_prod(sum_sq, project(sum_sq, goi_indices)));
-}
-
-const GeneCorrelations& GeneExpression::get_gene_correlations() const {
-	return gene_correlations;
-}
-
 size_type GeneExpression::get_gene_index(std::string name) const {
 	assert(has_gene(name));
 	return gene_indices.find(name)->second;
@@ -125,10 +87,6 @@ bool GeneExpression::has_gene(string gene) const {
 	return gene_indices.find(gene) != gene_indices.end();
 }
 
-size_type GeneExpression::get_gene_column_index(size_type gene_row_index) const {
-	return gene_column_indices.at(gene_row_index);
-}
-
 string GeneExpression::get_name() const {
 	return name;
 }
@@ -141,8 +99,8 @@ void GeneExpression::dispose_expression_data() {
 	expression_matrix.resize(0, 0);
 }
 
-void GeneExpression::dispose_correlations() {
-	gene_correlations.resize(0, 0);
+const matrix& GeneExpression::get() const {
+	return expression_matrix;
 }
 
 }
