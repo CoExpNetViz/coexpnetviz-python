@@ -4,7 +4,8 @@
 
 #include <deep_blue_genome/morph/Ranking.h>
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
+namespace MORPH {
 
 /**
  * Ranking for GOI
@@ -34,4 +35,4 @@ private:
 	double ausr_count; // number of AUSRs added
 };
 
-}
+}}

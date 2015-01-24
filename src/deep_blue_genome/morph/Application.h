@@ -4,11 +4,11 @@
 
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
-#include <deep_blue_genome/common/Cache.h>
 #include "Species.h"
+#include <deep_blue_genome/common/Database.h>
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
+namespace MORPH {
 
 class Application
 {
@@ -25,9 +25,9 @@ private:
 	std::string config_path;
 	std::string job_list_path;
 	std::string output_path;
-	std::unique_ptr<Cache> cache;
+	std::unique_ptr<Database> database;
 	int top_k;
 	bool output_yaml;
 };
 
-}
+}}

@@ -15,19 +15,12 @@
 
 using namespace std;
 
+// TODO lots of validation on input when read for first time (i.e. reading from plain text), then when loaded from binary no need for validation
 int main(int argc, char** argv) {
-	using namespace MORPHC;
-	try {
+	using namespace DEEP_BLUE_GENOME;
+	using namespace DEEP_BLUE_GENOME::MORPH;
+	graceful_main([argc, argv](){
 		Application app(argc, argv);
 		app.run();
-	}
-	catch (const TypedException& e) {
-		cerr << "Exception: " << e.what() << endl;
-		return e.get_exit_code();
-	}
-	catch (const exception& e) {
-		cerr << "Exception: " << exception_what(e) << endl;
-		return static_cast<int>(ErrorType::GENERIC);
-	}
-	return 0;
+	});
 }

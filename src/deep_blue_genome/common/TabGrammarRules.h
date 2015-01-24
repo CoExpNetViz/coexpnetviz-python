@@ -4,7 +4,7 @@
 
 #include <boost/spirit/include/qi.hpp>
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
 
 /**
  * Grammar rules for tab separated files

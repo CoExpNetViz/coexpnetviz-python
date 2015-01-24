@@ -6,35 +6,28 @@
 
 using namespace std;
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
+namespace MORPH {
 
-GenesOfInterest::GenesOfInterest(string data_root, const YAML::Node& node, const boost::regex& gene_pattern)
-:	name(node["name"].as<string>())
+GenesOfInterest::GenesOfInterest(string name, string path, const boost::regex& gene_pattern)
+:	name(name)
 {
 	// Load
-	auto genes_ = node["genes"];
-	if (genes_) {
-		for (auto gene : genes_) {
-			genes.emplace_back(gene.as<string>());
-		}
-	}
-	else {
-		read_file(prepend_path(data_root, node["path"].as<string>()), [this](const char* begin, const char* end) {
-			using namespace boost::spirit::qi;
-			typedef const char* Iterator;
+	read_file(path, [this](const char* begin, const char* end) {
+		using namespace boost::spirit::qi;
+		typedef const char* Iterator;
 
-			rule<Iterator> separator = space | lit(",");
-			rule<Iterator, std::string()> gene;
+		rule<Iterator> separator = space | lit(",");
+		rule<Iterator, std::string()> gene;
 
-			gene %= as_string[lexeme[+(char_-separator)]];
+		gene %= as_string[lexeme[+(char_-separator)]];
 
-			separator.name("gene separator");
-			gene.name("gene");
+		separator.name("gene separator");
+		gene.name("gene");
 
-			parse(begin, end, gene % separator, genes);
-			return begin;
-		});
-	}
+		parse(begin, end, gene % separator, genes);
+		return begin;
+	});
 
 	for (auto& gene : genes) {
 		to_lower(gene);
@@ -71,4 +64,4 @@ void GenesOfInterest::apply_mapping(const GeneMapping& mapping) {
 	genes.erase(unique_end, genes.end());
 }
 
-}
+}}

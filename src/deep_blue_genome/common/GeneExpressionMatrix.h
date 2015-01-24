@@ -3,14 +3,17 @@
 #pragma once
 
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <boost/noncopyable.hpp>
-#include <yaml-cpp/yaml.h>
+#include <memory>
 #include <deep_blue_genome/common/ublas.h>
-#include <deep_blue_genome/common/Cache.h>
+#include <deep_blue_genome/common/Species.h>
 
 // TODO size_type is unsigned long long or such, we don't need thaaat much. Should swap it for a typedef of our own and then set that to uint32_t. You probably won't need more than uint, but there's not much extra effort in using a typedef
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
+
+class GeneExpressionMatrixClustering;
+class Database;
 
 /**
  * Gene expression matrix
@@ -19,13 +22,20 @@ namespace MORPHC {
  *
  * Note: these row indices are often used as gene ids in deep blue genome apps
  */
-class GeneExpression : public boost::noncopyable // TODO rename to *Matrix
+class GeneExpressionMatrix : public boost::noncopyable, public std::enable_shared_from_this<GeneExpressionMatrix>
 {
 public:
 	/**
-	 * Load gene expression from file
+	 * Construct invalid expression matrix (for loading via serialization)
 	 */
-	GeneExpression(std::string data_root, const YAML::Node, Cache&);
+	GeneExpressionMatrix(std::string name, std::string species_name, Database&);
+
+	/**
+	 * Construct an expression matrix from a TODO particular plain text format
+	 *
+	 * @param species_name Name of species to which the gene expressions belong
+	 */
+	GeneExpressionMatrix(std::string name, std::string species_name, std::string path, Database&);
 
 	/**
 	 * Get index of row corresponding to given gene
@@ -35,25 +45,25 @@ public:
 	bool has_gene(std::string name) const;
 
 	std::string get_name() const;
+	std::string get_species_name() const;
 
 	void dispose_expression_data();
+
+	Iterable<Species::name_iterator> get_clusterings() const;
+	std::shared_ptr<GeneExpressionMatrixClustering> get_clustering(std::string clustering_name);
 
 	/**
 	 * Get inner matrix representation
 	 */
 	const matrix& get() const;
 
-
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version);
 
-	/**
-	 * Load gene expression from plain text file
-	 */
-	void load_plain(std::string path);
-
 private:
 	std::string name; // name of dataset
+	std::string species_name;
+	Database& database;
 
 	matrix expression_matrix; // row_major
 
@@ -68,7 +78,7 @@ private:
 // hpp
 
 template<class Archive>
-void GeneExpression::serialize(Archive& ar, const unsigned int version) {
+void GeneExpressionMatrix::serialize(Archive& ar, const unsigned int version) {
 	ar & expression_matrix;
 	ar & genes;
 	ar & gene_indices;

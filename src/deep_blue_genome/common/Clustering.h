@@ -2,19 +2,14 @@
 
 #pragma once
 
-#include <unordered_map>
 #include <boost/noncopyable.hpp>
-#include <yaml-cpp/yaml.h>
-#include <deep_blue_genome/common/Cache.h>
-#include <deep_blue_genome/common/GeneExpression.h>
+#include <deep_blue_genome/common/GeneExpressionMatrix.h>
 #include <deep_blue_genome/common/Cluster.h>
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
 
 /**
- * A clustering of gene expression data.
- *
- * Contains exactly all genes of its corresponding gene expression
+ * A clustering of genes
  */
 class Clustering : public boost::noncopyable
 {
@@ -23,7 +18,15 @@ public:
 	typedef Clusters::const_iterator const_iterator;
 
 public:
-	Clustering(std::shared_ptr<GeneExpression>, std::string data_root, const YAML::Node, Cache&);
+	/**
+	 * Construct invalid clustering (for loading via serialization)
+	 */
+	Clustering(std::string name);
+
+	/**
+	 * Construct a clustering from a TODO particular plain text format
+	 */
+	Clustering(std::string name, std::string path);
 
 	/**
 	 * Get iterator to first cluster
@@ -31,13 +34,9 @@ public:
 	const_iterator begin() const;
 	const_iterator end() const;
 
-	GeneExpression& get_source() const;
-
 	std::string get_name() const {
 		return name;
 	}
-
-	void load_plain(std::string path);
 
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version);
@@ -45,8 +44,7 @@ public:
 private:
 	std::string name;
 	Clusters clusters;  // mutually disjunct clusters
-	std::shared_ptr<GeneExpression> gene_expression; // gene expression data we clustered
-}; // TODO consider sorted vectors instead of sets
+};
 
 
 /////////////////////

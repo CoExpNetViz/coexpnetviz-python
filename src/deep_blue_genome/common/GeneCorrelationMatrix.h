@@ -4,10 +4,10 @@
 
 #include <map>
 #include <boost/noncopyable.hpp>
-#include <deep_blue_genome/common/GeneExpression.h>
+#include <deep_blue_genome/common/GeneExpressionMatrix.h>
 
 // TODO size_type is unsigned long long or such, we don't need thaaat much. Should swap it for a typedef of our own and then set that to uint32_t. You probably won't need more than uint, but there's not much extra effort in using a typedef
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
 
 typedef matrix GeneCorrelations;
 
@@ -27,7 +27,7 @@ public:
 	 * @param gene_indices expression_matrix's gene indices to compare all genes with.
 	 * 		Must be a subset of expression_matrix's gene indices.
 	 */
-	GeneCorrelationMatrix(const GeneExpression& expression_matrix, const std::vector<size_type>& gene_indices);
+	GeneCorrelationMatrix(const GeneExpressionMatrix& expression_matrix, const std::vector<size_type>& gene_indices);
 
 	/**
 	 * Get inner matrix
@@ -38,6 +38,9 @@ public:
 	 * Get column index of corresponding to given row_index (if any, segfaults otherwise)
 	 */
 	size_type get_column_index(size_type row_index) const;
+
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version);
 
 private:
 	matrix gene_correlations;

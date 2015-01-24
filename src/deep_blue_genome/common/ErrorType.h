@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <map>
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
 
 // Note: when changing enum, be sure to update list in usage printing of Application.cpp
 enum class ErrorType : int {

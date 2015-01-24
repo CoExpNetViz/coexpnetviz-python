@@ -1,6 +1,6 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
-#include "GeneExpression.h"
+#include "GeneExpressionMatrix.h"
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <boost/spirit/include/qi.hpp>
@@ -9,21 +9,21 @@
 #include <iomanip>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/TabGrammarRules.h>
+#include <deep_blue_genome/common/Database.h>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
 
-GeneExpression::GeneExpression(string data_root, const YAML::Node node, Cache& cache)
+GeneExpressionMatrix::GeneExpressionMatrix(string name, std::string species_name, Database& database)
+:	name(name), species_name(species_name), database(database)
 {
-	name = node["name"].as<string>();
-
-	// load expression_matrix
-	cache.load_bin_or_plain(prepend_path(data_root, node["path"].as<string>()), *this);
 }
 
-void GeneExpression::load_plain(std::string path) {
+GeneExpressionMatrix::GeneExpressionMatrix(string name, std::string species_name, std::string path, Database& database)
+:	GeneExpressionMatrix(name, species_name, database)
+{
 	int j;
 	read_file(path, [this, &j](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
@@ -73,30 +73,42 @@ void GeneExpression::load_plain(std::string path) {
 			ErrorType::GENERIC);
 }
 
-size_type GeneExpression::get_gene_index(std::string name) const {
+size_type GeneExpressionMatrix::get_gene_index(std::string name) const {
 	assert(has_gene(name));
 	return gene_indices.find(name)->second;
 }
 
-std::string GeneExpression::get_gene_name(size_type index) const {
+std::string GeneExpressionMatrix::get_gene_name(size_type index) const {
 	assert(gene_names.find(index) != gene_names.end());
 	return gene_names.find(index)->second;
 }
 
-bool GeneExpression::has_gene(string gene) const {
+bool GeneExpressionMatrix::has_gene(string gene) const {
 	return gene_indices.find(gene) != gene_indices.end();
 }
 
-string GeneExpression::get_name() const {
+string GeneExpressionMatrix::get_name() const {
 	return name;
 }
 
-void GeneExpression::dispose_expression_data() {
+void GeneExpressionMatrix::dispose_expression_data() {
 	expression_matrix.resize(0, 0);
 }
 
-const matrix& GeneExpression::get() const {
+const matrix& GeneExpressionMatrix::get() const {
 	return expression_matrix;
 }
 
+Iterable<Species::name_iterator> GeneExpressionMatrix::get_clusterings() const {
+	return database.get_species(species_name)->get_clusterings(name);
 }
+
+std::string GeneExpressionMatrix::get_species_name() const {
+	return species_name;
+}
+
+std::shared_ptr<GeneExpressionMatrixClustering> GeneExpressionMatrix::get_clustering(std::string clustering_name) {
+	return database.get_gene_expression_matrix_clustering(shared_from_this(), name);
+}
+
+} // end namespace

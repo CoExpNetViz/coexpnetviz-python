@@ -10,15 +10,15 @@
 namespace DEEP_BLUE_GENOME {
 
 /**
- * A cluster of a Clustering
+ * A cluster of a GeneExpressionMatrixClustering
  */
-class Cluster //TODO: public boost::noncopyable
+class GeneExpressionMatrixCluster //TODO: public boost::noncopyable
 {
 public:
-	Cluster() {}  // boost::serialization uses this to construct an invalid Cluster before loading it
-	Cluster(std::string name);
+	GeneExpressionMatrixCluster() {}  // boost::serialization uses this to construct an invalid Cluster before loading it
+	GeneExpressionMatrixCluster(std::string name);
 
-	void add(std::string gene);
+	void add(size_type index);
 
 	/**
 	 * Get whether cluster is empty
@@ -28,10 +28,10 @@ public:
 	/**
 	 * Get iterator to first gene
 	 */
-	std::vector<std::string>::const_iterator begin() const;
-	std::vector<std::string>::const_iterator end() const;
-	std::vector<std::string>::iterator begin();
-	std::vector<std::string>::iterator end();
+	std::vector<size_type>::const_iterator begin() const;
+	std::vector<size_type>::const_iterator end() const;
+	std::vector<size_type>::iterator begin();
+	std::vector<size_type>::iterator end();
 
 	std::string get_name() const;
 
@@ -39,7 +39,7 @@ public:
 	void serialize(Archive& ar, const unsigned int version);
 
 private:
-	std::vector<std::string> genes;
+	std::vector<size_type> genes;
 	std::string name;
 
 private:
@@ -51,7 +51,7 @@ private:
 // hpp
 
 template<class Archive>
-void Cluster::serialize(Archive& ar, const unsigned int version) {
+void GeneExpressionMatrixCluster::serialize(Archive& ar, const unsigned int version) {
 	ar & name;
 	ar & genes;
 }

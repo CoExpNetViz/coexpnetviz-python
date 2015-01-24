@@ -1,19 +1,18 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
 #include "Cluster.h"
-#include <deep_blue_genome/common/util.h>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
 
 Cluster::Cluster(string name)
 :	name(name)
 {
 }
 
-void Cluster::add(size_type gene_index) {
+void Cluster::add(string gene_index) {
 	genes.emplace_back(gene_index);
 }
 
@@ -21,19 +20,19 @@ bool Cluster::empty() const {
 	return genes.empty();
 }
 
-std::vector<size_type>::const_iterator Cluster::begin() const {
+std::vector<string>::const_iterator Cluster::begin() const {
 	return genes.begin();
 }
 
-std::vector<size_type>::const_iterator Cluster::end() const {
+std::vector<string>::const_iterator Cluster::end() const {
 	return genes.end();
 }
 
-std::vector<size_type>::iterator Cluster::begin() {
+std::vector<string>::iterator Cluster::begin() {
 	return genes.begin();
 }
 
-std::vector<size_type>::iterator Cluster::end() {
+std::vector<string>::iterator Cluster::end() {
 	return genes.end();
 }
 

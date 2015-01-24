@@ -4,32 +4,35 @@
 
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include <memory>
+#include <deep_blue_genome/common/Species.h>
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
 
-class Cache;
+class Database;
+
+namespace MORPH {
 
 /**
  * A species
  */
 class Species {
 public:
-	Species(std::string data_root, const YAML::Node species);
+	Species(std::string name, Database&);
 
-	void add_job(std::string data_root, const YAML::Node& job);
+	void add_goi(std::string name, std::string path);
 
 	/**
 	 * Find best ranking for each goi, save best rankings in output_path, save at most top_k genes of each ranking
 	 */
-	void run_jobs(std::string output_path, int top_k, Cache&, bool output_yaml);
+	void run_jobs(std::string output_path, int top_k, bool output_yaml);
 
 	std::string get_name() const;
 
 private:
-	const YAML::Node species;
-	std::string data_root;
-	std::vector<std::pair<std::string, const YAML::Node>> gois;
+	std::shared_ptr<DEEP_BLUE_GENOME::Species> species;
+	Database& database;
+	std::vector<std::pair<std::string, std::string>> gois;
 };
 
-}
+}}

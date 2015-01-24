@@ -11,13 +11,13 @@
 #include <boost/numeric/ublas/storage.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
 
 typedef boost::numeric::ublas::matrix<double> matrix;
 typedef boost::numeric::ublas::matrix_indirect<matrix> matrix_indirect;
 typedef matrix::size_type size_type;
 //typedef boost::numeric::ublas::matrix<double>::array_type array_type;
 typedef boost::numeric::ublas::indirect_array<> indirect_array;
-typedef MORPHC::indirect_array::array_type array;
+typedef DEEP_BLUE_GENOME::indirect_array::array_type array;
 
 }

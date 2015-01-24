@@ -1,47 +1,44 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
 #include "Species.h"
-#include <boost/regex.hpp>
 #include <iomanip>
-#include <deep_blue_genome/common/GeneExpression.h>
-#include <deep_blue_genome/common/Clustering.h>
+#include <deep_blue_genome/common/GeneExpressionMatrix.h>
+#include <deep_blue_genome/common/GeneCorrelationMatrix.h>
+#include <deep_blue_genome/common/GeneExpressionMatrixClustering.h>
 #include <deep_blue_genome/common/GeneMapping.h>
 #include <deep_blue_genome/common/util.h>
+#include <deep_blue_genome/common/Database.h>
 #include <deep_blue_genome/morph/GOIResult.h>
 #include <deep_blue_genome/morph/GenesOfInterest.h>
 
 using namespace std;
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
+namespace MORPH {
 
-Species::Species(string parent_data_root, const YAML::Node node)
-:	species(node)
+Species::Species(std::string name, Database& database)
+:	species(database.get_species(name)), database(database)
 {
-	get_name();
-	data_root = prepend_path(parent_data_root, node["data_path"].as<string>("."));
 }
 
-void Species::add_job(std::string data_root, const YAML::Node& node) { // TODO load later instead of right away
-	gois.emplace_back(data_root, node);
+void Species::add_goi(std::string name, std::string path) {
+	gois.emplace_back(name, path);
 }
 
-void Species::run_jobs(string output_path, int top_k, Cache& cache, bool output_yaml) {
+void Species::run_jobs(string output_path, int top_k, bool output_yaml) {
 	if (gois.empty())
 		return;
 
 	// Load gene mapping
-	unique_ptr<GeneMapping> gene_mapping;
-	if (species["gene_mapping"]) {
-		gene_mapping = make_unique<GeneMapping>(prepend_path(data_root, species["gene_mapping"].as<string>()));
+	shared_ptr<GeneMapping> gene_mapping;
+	if (species->has_gene_mapping()) {
+		gene_mapping = species->get_gene_mapping();
 	}
-
-	// Regex for gene name validation
-	boost::regex gene_pattern(species["gene_pattern"].as<string>(), boost::regex::perl|boost::regex::icase);
 
 	// Load gois
 	std::vector<GenesOfInterest> gois;
 	for (auto& p : this->gois) {
-		gois.emplace_back(p.first, p.second, gene_pattern);
+		gois.emplace_back(p.first, p.second, species->get_gene_pattern_re());
 		auto& goi = gois.back();
 		if (gene_mapping.get()) {
 			goi.apply_mapping(*gene_mapping);
@@ -55,8 +52,8 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache, bool output_
 
 	// For each GeneExpression, ge.Cluster, GOI calculate the ranking and keep the best one per GOI
 	map<int, GOIResult> results; // goi index -> result for goi
-	for (auto gene_expression_description : species["expression_matrices"]) {
-		auto gene_expression = make_shared<GeneExpression>(data_root, gene_expression_description, cache);
+	for (auto gem_name : species->get_gene_expression_matrices()) {
+		auto gene_expression = species->get_gene_expression_matrix(gem_name);
 
 		// translate gene names to indices; and drop genes missing from the gene expression data
 		std::vector<std::vector<size_type>> gois_indices; // gois, but specified by gene indices, not names
@@ -70,7 +67,7 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache, bool output_
 		}
 
 		// generate correlations
-		unique_ptr<GeneCorrelationMatrix> gene_correlations;
+		unique_ptr<DEEP_BLUE_GENOME::GeneCorrelationMatrix> gene_correlations;
 		{
 			// distinct union all left over genes of interest
 			std::vector<size_type> all_genes_of_interest;
@@ -82,13 +79,13 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache, bool output_
 			all_genes_of_interest.erase(duplicate_begin, all_genes_of_interest.end());
 
 			// generate the correlations we need
-			gene_correlations = make_unique<GeneCorrelationMatrix>(*gene_expression, all_genes_of_interest);
+			gene_correlations = make_unique<DEEP_BLUE_GENOME::GeneCorrelationMatrix>(*gene_expression, all_genes_of_interest);
 			gene_expression->dispose_expression_data();
 		}
 
 		// clustering
-		for (auto clustering_ : gene_expression_description["clusterings"]) {
-			auto clustering = make_shared<Clustering>(gene_expression, data_root, clustering_, cache);
+		for (auto clustering_name : gene_expression->get_clusterings()) {
+			auto clustering = gene_expression->get_clustering(clustering_name);
 			int goi_index=0;
 			for (int i=0; i < gois_indices.size(); i++) {
 				auto& goi = gois_indices.at(i);
@@ -121,15 +118,15 @@ void Species::run_jobs(string output_path, int top_k, Cache& cache, bool output_
 		}
 	}
 
-	GeneDescriptions gene_descriptions(prepend_path(data_root, species["gene_descriptions"].as<string>()));
+	auto gene_descriptions = species->get_gene_descriptions(); // Keep descriptions loaded during the loop below
 	for (auto& p : results) {
 		auto& result = p.second;
-		result.best_ranking->save(output_path, top_k, gene_descriptions, species["gene_web_page"].as<string>(), gois.at(p.first), result.get_average_ausr(), output_yaml);
+		result.best_ranking->save(output_path, top_k, *species, gois.at(p.first), result.get_average_ausr(), output_yaml);
 	}
 }
 
 string Species::get_name() const {
-	return species["name"].as<string>();
+	return species->get_name();
 }
 
-}
+}}

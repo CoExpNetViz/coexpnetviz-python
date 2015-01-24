@@ -8,12 +8,18 @@
 #include <boost/algorithm/string.hpp>
 #include <errno.h>
 #include <deep_blue_genome/common/util.h>
+#include <deep_blue_genome/common/GeneDescriptions.h>
+#include <deep_blue_genome/common/GeneExpressionMatrixClustering.h>
+#include <deep_blue_genome/common/GeneCorrelationMatrix.h>
+#include <deep_blue_genome/morph/GenesOfInterest.h>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
 using namespace ublas;
+using namespace DEEP_BLUE_GENOME;
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
+namespace MORPH {
 
 /**
  * One row of a ranking
@@ -21,12 +27,20 @@ namespace MORPHC {
 class Rank
 {
 public:
-	Rank(int rank, string gene, double score, string annotation, string gene_web_page)
-	:	rank(rank), gene(gene), score(score), annotation(annotation), gene_web_page(gene_web_page)
+	Rank(int rank, string gene, double score, string annotation)
+	:	rank(rank), gene(gene), score(score), annotation(annotation)
 	{
 	}
 
-public:
+	void set_gene_web_page(std::string web_page) {
+		gene_web_page = web_page;
+	}
+
+	bool has_gene_web_page() {
+		return gene_web_page != "";
+	}
+
+public: // TODO make privy
 	int rank; // row in ranking, 1-based
 	string gene;
 	double score;
@@ -37,29 +51,30 @@ public:
 
 size_type K = 1000;
 
-Ranking_ClusterInfo::Ranking_ClusterInfo(const GeneCorrelationMatrix& gene_correlations, const std::vector<size_type>& genes_of_interest, const Cluster& c)
+Ranking_ClusterInfo::Ranking_ClusterInfo(const GeneCorrelationMatrix& gene_correlations, const std::vector<size_type>& genes_of_interest, const
+		GeneExpressionMatrixCluster& c)
 {
-	auto& cluster = const_cast<Cluster&>(c);
+	auto& cluster = const_cast<GeneExpressionMatrixCluster&>(c);
 	auto is_goi = [&genes_of_interest](size_type gene) {
 		return contains(genes_of_interest, gene);
 	};
 	auto candidates_begin = partition(cluster.begin(), cluster.end(), is_goi); // Note: modifying the order of cluster genes doesn't really change the cluster
 
-	goi_ = MORPHC::array(distance(cluster.begin(), candidates_begin));
+	goi_ = array(distance(cluster.begin(), candidates_begin));
 	copy(cluster.begin(), candidates_begin, goi_.begin());
-	goi = MORPHC::indirect_array(goi_.size(), goi_); // Note: ublas indirect_array is making me do ugly things
+	goi = indirect_array(goi_.size(), goi_); // Note: ublas indirect_array is making me do ugly things
 
-	candidates = MORPHC::indirect_array(&*candidates_begin, &*cluster.end());
-	genes = MORPHC::indirect_array(&*cluster.begin(), &*cluster.end());
+	candidates = indirect_array(&*candidates_begin, &*cluster.end());
+	genes = indirect_array(&*cluster.begin(), &*cluster.end());
 
-	goi_columns_ = MORPHC::array(goi.size());
+	goi_columns_ = array(goi.size());
 	for (size_type i=0; i<goi.size(); i++) {
 		goi_columns_[i] = gene_correlations.get_column_index(goi_[i]);
 	}
-	goi_columns = MORPHC::indirect_array(goi_columns_.size(), goi_columns_);
+	goi_columns = indirect_array(goi_columns_.size(), goi_columns_);
 }
 
-Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<Clustering> clustering, const GeneCorrelationMatrix& gene_correlations, std::string name)
+Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<GeneExpressionMatrixClustering> clustering, const GeneCorrelationMatrix& gene_correlations, std::string name)
 :	genes_of_interest(goi), clustering(clustering), gene_correlations(gene_correlations), ausr(-1.0), name(name)
 {
 	Rankings rankings(gene_correlations.get().size1(), nan("undefined"));
@@ -97,7 +112,7 @@ void Ranking::finalise_ranking(const Rankings& rankings) {
 	}
 }
 
-void Ranking::finalise_sub_ranking(const Rankings& rankings, Rankings& final_rankings, const MORPHC::indirect_array& sub_indices, Ranking_ClusterInfo& info, long excluded_goi) {
+void Ranking::finalise_sub_ranking(const Rankings& rankings, Rankings& final_rankings, const indirect_array& sub_indices, Ranking_ClusterInfo& info, long excluded_goi) {
 	if (info.get_goi_count() == 0 || info.candidates.size() == 0) {
 		return; // in this case, all values in these ranking will (and should) be NaN
 	}
@@ -139,11 +154,11 @@ void Ranking::rank_self(const Rankings& rankings) {
 	for (auto& p : cluster_info) {
 		auto& cluster = *p.first;
 		auto& info = p.second;
-		MORPHC::array candidates_and_gene_(info.candidates.size() + 1);
+		array candidates_and_gene_(info.candidates.size() + 1);
 		copy(info.candidates.begin(), info.candidates.end(), candidates_and_gene_.begin());
 		for (auto gene : info.goi) {
 			candidates_and_gene_[candidates_and_gene_.size()-1] = gene;
-			MORPHC::indirect_array candidates_and_gene(candidates_and_gene_.size(), candidates_and_gene_);
+			indirect_array candidates_and_gene(candidates_and_gene_.size(), candidates_and_gene_);
 			finalise_sub_ranking(rankings, final_rankings, candidates_and_gene, info, gene);
 
 			double rank = final_rankings(gene);
@@ -174,7 +189,7 @@ void Ranking::rank_self(const Rankings& rankings) {
 	ausr = auc / K;
 }
 
-void Ranking::save(std::string path, int top_k, const GeneDescriptions& descriptions, std::string gene_web_page_template, const GenesOfInterest& full_goi, double average_ausr, bool output_yaml) {
+void Ranking::save(std::string path, int top_k, const DEEP_BLUE_GENOME::Species& species, const GenesOfInterest& full_goi, double average_ausr, bool output_yaml) {
 	// Sort results
 	std::vector<pair<double, string>> results; // vec<(rank, gene)>
 	auto& gene_expression = clustering->get_source();
@@ -201,14 +216,19 @@ void Ranking::save(std::string path, int top_k, const GeneDescriptions& descript
 		}
 	}
 
+	auto descriptions = species.get_gene_descriptions();
 	std::vector<Rank> ranks;
 	for (int i=0; i<results.size() && i<top_k; i++) {
 		auto& r = results.at(i);
 		auto& gene = r.second;
 		assert(!std::isnan(r.first));
-		std::string web_page = gene_web_page_template;
-		boost::replace_all(web_page, "$name", gene);
-		ranks.emplace_back(i+1, gene, r.first, descriptions.get(gene), web_page);
+		ranks.emplace_back(i+1, gene, r.first, descriptions->get(gene));
+
+		if (species.has_gene_web_page()) {
+			std::string web_page = species.get_gene_web_page();
+			boost::replace_all(web_page, "$name", gene);
+			ranks.back().set_gene_web_page(web_page);
+		}
 	}
 
 	// Out put results
@@ -229,7 +249,9 @@ void Ranking::save(std::string path, int top_k, const GeneDescriptions& descript
 			candidate["gene"] = rank.gene;
 			candidate["score"] = rank.score;
 			candidate["annotation"] = rank.annotation;
-			candidate["gene_web_page"] = rank.gene_web_page;
+			if (rank.has_gene_web_page()) { // TODO update web site to deal with optional gene web page
+				candidate["gene_web_page"] = rank.gene_web_page;
+			}
 			ranking["candidates"].push_back(candidate);
 		}
 
@@ -256,9 +278,9 @@ void Ranking::save(std::string path, int top_k, const GeneDescriptions& descript
 
 		out << "\n";
 		out << "Candidates:\n";
-		out << "Rank\tGene ID\tScore\tAnnotation\tGene web page\n";
+		out << "Rank\tGene ID\tScore\tAnnotation\n";
 		for (auto& rank : ranks) {
-			out << rank.rank << "\t" << rank.gene << "\t" << rank.score << "\t" << rank.annotation << "\t" << rank.gene_web_page << "\n";
+			out << rank.rank << "\t" << rank.gene << "\t" << rank.score << "\t" << rank.annotation << "\n";
 		}
 	}
 }
@@ -275,8 +297,8 @@ const matrix& Ranking::get_gene_correlations() {
 	return gene_correlations.get();
 }
 
-const GeneExpression& Ranking::get_gene_expression() {
+const GeneExpressionMatrix& Ranking::get_gene_expression() {
 	return clustering->get_source();
 }
 
-}
+}}

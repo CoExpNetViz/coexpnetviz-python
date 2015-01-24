@@ -1,3 +1,11 @@
+# Deep Blue Genome 
+
+Contains these CLI:
+
+- database: to manage the database needed by the other commands
+- morph: to run Morph
+- coexpr: to run CoExpr
+
 # MORPH v1.0.6
 
 TODO short description

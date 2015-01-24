@@ -3,10 +3,10 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include <boost/noncopyable.hpp>
-#include <deep_blue_genome/common/StringMapping.h>
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
 
 /**
  * Functional annotations
@@ -20,8 +20,20 @@ public:
 	 */
 	std::string get(std::string gene) const;
 
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version);
+
 private:
-	StringMapping mapping; // gene -> description
+	std::unordered_map<std::string, std::string> mapping;; // gene -> description
 };
+
+
+/////////////////////
+// hpp
+
+template<class Archive>
+void GeneDescriptions::serialize(Archive& ar, const unsigned int version) {
+	ar & mapping;
+}
 
 }

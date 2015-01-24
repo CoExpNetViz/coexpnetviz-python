@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <boost/noncopyable.hpp>
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
 
 /**
  * Maps gene names to other gene names (for mapping between different naming schemes)
@@ -38,8 +38,20 @@ public:
 	 */
 	bool has(std::string gene) const;
 
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version);
+
 private:
 	std::unordered_map<std::string, std::vector<std::string>> mapping; // ns1:gene -> ns2:gene+
 };
+
+
+/////////////////////
+// hpp
+
+template<class Archive>
+void GeneMapping::serialize(Archive& ar, const unsigned int version) {
+	ar & mapping;
+}
 
 }

@@ -25,7 +25,7 @@
 
 using namespace std;
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
 
 void read_file(std::string path, std::function<const char* (const char*, const char*)> reader) {
 	try {
@@ -155,4 +155,30 @@ void graceful_main(std::function<void()> fragile_main) {
 	exit(EXIT_SUCCESS);
 }
 
+std::string to_file_name(const std::string& in) {
+	std::stringstream out;
+	for (auto c : in) {
+		switch(c) {
+		case '%':
+		case '<':
+		case '>':
+		case ':':
+		case '"':
+		case '/':
+		case '\\':
+		case '|':
+		case '?':
+		case '*':
+			out << "%" << std::hex << +c; // %XX, (about +c, it prints the char as a number: http://www.parashift.com/c++-faq/print-char-or-ptr-as-number.html; TODO if this works, make a function for it)
+			break;
+
+		default:
+			out << c;
+			break;
+		}
+	}
+	return out.str();
 }
+
+
+} // end namespace

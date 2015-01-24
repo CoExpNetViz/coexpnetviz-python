@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iomanip>
 #include <boost/filesystem.hpp>
+#include <yaml-cpp/yaml.h>
 #include <deep_blue_genome/common/ublas.h>
 #include <deep_blue_genome/common/util.h>
 
@@ -12,7 +13,8 @@ namespace ublas = boost::numeric::ublas;
 using namespace ublas;
 namespace fs = boost::filesystem;
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
+namespace MORPH {
 
 Application::Application(int argc, char** argv)
 {
@@ -37,7 +39,7 @@ Application::Application(int argc, char** argv)
 		}
 	}
 	catch (const exception& e) {
-		cerr << "USAGE: morphc path/to/config.yaml path/to/joblist.yaml path/to/output_directory top_k [--output-yaml]\n"
+		cerr << "USAGE: morphc path/to/database.yaml path/to/joblist.yaml path/to/output_directory top_k [--output-yaml]\n"
 			<< "\n"
 			<< "top_k = max number of candidate genes to save in outputted rankings\n"
 			<< "--output-yaml = when specified, rankings are saved in yaml format, otherwise they are saved in plain text format\n"
@@ -58,18 +60,13 @@ void Application::run() {
 	load_jobs();
 
 	for (auto& species_ : species) {
-		species_.run_jobs(output_path, top_k, *cache.get(), output_yaml);
+		species_.run_jobs(output_path, top_k, output_yaml);
 	}
 }
 
 void Application::load_config() {
-	YAML::Node config = YAML::LoadFile(config_path);
-	string data_root = config["species_data_path"].as<string>(".");
-	cache = make_unique<Cache>(config["cache_path"].as<string>());
-
-	for (auto species_ : config["species"]) {
-		species.emplace_back(data_root, species_);
-	}
+	database = make_unique<Database>("/home/limyreth/dbg_db"); // TODO from input
+	database->update(config_path); // TODO up front with database cli, and s/config_path/database_path/ in args in.
 }
 
 void Application::load_jobs() {
@@ -86,13 +83,13 @@ void Application::load_jobs() {
 			throw runtime_error("Unknown species in job list: " + species_name);
 		}
 
-		string data_root2 = prepend_path(data_root, job_group["data_path"].as<string>("."));
+		string goi_root = prepend_path(data_root, job_group["data_path"].as<string>("."));
 
 		for (auto goi : job_group["genes_of_interest"]) {
-			it->add_job(data_root2, goi);
+			it->add_goi(goi["name"].as<string>(), prepend_path(goi_root, goi["path"].as<string>()));
 		}
 	}
 }
 
-}
+}}
 

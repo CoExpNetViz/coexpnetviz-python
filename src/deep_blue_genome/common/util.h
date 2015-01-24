@@ -8,7 +8,7 @@
 #include <boost/spirit/include/qi.hpp>
 #include <deep_blue_genome/common/ErrorType.h>
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
 
 // This class taken from: http://stackoverflow.com/a/25351759/1031434
 // Contributed by Jason R
@@ -93,7 +93,44 @@ void to_lower(std::string& data);
  */
 void graceful_main(std::function<void()> fragile_main);
 
+
+template<class T>
+class Iterable
+{
+public:
+    Iterable(T begin, T end)
+    :	_begin(begin), _end(end)
+    {
+    }
+
+    T begin() {
+        return _begin;
+    }
+
+    T end() {
+        return _end;
+    }
+
+private:
+    T _begin;
+    T _end;
+};
+
+template<class T>
+Iterable<T> make_iterable(T t, T u)
+{
+    return Iterable<T>(t, u);
 }
+
+/**
+ * Encode string in such a way that it's a valid file name.
+ *
+ * This mapping has no collisions. (i.e. f(x) == f(y) iff x=y).
+ * Its encoding is similar url encoding (illegal characters replaced by %XX)
+ */
+std::string to_file_name(const std::string&);
+
+} // end namespace
 
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args)

@@ -13,15 +13,15 @@
 using namespace std;
 namespace ublas = boost::numeric::ublas;
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
 
-GeneCorrelationMatrix::GeneCorrelationMatrix(const GeneExpression& gene_expression_matrix, const std::vector<size_type>& gene_indices)
+GeneCorrelationMatrix::GeneCorrelationMatrix(const GeneExpressionMatrix& gene_expression_matrix, const std::vector<size_type>& gene_indices)
 :	gene_correlations(gene_expression_matrix.get().size1(), gene_indices.size())
 {
 	using namespace ublas;
 
 	auto& expression_matrix = gene_expression_matrix.get();
-	MORPHC::indirect_array gene_indices_(const_cast<size_type*>(&*gene_indices.begin()), const_cast<size_type*>(&*gene_indices.end()));
+	DEEP_BLUE_GENOME::indirect_array gene_indices_(const_cast<size_type*>(&*gene_indices.begin()), const_cast<size_type*>(&*gene_indices.end()));
 
 	for (size_type i=0; i<gene_indices.size(); i++) {
 		row_to_column_indices[gene_indices.at(i)] = i;

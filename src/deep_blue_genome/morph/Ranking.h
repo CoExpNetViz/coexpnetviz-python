@@ -3,33 +3,40 @@
 #pragma once
 
 #include <boost/noncopyable.hpp>
+#include <unordered_map>
 #include <deep_blue_genome/common/ublas.h>
-#include <deep_blue_genome/common/Clustering.h>
-#include <deep_blue_genome/common/GeneCorrelationMatrix.h>
-#include <deep_blue_genome/common/GeneDescriptions.h>
-#include <deep_blue_genome/morph/GenesOfInterest.h>
 
-namespace MORPHC{
+namespace DEEP_BLUE_GENOME {
+
+class Species;
+class GeneExpressionMatrix;
+class GeneExpressionMatrixClustering;
+class GeneExpressionMatrixCluster;
+class GeneCorrelationMatrix;
+
+namespace MORPH {
+
+class GenesOfInterest;
 
 /**
  * Private class of Ranking
  */
 class Ranking_ClusterInfo : public boost::noncopyable { // TODO this could be tidier
 public:
-	Ranking_ClusterInfo(const GeneCorrelationMatrix& gene_expression, const std::vector<size_type>& genes_of_interest, const Cluster& cluster);
+	Ranking_ClusterInfo(const DEEP_BLUE_GENOME::GeneCorrelationMatrix&, const std::vector<size_type>& genes_of_interest, const DEEP_BLUE_GENOME::GeneExpressionMatrixCluster& cluster);
 
 	size_type get_goi_count() {
 		return goi.size();
 	}
 
-	MORPHC::indirect_array goi; // row indices of genes of interest in cluster
-	MORPHC::indirect_array goi_columns; // column indices of genes of interest in cluster
-	MORPHC::indirect_array candidates; // candidates in cluster (i.e. not goi)
-	MORPHC::indirect_array genes; // all genes in cluster
+	DEEP_BLUE_GENOME::indirect_array goi; // row indices of genes of interest in cluster
+	DEEP_BLUE_GENOME::indirect_array goi_columns; // column indices of genes of interest in cluster
+	DEEP_BLUE_GENOME::indirect_array candidates; // candidates in cluster (i.e. not goi)
+	DEEP_BLUE_GENOME::indirect_array genes; // all genes in cluster
 
 private:
-	MORPHC::array goi_;
-	MORPHC::array goi_columns_;
+	DEEP_BLUE_GENOME::array goi_;
+	DEEP_BLUE_GENOME::array goi_columns_;
 };
 
 // TODO refactor
@@ -40,14 +47,14 @@ class Ranking : public boost::noncopyable // TODO this is not a single ranking, 
 {
 public:
 
-	Ranking(std::vector<size_type> genes_of_interest, std::shared_ptr<Clustering>, const GeneCorrelationMatrix&, std::string name);
+	Ranking(std::vector<size_type> genes_of_interest, std::shared_ptr<DEEP_BLUE_GENOME::GeneExpressionMatrixClustering>, const DEEP_BLUE_GENOME::GeneCorrelationMatrix&, std::string name);
 
 	/**
 	 * Save top k results in given directory
 	 *
 	 * Full goi: goi without genes missing in dataset removed
 	 */
-	void save(std::string directory, int top_k, const GeneDescriptions&, std::string gene_webpage_template, const GenesOfInterest& full_goi, double average_ausr, bool output_yaml);
+	void save(std::string directory, int top_k, const DEEP_BLUE_GENOME::Species&, const GenesOfInterest& full_goi, double average_ausr, bool output_yaml);
 
 	double get_ausr() const;
 	bool operator>(const Ranking&) const;
@@ -56,7 +63,7 @@ private:
 	typedef boost::numeric::ublas::vector<double> Rankings;
 
 	const matrix& get_gene_correlations();
-	const GeneExpression& get_gene_expression();
+	const DEEP_BLUE_GENOME::GeneExpressionMatrix& get_gene_expression();
 	void rank_genes(const std::vector<size_type>& genes_of_interest, Rankings& rankings);
 	void rank_self(const Rankings& rankings);
 	void finalise_ranking(const Rankings& rankings);
@@ -69,16 +76,16 @@ private:
 	 *
 	 * Note: this func is highly specialised, not very reusable
 	 */
-	void finalise_sub_ranking(const Rankings& rankings, Rankings& final_rankings, const MORPHC::indirect_array& sub_indices, Ranking_ClusterInfo&, long excluded_goi = -1);
+	void finalise_sub_ranking(const Rankings& rankings, Rankings& final_rankings, const DEEP_BLUE_GENOME::indirect_array& sub_indices, Ranking_ClusterInfo&, long excluded_goi = -1);
 
 private:
 	std::vector<size_type> genes_of_interest; // genes_of_interest
-	std::shared_ptr<Clustering> clustering;
+	std::shared_ptr<GeneExpressionMatrixClustering> clustering;
 	const GeneCorrelationMatrix& gene_correlations; // Note: only valid during construction
 	Rankings final_rankings; // finalised rankings, after ctor has finished
 	double ausr;
 	std::string name;
-	std::unordered_map<const Cluster*, Ranking_ClusterInfo> cluster_info; // TODO could use vector instead, uses just iterate over all of it
+	std::unordered_map<const DEEP_BLUE_GENOME::GeneExpressionMatrixCluster*, Ranking_ClusterInfo> cluster_info; // TODO could use vector instead, uses just iterate over all of it
 };
 
-}
+}}

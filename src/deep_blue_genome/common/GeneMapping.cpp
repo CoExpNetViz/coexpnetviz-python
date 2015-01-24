@@ -6,7 +6,7 @@
 
 using namespace std;
 
-namespace MORPHC {
+namespace DEEP_BLUE_GENOME {
 
 GeneMapping::GeneMapping(string path)
 {
