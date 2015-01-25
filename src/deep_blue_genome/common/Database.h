@@ -132,7 +132,7 @@ private:
 #include <boost/serialization/unordered_map.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
-BOOST_CLASS_IMPLEMENTATION(DEEP_BLUE_GENOME::Database, boost::serialization::object_serializable);
+// TODO might as well use cereal: http://uscilab.github.io/cereal/index.html, which is like boost serialization, but it's a bit better. It might have move semantics (so we can put back boost::noncopyable), and allow us to get rid of default constructors
 
 namespace DEEP_BLUE_GENOME {
 
@@ -156,7 +156,8 @@ std::shared_ptr<Type> Database::load(std::string path, Args... args) {
 	// or make new shared ptr
 	auto ptr = make_shared<Type>(args...);
 	instance = ptr;
-	load_from_binary(path, *ptr);
+
+	load_from_binary(path, *ptr); // Apparently this first trashes the object, and then serializes data into the object...
 	return ptr;
 }
 
