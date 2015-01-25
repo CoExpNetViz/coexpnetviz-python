@@ -28,6 +28,8 @@ class GeneDescriptions;
  */
 class Database {
 public:
+	typedef std::vector<std::string>::const_iterator name_iterator;
+
 	/**
 	 * @param database_path location of database. Currently this is a config with paths to all db files
 	 */
@@ -63,6 +65,14 @@ public:
 	 */
 	std::shared_ptr<Species> get_species(std::string species);
 
+	/**
+	 * Get names of all species in database
+	 */
+	Iterable<name_iterator> get_species_names();
+
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version);
+
 private:
 	/**
 	 * Load instance of given Type.
@@ -74,14 +84,16 @@ private:
 	std::shared_ptr<Type> load(std::string path, Args... args);
 
 	/**
+	 * Get database info path
+	 *
+	 * Database info file describes what's in the database.
+	 */
+	std::string get_database_info_path();
+
+	/**
 	 * Get path to directory with all species info
 	 */
 	std::string get_species_dir(std::string species_name);
-
-	/**
-	 * Get path to file with general info on species
-	 */
-	std::string get_species_info_path(std::string species_name);
 
 	std::string get_gene_expression_matrix_dir(std::string species, std::string name);
 	std::string get_gene_expression_matrix_path(std::string species, std::string name);
@@ -93,14 +105,15 @@ private:
 	 * Load object saved with save_to_binary
 	 */
 	template <class T>
-	void load_from_binary(std::string path, T& object);
+	static void load_from_binary(std::string path, T& object);
 
 	template <class T>
-	void save_to_binary(std::string path, const T& object);
+	static void save_to_binary(std::string path, const T& object);
 
 private:
 	std::string database_path;
 	std::unordered_map<std::string, std::shared_ptr<Species>> species_infos;
+	std::vector<std::string> species_names;
 };
 
 } // end namespace
@@ -109,6 +122,7 @@ private:
 ///////////////////////////////
 // hpp
 
+#include <boost/filesystem.hpp>
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/stream_buffer.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -116,6 +130,9 @@ private:
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/unordered_map.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+
+BOOST_CLASS_IMPLEMENTATION(DEEP_BLUE_GENOME::Database, boost::serialization::object_serializable);
 
 namespace DEEP_BLUE_GENOME {
 
@@ -156,6 +173,8 @@ template <class T>
 void Database::save_to_binary(std::string path, const T& object) {
 	using namespace std;
 	using namespace boost::iostreams;
+	using namespace boost::filesystem;
+	create_directories(boost::filesystem::path(path).remove_filename());
 	stream_buffer<file_sink> out(path, ios::binary);
 	boost::archive::binary_oarchive ar(out);
 	try {
@@ -163,6 +182,36 @@ void Database::save_to_binary(std::string path, const T& object) {
 	}
 	catch (const exception& e) {
 		throw runtime_error("Error while writing to " + path + ": " + exception_what(e));
+	}
+}
+
+template<class Archive>
+void Database::serialize(Archive& ar, const unsigned int version) {
+	using namespace std;
+
+	auto size = species_infos.size();
+	ar & size;
+	cout << (uint64_t)this << endl;
+
+	if (Archive::is_loading::value) {
+		for (int i=0; i<size; i++) {
+			string name;
+			ar & name;
+
+			species_names.emplace_back(name);
+
+			auto species = make_shared<Species>(name, *this);
+			ar & *species;
+
+			species_infos.emplace(name, species);
+		}
+	}
+	else {
+		for (auto& p : species_infos) {
+			auto name = p.first;  // <<, & don't allow const references (<< should have allowed it probably); So we copy the value
+			ar & name;
+			ar & *p.second;
+		}
 	}
 }
 

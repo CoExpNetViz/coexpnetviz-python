@@ -37,6 +37,8 @@ public:
 	 */
 	GeneExpressionMatrix(std::string name, std::string species_name, std::string path, Database&);
 
+	~GeneExpressionMatrix() { std::cout << "~" << name << std::endl; }
+
 	/**
 	 * Get index of row corresponding to given gene
 	 */

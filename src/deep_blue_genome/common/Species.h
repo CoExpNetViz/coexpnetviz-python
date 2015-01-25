@@ -22,11 +22,6 @@ class Species {
 public:
 	typedef std::vector<std::string>::const_iterator name_iterator;
 
-	/**
-	 * Construct invalid species for loading with serialization
-	 */
-	Species(Database&);
-
 	Species(std::string name, Database&);
 
 	/**
@@ -108,7 +103,6 @@ private:
 
 template<class Archive>
 void Species::serialize(Archive& ar, const unsigned int version) {
-	ar & name;
 	ar & has_gene_descriptions_;
 	ar & has_gene_mapping_;
 	ar & gene_expression_matrices;

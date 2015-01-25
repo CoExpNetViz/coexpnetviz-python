@@ -40,3 +40,10 @@ add_executable(morph ${morph_sources})
 target_link_libraries(morph
 	common)
 
+
+# database
+file(GLOB_RECURSE database_sources deep_blue_genome/database/*.cpp)
+add_executable(database ${database_sources})
+
+target_link_libraries(database
+	common)

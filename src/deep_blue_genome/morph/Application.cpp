@@ -70,6 +70,12 @@ void Application::load_config() {
 }
 
 void Application::load_jobs() {
+	// Load all species (not really necessary except for the way the next code block is written)
+	for (auto name : database->get_species_names()) {
+		species.emplace_back(name, *database);
+	}
+
+	// Load jobs
 	YAML::Node job_list = YAML::LoadFile(job_list_path);
 	string data_root = job_list["data_path"].as<string>(".");
 

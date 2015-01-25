@@ -39,9 +39,6 @@ public:
 	 */
 	size_type get_column_index(size_type row_index) const;
 
-	template<class Archive>
-	void serialize(Archive& ar, const unsigned int version);
-
 private:
 	matrix gene_correlations;
 	std::unordered_map<size_type, size_type> row_to_column_indices; // gene row index -> column index

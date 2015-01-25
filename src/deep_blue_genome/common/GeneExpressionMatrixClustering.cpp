@@ -14,7 +14,7 @@ GeneExpressionMatrixClustering::GeneExpressionMatrixClustering(std::shared_ptr<G
 GeneExpressionMatrixClustering::GeneExpressionMatrixClustering(std::shared_ptr<GeneExpressionMatrix> gene_expression_matrix, const Clustering& clustering)
 :	name(clustering.get_name()), gene_expression_matrix(gene_expression_matrix)
 {
-	size_type genes_missing;
+	size_type genes_missing = 0;
 	vector<size_type> genes;
 
 	// Convert gene names to indices

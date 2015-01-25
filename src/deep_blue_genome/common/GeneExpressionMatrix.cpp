@@ -19,6 +19,8 @@ namespace DEEP_BLUE_GENOME {
 GeneExpressionMatrix::GeneExpressionMatrix(string name, std::string species_name, Database& database)
 :	name(name), species_name(species_name), database(database)
 {
+	cout << name << endl;
+	database.get_species("Tomato");
 }
 
 GeneExpressionMatrix::GeneExpressionMatrix(string name, std::string species_name, std::string path, Database& database)
@@ -100,6 +102,8 @@ const matrix& GeneExpressionMatrix::get() const {
 }
 
 Iterable<Species::name_iterator> GeneExpressionMatrix::get_clusterings() const {
+	cout << "t" << name << endl;
+	cout << (uint64_t)&database << endl;
 	return database.get_species(species_name)->get_clusterings(name);
 }
 
