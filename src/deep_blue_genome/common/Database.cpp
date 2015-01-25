@@ -19,7 +19,6 @@ Database::Database(std::string database_path)
 	if (boost::filesystem::exists(get_database_info_path())) {
 		load_from_binary(get_database_info_path(), *this);
 	}
-	cout << (uint64_t)this << endl;
 }
 
 void Database::update(std::string yaml_path) {
@@ -126,15 +125,14 @@ std::shared_ptr<GeneExpressionMatrixClustering> Database::get_gene_expression_ma
 }
 
 std::shared_ptr<GeneMapping> Database::get_gene_mapping(std::string species) {
-	return load<GeneMapping>(get_gene_mapping_path(species), species);
+	return load<GeneMapping>(get_gene_mapping_path(species));
 }
 
 std::shared_ptr<GeneDescriptions> Database::get_gene_descriptions(std::string species) {
-	return load<GeneDescriptions>(get_gene_descriptions_path(species), species);
+	return load<GeneDescriptions>(get_gene_descriptions_path(species));
 }
 
 std::shared_ptr<Species> Database::get_species(std::string species) {
-	cout << "db" << database_path << endl;
 	auto it = species_infos.find(species);
 	assert(it != species_infos.end());
 	return it->second;

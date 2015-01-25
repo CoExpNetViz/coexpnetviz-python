@@ -16,6 +16,11 @@ public:
 	GeneDescriptions(std::string path);
 
 	/**
+	 * Construct invalid object for serialization
+	 */
+	GeneDescriptions() {}
+
+	/**
 	 * Get description of gene
 	 */
 	std::string get(std::string gene) const;

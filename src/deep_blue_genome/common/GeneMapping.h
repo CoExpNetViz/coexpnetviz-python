@@ -19,6 +19,11 @@ namespace DEEP_BLUE_GENOME {
 class GeneMapping : public boost::noncopyable {
 public:
 	/**
+	 * Construct invalid object for serialization
+	 */
+	GeneMapping() {}
+
+	/**
 	 * Load gene mapping
 	 */
 	GeneMapping(std::string path);

@@ -4,6 +4,7 @@
 
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/Species.h>
+#include <boost/noncopyable.hpp>
 
 namespace DEEP_BLUE_GENOME {
 
@@ -26,7 +27,7 @@ class GeneDescriptions;
  *
  * When data is added to the database, it is validated, and then stored as read-only data.
  */
-class Database {
+class Database : public boost::noncopyable {
 public:
 	typedef std::vector<std::string>::const_iterator name_iterator;
 
@@ -81,7 +82,7 @@ private:
 	 * as long as you don't use multiple constructors of a single Type.
 	 */
 	template <class Type, class... Args>
-	std::shared_ptr<Type> load(std::string path, Args... args);
+	std::shared_ptr<Type> load(std::string path, Args&... args);
 
 	/**
 	 * Get database info path
@@ -137,7 +138,7 @@ private:
 namespace DEEP_BLUE_GENOME {
 
 template <class Type, class... Args>
-std::shared_ptr<Type> Database::load(std::string path, Args... args) {
+std::shared_ptr<Type> Database::load(std::string path, Args&... args) {
 	using namespace std;
 	static unordered_map<std::string, weak_ptr<Type>> instances;
 
@@ -157,7 +158,8 @@ std::shared_ptr<Type> Database::load(std::string path, Args... args) {
 	auto ptr = make_shared<Type>(args...);
 	instance = ptr;
 
-	load_from_binary(path, *ptr); // Apparently this first trashes the object, and then serializes data into the object...
+	load_from_binary(path, *ptr);
+
 	return ptr;
 }
 
