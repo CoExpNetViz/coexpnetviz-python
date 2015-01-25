@@ -108,7 +108,7 @@ std::string GeneExpressionMatrix::get_species_name() const {
 }
 
 std::shared_ptr<GeneExpressionMatrixClustering> GeneExpressionMatrix::get_clustering(std::string clustering_name) {
-	return database.get_gene_expression_matrix_clustering(shared_from_this(), name);
+	return database.get_gene_expression_matrix_clustering(shared_from_this(), clustering_name);
 }
 
 } // end namespace

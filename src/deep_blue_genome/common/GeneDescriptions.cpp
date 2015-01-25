@@ -33,7 +33,7 @@ GeneDescriptions::GeneDescriptions(string path)
 }
 
 std::string GeneDescriptions::get(std::string gene) const {
-	assert(all_of(gene.begin(), gene.end(), [](int c){ return islower(c); }));
+	assert(all_of(gene.begin(), gene.end(), [](int c){ return !isupper(c); }));
 	auto it = mapping.find(gene);
 	if (it == mapping.end()) {
 		//cout << "Warning: description not found for gene: " << gene << "\n";

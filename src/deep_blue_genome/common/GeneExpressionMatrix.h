@@ -37,8 +37,6 @@ public:
 	 */
 	GeneExpressionMatrix(std::string name, std::string species_name, std::string path, Database&);
 
-	~GeneExpressionMatrix() { std::cout << "~" << name << std::endl; }
-
 	/**
 	 * Get index of row corresponding to given gene
 	 */
@@ -81,7 +79,6 @@ private:
 
 template<class Archive>
 void GeneExpressionMatrix::serialize(Archive& ar, const unsigned int version) {
-	std::cout << (uint64_t)&database << std::endl;
 	ar & expression_matrix;
 	ar & genes;
 	ar & gene_indices;
