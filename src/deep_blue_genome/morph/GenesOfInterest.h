@@ -4,9 +4,8 @@
 
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
 #include <boost/regex.hpp>
-#include <deep_blue_genome/common/GeneMapping.h>
+#include <deep_blue_genome/common/Canonicaliser.h>
 
 namespace DEEP_BLUE_GENOME {
 namespace MORPH {
@@ -30,7 +29,7 @@ public:
 	/**
 	 * Apply mappings to genes
 	 */
-	void apply_mapping(const DEEP_BLUE_GENOME::GeneMapping&);
+	void canonicalise(const DEEP_BLUE_GENOME::Canonicaliser&);
 
 private:
 	std::string name;

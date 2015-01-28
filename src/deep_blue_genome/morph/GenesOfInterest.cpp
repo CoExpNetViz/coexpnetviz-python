@@ -45,16 +45,11 @@ std::string GenesOfInterest::get_name() const {
 	return name;
 }
 
-void GenesOfInterest::apply_mapping(const GeneMapping& mapping) {
+void GenesOfInterest::canonicalise(const Canonicaliser& mapping) {
 	vector<string> new_genes;
 	for (auto& gene : genes) {
-		if (mapping.has(gene)) {
-			auto genes = mapping.get(gene);
-			new_genes.insert(new_genes.end(), genes.begin(), genes.end());
-		}
-		else {
-			new_genes.emplace_back(gene);
-		}
+		auto genes = mapping.get(gene);
+		new_genes.insert(new_genes.end(), genes.begin(), genes.end());
 	}
 	genes.swap(new_genes);
 

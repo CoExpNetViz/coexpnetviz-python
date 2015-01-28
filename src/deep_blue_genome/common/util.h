@@ -130,6 +130,21 @@ Iterable<T> make_iterable(T t, T u)
  */
 std::string to_file_name(const std::string&);
 
+/**
+ * Code from boost
+ * Reciprocal of the golden ratio helps spread entropy
+ *     and handles duplicates.
+ * See Mike Seymour in magic-numbers-in-boosthash-combine:
+ *     http://stackoverflow.com/questions/4948780
+ *
+ * @example hash of tuple (x,y): seed=0; hash_combine(seed, x); hash_combine(seed, y); return seed;
+ */
+template <class T>
+inline void hash_combine(std::size_t& seed, T const& v)
+{
+	seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+}
+
 } // end namespace
 
 template<typename T, typename... Args>

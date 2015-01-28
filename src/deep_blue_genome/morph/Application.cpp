@@ -66,7 +66,7 @@ void Application::run() {
 
 void Application::load_config() {
 	database = make_unique<Database>("/home/limyreth/dbg_db"); // TODO from input
-	database->update(config_path); // TODO up front with database cli, and s/config_path/database_path/ in args in.
+	// TODO s/config_path/database_path/ in args in.
 }
 
 void Application::load_jobs() {

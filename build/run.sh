@@ -1,5 +1,5 @@
 #!/bin/sh
 /bin/rm -rf output
 mkdir output
-. ../command.sh
+. ../$1_command.sh
 ${command[@]}

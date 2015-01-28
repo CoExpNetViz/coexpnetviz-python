@@ -5,7 +5,7 @@
 #include <deep_blue_genome/common/GeneExpressionMatrix.h>
 #include <deep_blue_genome/common/GeneCorrelationMatrix.h>
 #include <deep_blue_genome/common/GeneExpressionMatrixClustering.h>
-#include <deep_blue_genome/common/GeneMapping.h>
+#include <deep_blue_genome/common/Canonicaliser.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/Database.h>
 #include <deep_blue_genome/morph/GOIResult.h>
@@ -30,19 +30,15 @@ void Species::run_jobs(string output_path, int top_k, bool output_yaml) {
 		return;
 
 	// Load gene mapping
-	shared_ptr<GeneMapping> gene_mapping;
-	if (species->has_gene_mapping()) {
-		gene_mapping = species->get_gene_mapping();
-	}
+	Canonicaliser canonicaliser(database, get_name());
 
 	// Load gois
 	std::vector<GenesOfInterest> gois;
 	for (auto& p : this->gois) {
 		gois.emplace_back(p.first, p.second, species->get_gene_pattern_re());
 		auto& goi = gois.back();
-		if (gene_mapping.get()) {
-			goi.apply_mapping(*gene_mapping);
-		}
+		goi.canonicalise(canonicaliser);
+
 		auto size = goi.get_genes().size();
 		if (size < 5) {
 			cout << "Dropping GOI " << goi.get_name() << ": too few genes: " << size << " < 5\n";

@@ -61,6 +61,16 @@ public:
 	void update_gene_expression_matrix(std::string name, IterableT clustering_names);
 
 	/**
+	 * Create or update ortholog sets.
+	 *
+	 * Updating never removes any, it only adds more
+	 */
+	template <class IterableT>
+	void update_ortholog_mappings(IterableT species_names);
+
+	std::shared_ptr<GeneMapping> get_ortholog_mapping(std::string target_species) const;
+
+	/**
 	 * Get whether or not a gene web page pattern is known
 	 */
 	bool has_gene_web_page() const;
@@ -74,9 +84,9 @@ public:
 	void has_gene_descriptions(bool has_it);
 	std::shared_ptr<GeneDescriptions> get_gene_descriptions() const;
 
-	bool has_gene_mapping() const;
-	void has_gene_mapping(bool has_it);
-	std::shared_ptr<GeneMapping> get_gene_mapping() const; // TODO get via db
+	bool has_canonical_mapping() const;
+	void has_canonical_mapping(bool has_it);
+	std::shared_ptr<GeneMapping> get_canonical_mapping() const;
 
 	std::shared_ptr<GeneExpressionMatrix> get_gene_expression_matrix(std::string name) const;
 
@@ -87,12 +97,13 @@ private:
 	std::string name;
 	Database& database;
 	bool has_gene_descriptions_;
-	bool has_gene_mapping_;
+	bool has_canonical_mapping_;
 	std::unordered_map<std::string, std::vector<std::string>> gene_expression_matrices; // name of expression matrix mapped to a list of clusterings specific to that matrix
 	std::vector<std::string> clusterings; // name of each clustering specific to a species, not to a gene expression matrix
 	std::string gene_pattern; // regex string that matches any gene that belongs to this species
 	boost::regex gene_pattern_re; // gene_pattern as regex
 	std::string gene_web_page;
+	std::vector<std::string> ortholog_mappings; // names corresponding to species which are a target of one of the ortholog mappings we have
 
 	std::vector<std::string> gene_expression_matrix_names; // redundant vectors because special iterators are hard to return sometimes...
 };
@@ -104,7 +115,7 @@ private:
 template<class Archive>
 void Species::serialize(Archive& ar, const unsigned int version) {
 	ar & has_gene_descriptions_;
-	ar & has_gene_mapping_;
+	ar & has_canonical_mapping_;
 	ar & gene_expression_matrices;
 	ar & clusterings;
 	ar & gene_pattern;
@@ -112,6 +123,7 @@ void Species::serialize(Archive& ar, const unsigned int version) {
 		set_gene_pattern(gene_pattern); // fills gene_pattern_re
 	}
 	ar & gene_web_page;
+	ar & ortholog_mappings;
 	ar & gene_expression_matrix_names;
 }
 
@@ -119,6 +131,11 @@ template <class IterableT>
 void Species::update_gene_expression_matrix(std::string name, IterableT clustering_names) {
 	gene_expression_matrix_names.emplace_back(name); // TODO currently just adds, should merge
 	gene_expression_matrices[name] = clustering_names; // TODO merge with current clustering names vec (Don't want duplicates. Validate input for duplicate names first)
+}
+
+template <class IterableT>
+void Species::update_ortholog_mappings(IterableT species_names) {
+	ortholog_mappings = std::vector<std::string>(species_names.begin(), species_names.end()); // TODO merge with existing
 }
 
 }

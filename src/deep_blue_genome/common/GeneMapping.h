@@ -6,6 +6,7 @@
 #include <vector>
 #include <unordered_map>
 #include <boost/noncopyable.hpp>
+#include <deep_blue_genome/common/util.h>
 
 namespace DEEP_BLUE_GENOME {
 
@@ -31,7 +32,6 @@ public:
 	/**
 	 * Get mapped gene names
 	 *
-	 * @param gene Lower case gene name
 	 * @returns vector with size > 0
 	 */
 	const std::vector<std::string>& get(std::string gene) const;
@@ -42,6 +42,11 @@ public:
 	 * @param gene Lower case gene name
 	 */
 	bool has(std::string gene) const;
+
+	/**
+	 * Add mapping source -> mapped to current mappings
+	 */
+	void add(std::string source, std::string mapped);
 
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version);
@@ -59,4 +64,4 @@ void GeneMapping::serialize(Archive& ar, const unsigned int version) {
 	ar & mapping;
 }
 
-}
+} // end namespace

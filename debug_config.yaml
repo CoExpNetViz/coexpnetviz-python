@@ -11,7 +11,12 @@ species:
       gene_descriptions: gene_descriptions  # tab separated file mapping gene to gene-description
       gene_web_page: 'http://www.arabidopsis.org/servlets/TairObject?name=$name&type=locus'  # url to page of gene, use $name as placeholder for the gene name
       gene_pattern: 'AT[0-9]G[0-9]{5}'  # regex pattern (perl syntax) that all valid genes should match, match is case-insensitive. http://www.boost.org/doc/libs/1_57_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html
+      #orthologs:
+      #    - target_species: 'Apple'
+      #      path: '/mnt/midas/group/biocomp/projects/morph/coexpr/tmp/ArabidopsisAppleConversion.txt' # mapping file: source -> target species' genes
       expression_matrices:
+          - name: 'Data set 1'
+            path: '/mnt/midas/group/biocomp/projects/morph/coexpr/tmp/Arabidopsis_dataset.txt'
           - name: 'Seed_GH'
             path: data_sets/Seed_GH_DataSet.txt
             clusterings:
@@ -43,6 +48,16 @@ species:
                   path: cluster_solution/Seedlings_PPI_Network_ClusteringSol.txt
                 - name: 'CLICK'
                   path: cluster_solution/Seedlings_CLICK_ClusteringSol.txt
+          - name: 'abiotic_rma_TAIR10_v14'
+            path: '/home/limyreth/doc/internship/CoExpNetViz/Data/cornet2.0/abiotic_rma_TAIR10_v14.txt'
+          - name: 'biotic_rma_TAIR10_v14'
+            path: '/home/limyreth/doc/internship/CoExpNetViz/Data/cornet2.0/biotic_rma_TAIR10_v14.txt'
+          - name: 'stress_rma_TAIR10_v14'
+            path: '/home/limyreth/doc/internship/CoExpNetViz/Data/cornet2.0/stress_rma_TAIR10_v14.txt'
+          - name: 'atgenexpress_rma_TAIR10_v14'
+            path: '/home/limyreth/doc/internship/CoExpNetViz/Data/cornet2.0/atgenexpress_rma_TAIR10_v14.txt'
+          - name: 'compendium_15_rma_TAIR10_v14'
+            path: '/home/limyreth/doc/internship/CoExpNetViz/Data/cornet2.0/compendium_15_rma_TAIR10_v14.txt'
     - name: 'Potato - ITAG'
       data_path: ITAG
       example_goi: ['Sotub02g020720.1.1', 'Sotub02g020710.1.1', 'Sotub02g020130.1.1', 'Sotub07g023520.1.1', 'Sotub02g010840.1.1', 'Sotub11g008880.1.1', 'Sotub10g009720.1.1', 'Sotub05g026310.1.1', 'Sotub04g021880.1.1', 'Sotub07g025180.1.1', 'Sotub09g027860.1.1']
@@ -103,7 +118,12 @@ species:
       gene_descriptions: gene_descriptions
       gene_web_page: 'http://potato.plantbiology.msu.edu/cgi-bin/annotation_report.cgi?gene_id=$name'
       gene_pattern: 'PGSC[0-9]{4}DMP[0-9]{9}'
+      #orthologs:
+      #    - target_species: 'Tomato'
+      #      path: '/mnt/midas/group/biocomp/projects/morph/coexpr/tmp/PotatoTomatoConversion.txt'
       expression_matrices:
+          - name: 'Data set 1'
+            path: '/mnt/midas/group/biocomp/projects/morph/coexpr/tmp/Potato_dataset.txt'
           - name: 'All tissues'
             path: data_sets/All_TissuesDataSet_PGSC.txt
             clusterings:
@@ -153,8 +173,10 @@ species:
       example_goi: ['Solyc10g084400', 'Solyc09g074850', 'Solyc09g011630', 'Solyc09g011540', 'Solyc09g011520', 'Solyc09g011510', 'Solyc09g007150', 'Solyc08g080910', 'Solyc08g080900', 'Solyc07g056500', 'Solyc07g056490', 'Solyc07g056480', 'Solyc07g056440', 'Solyc07g056420', 'Solyc06g009040', 'Solyc06g009020', 'Solyc05g006750', 'Solyc05g006740', 'Solyc02g081430', 'Solyc02g081340', 'Solyc02g068900', 'Solyc01g091330', 'Solyc01g086680', 'Solyc01g081310']
       gene_descriptions: gene_descriptions
       gene_web_page: 'http://solgenomics.net/search/locus_search.pl?w8e4_any_name_matchtype=exactly&w8e4_any_name=$name&w8e4_common_name=&w8e4_phenotype=&w8e4_locus_linkage_group=&w8e4_ontology_term=&w8e4_editor=&w8e4_genbank_accession='
-      gene_pattern: 'Solyc[0-9]{2}g[0-9]{6}'
+      gene_pattern: 'Solyc[0-9]{2}g[0-9]{6}([.][0-9]+[.][0-9]+)?'
       expression_matrices:
+          - name: 'Data set 1'
+            path: '/mnt/midas/group/biocomp/projects/morph/coexpr/tmp/Tomato_dataset.txt'
           - name: 'Root and leaf'
             path: data_sets/RootAndLeafDataSet.txt
             clusterings:
@@ -190,7 +212,7 @@ species:
       example_goi: ['Os01g0323600', 'Os01g0719100', 'LOC_Os01g01030']
       gene_descriptions: annotations  # tab separated file mapping gene to gene-description
       gene_web_page: 'http://rapdb.dna.affrc.go.jp/viewer/gbrowse_details/irgsp1?name=$name;feature_id=2503361'
-      gene_mapping: msu_to_rap.mapping
+      to_canonical_mapping: msu_to_rap.mapping  # A mapping file that maps genes of a non-canonical format to the canonical format
       gene_pattern: 'Os[0-9]{2}g[0-9]{7}|LOC_Os[0-9]{2}g[0-9]{5}([.][0-9]+)?|.*[.]fgenesh[.]mrna[.][0-9]+'
       expression_matrices:
           - name: 'E-GEOD-14275'
@@ -274,3 +296,8 @@ species:
                   path: 'clusterings/RiceGenomeDataSet_click.clustering'
                 - name: 'IsEnzyme'
                   path: 'clusterings/is_enzyme.clustering'
+    - name: 'Apple'
+      gene_pattern: 'MDP[0-9]{10}'
+      expression_matrices:
+          - name: 'Data set 1'
+            path: '/mnt/midas/group/biocomp/projects/morph/coexpr/tmp/Apple_dataset.txt'

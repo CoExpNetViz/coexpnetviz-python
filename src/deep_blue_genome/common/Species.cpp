@@ -13,7 +13,7 @@ using namespace boost;
 namespace DEEP_BLUE_GENOME {
 
 Species::Species(std::string name, Database& database)
-:	name(name), database(database), has_gene_descriptions_(false), has_gene_mapping_(false)
+:	name(name), database(database), has_gene_descriptions_(false), has_canonical_mapping_(false)
 {
 }
 
@@ -68,20 +68,24 @@ std::shared_ptr<GeneDescriptions> Species::get_gene_descriptions() const {
 	return database.get_gene_descriptions(name);
 }
 
-bool Species::has_gene_mapping() const {
-	return has_gene_mapping_;
+bool Species::has_canonical_mapping() const {
+	return has_canonical_mapping_;
 }
 
-void Species::has_gene_mapping(bool has_it) {
-	has_gene_mapping_ = has_it;
+void Species::has_canonical_mapping(bool has_it) {
+	has_canonical_mapping_ = has_it;
 }
 
-std::shared_ptr<GeneMapping> Species::get_gene_mapping() const {
-	return database.get_gene_mapping(name);
+std::shared_ptr<GeneMapping> Species::get_canonical_mapping() const {
+	return database.get_canonical_mapping(name);
 }
 
 std::shared_ptr<GeneExpressionMatrix> Species::get_gene_expression_matrix(std::string matrix) const {
 	return database.get_gene_expression_matrix(name, matrix);
+}
+
+std::shared_ptr<GeneMapping> Species::get_ortholog_mapping(std::string species) const {
+	return database.get_ortholog_mapping(GeneMappingId(name, species));
 }
 
 }

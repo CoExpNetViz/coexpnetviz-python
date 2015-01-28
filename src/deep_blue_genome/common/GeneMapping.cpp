@@ -1,7 +1,6 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
 #include "GeneMapping.h"
-#include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/TabGrammarRules.h>
 
 using namespace std;
@@ -21,19 +20,13 @@ GeneMapping::GeneMapping(string path)
 		auto on_line = [this](const std::vector<std::string>& line) {
 			auto gene_name = line.at(0);
 			to_lower(gene_name);
-			vector<std::string> mapped_names(line.begin()+1, line.end());
-			for (auto& name : mapped_names) {
-				to_lower(name);
+
+			if (mapping.find(gene_name) != mapping.end()) {
+				cerr << "Warning: Found mappings on multiple lines for: " << gene_name << "\n";
 			}
 
-			auto it = mapping.find(gene_name);
-			if (it != mapping.end()) {
-				cerr << "Warning: Found mappings on multiple lines for: " << gene_name << "\n";
-				auto& genes = it->second;
-				genes.insert(genes.end(), mapped_names.begin(), mapped_names.end());
-			}
-			else {
-				mapping.emplace(gene_name, mapped_names);
+			for (auto mapped_name : make_iterable(line.begin()+1, line.end())) {
+				add(gene_name, mapped_name);
 			}
 		};
 
@@ -60,4 +53,11 @@ bool GeneMapping::has(std::string gene) const {
 	return mapping.find(gene) != mapping.end();
 }
 
+void GeneMapping::add(std::string source, std::string mapped_name) {
+	auto& genes = mapping[source];
+	if (!contains(genes, mapped_name)) {
+		genes.emplace_back(mapped_name);
+	}
 }
+
+}  // end namespace

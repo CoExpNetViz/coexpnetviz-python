@@ -7,6 +7,7 @@
 #include <cmath>
 #include <boost/algorithm/string.hpp>
 #include <errno.h>
+#include <yaml-cpp/yaml.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/GeneDescriptions.h>
 #include <deep_blue_genome/common/GeneExpressionMatrixClustering.h>

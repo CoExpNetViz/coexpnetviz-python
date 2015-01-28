@@ -6,7 +6,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake_modules)
 ############################################
 # find dependencies
 
-find_package(Boost REQUIRED COMPONENTS filesystem iostreams system serialization regex)
+find_package(Boost REQUIRED COMPONENTS filesystem iostreams system serialization regex program_options)
 include_directories(${Boost_INCLUDE_DIRS})
 
 find_package(GSL REQUIRED COMPONENTS)
@@ -32,18 +32,23 @@ target_link_libraries(common
 	${YAMLCPP_LIBRARY}
     ${LIBS})
     
-   
+# database
+file(GLOB_RECURSE database_sources deep_blue_genome/database/*.cpp)
+add_executable(database ${database_sources})
+
+target_link_libraries(database
+	common ncurses)
+	
 # morph
 file(GLOB_RECURSE morph_sources deep_blue_genome/morph/*.cpp)
 add_executable(morph ${morph_sources})
 
 target_link_libraries(morph
 	common)
+	
+# coexpr
+#file(GLOB_RECURSE coexpr_sources deep_blue_genome/coexpr/*.cpp)
+#add_executable(coexpr ${coexpr_sources})
 
-
-# database
-file(GLOB_RECURSE database_sources deep_blue_genome/database/*.cpp)
-add_executable(database ${database_sources})
-
-target_link_libraries(database
-	common)
+#target_link_libraries(coexpr
+#	common)

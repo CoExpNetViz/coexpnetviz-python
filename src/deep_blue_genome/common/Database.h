@@ -2,8 +2,10 @@
 
 #pragma once
 
+#include <exception>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/Species.h>
+#include <deep_blue_genome/common/GeneMappingId.h>
 #include <boost/noncopyable.hpp>
 
 namespace DEEP_BLUE_GENOME {
@@ -13,6 +15,14 @@ class GeneExpressionMatrixClustering;
 class Clustering;
 class GeneMapping;
 class GeneDescriptions;
+
+class SpeciesNotFoundException : public std::runtime_error {
+public:
+	SpeciesNotFoundException(std::string msg)
+	:	runtime_error(msg)
+	{
+	}
+};
 
 /**
  * Deep Blue Genome Database
@@ -26,6 +36,13 @@ class GeneDescriptions;
  *  E.g. calling get_gene_descriptions twice in a row will return the same shared_ptr)
  *
  * When data is added to the database, it is validated, and then stored as read-only data.
+ *
+ * All functions that work on genes expect the genes to be in their canonical format
+ *
+ * Naming notes:
+ * - update_* implies data will be added or changed, never removed.
+ *
+ * When updating, loaded objects and some next loads can still refer to the old version.
  */
 class Database : public boost::noncopyable {
 public:
@@ -43,6 +60,8 @@ public:
 	 */
 	void update(std::string yaml_path);
 
+	void update_ortholog_mapping(const GeneMappingId&, std::shared_ptr<GeneMapping>);
+
 	/**
 	 * @param species Name of species the matrix belongs to
 	 * @param name Name of matrix
@@ -52,9 +71,11 @@ public:
 	std::shared_ptr<GeneExpressionMatrixClustering> get_gene_expression_matrix_clustering(std::shared_ptr<GeneExpressionMatrix>, std::string clustering_name);
 
 	/**
+	 * Get mapping that maps gene names to their canonical name
+	 *
 	 * @param species Name of species
 	 */
-	std::shared_ptr<GeneMapping> get_gene_mapping(std::string species);
+	std::shared_ptr<GeneMapping> get_canonical_mapping(std::string species);
 
 	/**
 	 * @param species Name of species
@@ -70,6 +91,20 @@ public:
 	 * Get names of all species in database
 	 */
 	Iterable<name_iterator> get_species_names();
+
+	/**
+	 * Get mapping of source gene -> target genes
+	 *
+	 * Target and source are each other's orthologs.
+	 */
+	std::shared_ptr<GeneMapping> get_ortholog_mapping(const GeneMappingId&);
+
+	/**
+	 * Find species name of gene.
+	 *
+	 * Gene needn't be in canonical format.
+	 */
+	std::string get_species_of_gene(std::string gene);
 
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version);
@@ -89,18 +124,24 @@ private:
 	 *
 	 * Database info file describes what's in the database.
 	 */
-	std::string get_database_info_path();
+	std::string get_database_info_path()const ;
 
 	/**
 	 * Get path to directory with all species info
 	 */
-	std::string get_species_dir(std::string species_name);
+	std::string get_species_dir(std::string species_name) const;
 
-	std::string get_gene_expression_matrix_dir(std::string species, std::string name);
-	std::string get_gene_expression_matrix_path(std::string species, std::string name);
-	std::string get_gene_mapping_path(std::string species);
-	std::string get_gene_descriptions_path(std::string species);
-	std::string get_gene_expression_matrix_clustering_path(std::string species, std::string matrix_name, std::string name);
+	std::string get_gene_expression_matrix_dir(std::string species, std::string name) const;
+	std::string get_gene_expression_matrix_path(std::string species, std::string name) const;
+	std::string get_canonical_mapping_path(std::string species) const;
+	std::string get_gene_descriptions_path(std::string species) const;
+	std::string get_gene_expression_matrix_clustering_path(std::string species, std::string matrix_name, std::string name) const;
+	std::string get_ortholog_mapping_path(const GeneMappingId&) const;
+
+	/**
+	 * Save database info
+	 */
+	void save();
 
 	/**
 	 * Load object saved with save_to_binary
@@ -194,7 +235,6 @@ void Database::serialize(Archive& ar, const unsigned int version) {
 
 	auto size = species_infos.size();
 	ar & size;
-	cout << (uint64_t)this << endl;
 
 	if (Archive::is_loading::value) {
 		for (int i=0; i<size; i++) {

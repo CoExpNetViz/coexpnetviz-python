@@ -2,4 +2,4 @@
 /bin/rm -rf output
 mkdir output
 . ../$1_command.sh
-gdb --args ${command[@]}
+valgrind ${command[@]}
