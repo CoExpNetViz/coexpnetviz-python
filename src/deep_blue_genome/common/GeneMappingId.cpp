@@ -22,7 +22,10 @@ const std::string& GeneMappingId::get_target_species() const {
 }
 
 bool GeneMappingId::operator<(const GeneMappingId& other) const {
-	return source_species < other.source_species || target_species < other.target_species;
+	if (source_species < other.source_species)
+		return true;
+	else
+		return target_species < other.target_species;
 }
 
 bool GeneMappingId::operator==(const GeneMappingId& other) const {

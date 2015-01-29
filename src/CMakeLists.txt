@@ -47,8 +47,8 @@ target_link_libraries(morph
 	common)
 	
 # coexpr
-#file(GLOB_RECURSE coexpr_sources deep_blue_genome/coexpr/*.cpp)
-#add_executable(coexpr ${coexpr_sources})
+file(GLOB_RECURSE coexpr_sources deep_blue_genome/coexpr/*.cpp)
+add_executable(coexpr ${coexpr_sources})
 
-#target_link_libraries(coexpr
-#	common)
+target_link_libraries(coexpr
+	common)

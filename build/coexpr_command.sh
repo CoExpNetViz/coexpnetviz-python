@@ -1,1 +1,1 @@
-../../data/test/coexpr/job2.yaml
+command=(./coexpr ../../data/test/coexpr/job2.yaml)

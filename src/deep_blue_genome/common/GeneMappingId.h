@@ -3,11 +3,12 @@
 #pragma once
 
 #include <string>
+#include <boost/operators.hpp>
 #include <deep_blue_genome/common/util.h>
 
 namespace DEEP_BLUE_GENOME {
 
-class GeneMappingId
+class GeneMappingId : public boost::totally_ordered<GeneMappingId>
 {
 public:
 	GeneMappingId(const std::string& source_species, const std::string& target_species);

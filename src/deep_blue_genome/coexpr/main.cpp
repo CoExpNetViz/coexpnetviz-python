@@ -3,17 +3,22 @@
 #include <iostream>
 #include <unordered_set>
 #include <unordered_map>
+#include <boost/noncopyable.hpp>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/Database.h>
 #include <deep_blue_genome/common/GeneExpressionMatrix.h>
 #include <deep_blue_genome/common/GeneCorrelationMatrix.h>
+#include <deep_blue_genome/common/GeneMapping.h>
 #include <deep_blue_genome/common/GeneMappingId.h>
 #include <deep_blue_genome/coexpr/Baits.h>
 #include <yaml-cpp/yaml.h>
 
 using namespace std;
+using namespace DEEP_BLUE_GENOME;
 
-class GeneExpressionMatrixId
+// TODO if many applications require to know orthologs for one gene to that of all other species, we might want to redesign the ortholog mapping files to source_species -> all_other_species
+
+class GeneExpressionMatrixId // TODO unused atm
 {
 public:
 	GeneExpressionMatrixId(std::string species, std::string name)
@@ -21,25 +26,167 @@ public:
 	{
 	}
 
-	std::string species; // TODO priv
+	const string& get_species() const;
+	const string& get_name() const;
+
+private:
+	std::string species;
 	std::string name;
 };
 
-class Group
+const string& GeneExpressionMatrixId::get_species() const {
+	return species;
+}
+
+const string& GeneExpressionMatrixId::get_name() const {
+	return name;
+}
+
+class Gene
 {
 public:
-	/**
-	 * @param genes Iterable of genes
-	 */
-	template<IterableT>
-	Group(IterableT genes)
-	:	genes(genes)
-	{
+	Gene(const string& species, const string& name);
+
+	const string& get_species() const;
+	const string& get_name() const;
+
+	bool operator==(const Gene& other) const {
+		return name == other.name;
+	}
+
+	bool operator<(const Gene& other) const {
+		return name < other.name;
 	}
 
 private:
-	const vector<std::string> genes; // ordered
+	string species;
+	string name;
 };
+
+Gene::Gene(const string& species, const string& name)
+:	species(species), name(name)
+{
+}
+
+const string& Gene::get_species() const {
+	return species;
+}
+
+const string& Gene::get_name() const {
+	return name;
+}
+
+namespace std {
+template <> struct hash<Gene>
+{
+	size_t operator()(const Gene& x) const
+	{
+		size_t hash = 0;
+		DEEP_BLUE_GENOME::hash_combine(hash, x.get_name());
+		return hash;
+	}
+};
+} // end namespace
+
+/**
+ * Group of genes which are each other's orthologs
+ */
+class Group : public boost::noncopyable
+{
+public:
+	/**
+	 * @param genes Iterable of distinct genes
+	 */
+	template<class IterableT>
+	Group(IterableT genes)
+	:	genes(genes.begin(), genes.end())
+	{
+	}
+
+	bool operator==(const Group& other) const = delete;
+
+	void add_owner(const Gene& owner) {
+		owners.emplace_back(owner);
+	}
+
+	vector<Gene>::const_iterator begin() const;
+	vector<Gene>::const_iterator end() const;
+
+private:
+	vector<Gene> genes; // ordered
+	vector<Gene> owners; // bait genes to which these genes are correlated
+};
+
+vector<Gene>::const_iterator Group::begin() const {
+	return genes.begin();
+}
+
+vector<Gene>::const_iterator Group::end() const {
+	return genes.end();
+}
+
+class GeneGroups
+{
+public:
+	template <class SpeciesIterable>
+	GeneGroups(Database& database, const SpeciesIterable& all_species)
+	:	all_species(all_species.begin(), all_species.end())
+	{
+		for (auto& source_species : all_species) {
+			for (auto& target_species : all_species) {
+				auto mapping = database.get_ortholog_mapping(GeneMappingId(source_species, target_species));
+				ortholog_mappings.emplace(piecewise_construct, forward_as_tuple(source_species, target_species), forward_as_tuple(mapping));
+			}
+		}
+	}
+
+	/**
+	 * Get Group of gene
+	 */
+	Group& get(const Gene& gene) {
+		auto it = group_of_gene.find(gene);
+		if (it == group_of_gene.end()) {
+			// make group
+			vector<Gene> orthologs;
+			orthologs.emplace_back(gene);
+			for (auto& target_species : all_species) {
+				auto it = ortholog_mappings.find(GeneMappingId(gene.get_species(), target_species));
+				assert(it != ortholog_mappings.end());
+				assert(it->second);
+				auto mapping = it->second;
+				if (mapping->has(gene.get_name())) {
+					auto& genes = mapping->get(gene.get_name());
+					for (auto& gene : genes) {
+						orthologs.emplace_back(target_species, gene);
+					}
+				}
+			}
+			sort(orthologs.begin(), orthologs.end());
+			auto uniq_end = unique(orthologs.begin(), orthologs.end());
+			groups.emplace_back(make_unique<Group>(make_iterable(orthologs.begin(), uniq_end)));
+			auto& group = *groups.back();
+
+			// add mappings
+			for (auto& gene : group) {
+				bool created = group_of_gene.emplace(gene, &group).second;
+				assert(created);
+			}
+
+			// return
+			return group;
+		}
+		else {
+			return *it->second;
+		}
+	}
+
+private:
+	vector<string> all_species;
+	unordered_map<GeneMappingId, shared_ptr<GeneMapping>> ortholog_mappings;
+	unordered_map<Gene, Group*> group_of_gene;
+	vector<unique_ptr<Group>> groups;
+};
+
 
 int main(int argc, char** argv) {
 	using namespace DEEP_BLUE_GENOME;
@@ -70,130 +217,88 @@ int main(int argc, char** argv) {
 		ensure(fabs(positive_treshold) <= 1.0+1e-7, "positive_treshold must be a double between -1 and 1", ErrorType::GENERIC);
 
 		unordered_set<std::string> species_list;
-		vector<GeneExpressionMatrixId> expression_matrices;
+		map<string, shared_ptr<GeneExpressionMatrix>> expression_matrices; // species -> matrix
 		for (auto matrix_node : job_node["expression_matrices"]) {
+			database
 			string species = matrix_node["species"].as<string>();
 			string matrix_name = matrix_node["name"].as<string>();
 
 			bool created = species_list.emplace(species).second;
 			ensure(created, "Specified more than 1 matrix for the same species", ErrorType::GENERIC);
 
-			expression_matrices.emplace_back(species, matrix_name);
+			expression_matrices.emplace(species, database.get_expression_matrix(species, matrix_name));
 		}
 
-		// Load ortholog mappings
-		map<OrthologMappingId, shared_ptr<GeneMapping>> ortholog_mappings; // TODO db update needs to make inverse mappings too. TODO we must grab from plaza...
-		for (auto& source_species : species_list) {
-			for (auto& target_species : species_list) {
-				ortholog_mappings.emplace(piecewise_construct, forward_as_tuple(species, target_species), forward_as_tuple(database.get_ortholog_mapping(source_species, target_species)));
-			}
-		}
+		// Gene groups
+		GeneGroups groups(database, species_list);
 
 		// Load baits
-		map<std::string, vector<string>> baits; // species -> baits without their orthologs
-		map<std::string, vector<std::string>> orthologs; // bait -> bait's orthologs including itself
+		vector<Group*> baits; // list of distinct baits
 		{
-			vector<string> all_baits; // kept to make sure no bait is taken into account twice
 			Baits baits_(baits_path);
-
-			// Get baits and their orthologs
-			for (auto gene : baits_.get_genes()) {
-				if (contains(all_baits, gene)) {
-					continue;
-				}
-
-				auto species = database.get_species_of_gene(gene);
-				baits[species].emplace(gene);
-
-				auto& baits = baits[name];
-				baits.emplace(gene);
-				for (auto& name : species_list) {
-					auto mapping = ortholog_mappings[name];
-					for (auto& g : mapping->get(gene)) {
-						baits.emplace(g);
-					}
-				}
-
-				for (auto& g : baits) {
-					all_baits.emplace(g);
-				}
+			for (auto& gene_name : baits_.get_genes()) {
+				Gene gene(database.get_species_of_gene(gene_name), gene_name);
+				auto& group = groups.get(gene);
+				baits.emplace_back(&group);
 			}
 		}
 
+		// Build species_baits map // TODO turn into a func that's called in next section
+		map<string, vector<Gene>> species_baits; // species -> baits of species
 		for (auto& expression_matrix_id : expression_matrices) {
-			auto gene_expressions = database.get_gene_expression_matrix(expression_matrix_id.species, expression_matrix_id.name);
-
-			auto& baits = baits[gene_expressions->get_species_name()];
-		}
-
-		// Get baits as indices
-		std::vector<size_type> baits_;
-		for (auto gene : baits_.get_genes()) {
-			baits_.emplace_back(gene_expressions->get_gene_index(gene));
-		}
-
-		// find neighbours of each bait
-		std::unordered_map<size_type, std::vector<size_type>> bait_neighbours; // bait row index -> genes correlated above pos treshold or below neg treshold
-		{
-			GeneCorrelationMatrix correlations(*gene_expressions, baits_);
-			{ // TODO rm debug output
-				auto& correlations_ = correlations.get();
-
-				cout << "\t";
-				for (auto bait : baits_) {
-					cout << gene_expressions->get_gene_name(bait) << "\t";
-
+			for (auto& group : baits) {
+				for (auto& bait : *group) {
+					species_baits[bait.get_species()].emplace_back(bait);
 				}
-				cout << "\n";
+			}
+		}
 
-				for (size_type gene=0; gene < correlations_.size1(); gene++) {
-					cout << gene_expressions->get_gene_name(gene) << "\t";
-					for (auto bait : baits_) {
-						cout << correlations_(gene, bait) << "\t";
-					}
-					cout << "\n";
+		// Remove bait groups of which at least one member is missing from its corresponding expression matrix
+		cout << "Warning: bait gene '" << << "' missing in expression matrix. Dropping bait and its orthologs." << "\n";
+
+		// Grab union of neighbours of each bait, where neighbour relation is sufficient (anti-)correlation
+		std::vector<Group> neighbours;
+		for (auto& matrix_id : expression_matrices) { // by expression matrix since that saves memory
+			auto& baits = species_baits[matrix_id.get_species()];
+
+			// Calculate correlations
+			auto gene_expressions = database.get_gene_expression_matrix(matrix_id.get_species(), matrix_id.get_name());
+
+			std::vector<size_type> baits_;
+			for (auto gene : baits) {
+				if (gene_expressions->has_gene(gene.get_name())) {
+					baits_.emplace_back(gene_expressions->get_gene_index(gene.get_name()));
+				}
+				else {
+					// TODO remove bait group and all things
+					;
 				}
 			}
 
-			for (auto bait : baits_) {
-				auto& neighbours = bait_neighbours.emplace(piecewise_construct, forward_as_tuple(bait), forward_as_tuple()).first->second;
-				auto& correlations_ = correlations.get();
-				auto col_index = correlations.get_column_index(bait);
+			GeneCorrelationMatrix correlations(*gene_expressions, baits_);
+			auto& correlations_ = correlations.get();
 
-				for (size_type gene = 0; gene < correlations_.size1() && gene != bait; gene++) {
+			// Make edges to nodes with sufficient correlation
+			for (auto& bait : baits) {
+				auto row_index = gene_expressions->get_gene_index(bait.get_name());
+				auto col_index = correlations.get_column_index(row_index);
+				for (size_type gene = 0; gene < correlations_.size1() && gene != row_index; gene++) {
 					auto corr = correlations_(gene, col_index);
 					if (corr < negative_treshold || corr > positive_treshold) {
-						neighbours.emplace_back(gene);
+						Gene row_gene(matrix_id.get_species(), gene_expressions->get_gene_name(gene));
+						groups.get(row_gene).add_owner(bait);
 					}
 				}
 			}
 		}
 
-		////////////////////////////
-		// Take intersections
-
-		// Efficiently grabbing any group (=gene grouped with all its orthologs):
-		// - grab with ortholog mapping
-		// - wrap in a Group object
-		// - compare by group contents (regardless of order), group behaves like a set (e.g. an ordered vector)
-
-		// Get *set* of bait groups (i.e. bait + orthologs)
-		// Grab neighbour groups for each of the baits via correlations (it's more memory efficient to do this by species)
-		// union all groups while keeping track of their owners. (group, owners). Group is a node, each owner is a bait node, there is an edge between any group and any owner(=a single bait)
-
-		// How to track owners:
-		// map<Group, owners>; add to that map while running through all baits. Then each group will be shown in maximal groups of owners, which is fairly ideal really
-
-		// TODO First intersect between all, then recurse by: for each left out bait do it again and exclude all those already put in a 'cluster'
-		// TODO make intersections gathering efficient once all features are implemented
-
 		//////////////////////
-		// Output cytoscape files
+		// Output cytoscape files using: baits, neighbours
 
 		string network_name = "abiotic"; // TODO
 
 		// sif file
-		{
+		/*{
 			ofstream out(network_name + ".sif");
 			out.exceptions(ofstream::failbit | ofstream::badbit);
 
@@ -203,7 +308,7 @@ int main(int argc, char** argv) {
 					out << gene_expressions->get_gene_name(bait) << "\tpd\t" << gene_expressions->get_gene_name(neigh) << "\n";
 				}
 			}
-		}
+		}*/
 
 		string install_dir = "/home/limyreth/doc/internship/deep_blue_genome"; // TODO don't hardcode, instead install_dir/... or something. with structure: ./bin, ./data; so dirname(argv[0])/..
 		install_dir + "/data/templates/coexpr_vizmap.props";
