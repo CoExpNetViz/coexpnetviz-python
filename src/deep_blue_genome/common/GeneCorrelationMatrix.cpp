@@ -25,6 +25,7 @@ GeneCorrelationMatrix::GeneCorrelationMatrix(const GeneExpressionMatrix& gene_ex
 
 	for (size_type i=0; i<gene_indices.size(); i++) {
 		row_to_column_indices[gene_indices.at(i)] = i;
+		column_to_row_indices.emplace_back(gene_indices.at(i));
 	}
 
 	// calculate Pearson's correlation
@@ -56,6 +57,10 @@ const matrix& GeneCorrelationMatrix::get() const {
 
 size_type GeneCorrelationMatrix::get_column_index(size_type row_index) const {
 	return row_to_column_indices.at(row_index);
+}
+
+size_type GeneCorrelationMatrix::get_row_index(size_type column_index) const {
+	return column_to_row_indices.at(column_index);
 }
 
 }
