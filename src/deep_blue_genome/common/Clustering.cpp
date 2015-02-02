@@ -30,7 +30,7 @@ Clustering::Clustering(string name, string path)
 
 		auto on_cluster_item = [this, &clusters, &genes, &genes_missing](const std::vector<std::string>& line) {
 			auto gene_name = line.at(0);
-			to_lower(gene_name);
+			// TODO currently assuming gene is already in canonical format
 			auto cluster_id = line.at(1);
 			auto it = clusters.find(cluster_id);
 			if (it == clusters.end()) {

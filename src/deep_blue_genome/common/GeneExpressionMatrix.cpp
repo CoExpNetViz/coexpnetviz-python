@@ -45,7 +45,7 @@ GeneExpressionMatrix::GeneExpressionMatrix(string name, std::string species_name
 		int i=-1;
 		j=-1;
 		auto on_new_gene = [this, &i, &j](std::string name) { // start new line
-			to_lower(name);
+			// TODO we currently assume gene is already in canonical form
 			ensure(i<0 || j==expression_matrix.size2()-1, (
 					make_string() << "Line " << i+2 << " (1-based, header included): expected "
 					<< expression_matrix.size2() << " columns, got " << j+1).str(),
