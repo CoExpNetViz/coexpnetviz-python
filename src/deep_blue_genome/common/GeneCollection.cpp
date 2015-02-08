@@ -38,13 +38,13 @@ bool GeneCollection::try_get_gene_by_name(const std::string& name, Gene& out) {
 
 		// Select existing
 		{
-			auto query = database.prepare("SELECT id FROM gene WHERE name = %0q");
+			auto query = database.prepare("SELECT id, ortholog_group_id FROM gene WHERE name = %0q");
 			query.parse();
 			auto result = query.store(name);
 			if (result.num_rows() > 0) {
 				assert(result.num_rows() == 1);
 				auto row = *result.begin();
-				out = Gene(row[0], id, 0, name);
+				out = Gene(row[0], id, row[1], name);
 				return true;
 			}
 		}
@@ -54,7 +54,7 @@ bool GeneCollection::try_get_gene_by_name(const std::string& name, Gene& out) {
 			auto query = database.prepare("INSERT INTO gene (gene_collection_id, name) VALUES (%0q, %1q)");
 			query.parse();
 			auto result = query.execute(id, name);
-			out = Gene(result.insert_id(), id, 0, name);
+			out = Gene(result.insert_id(), id, mysqlpp::null, name);
 			return true;
 		}
 	}

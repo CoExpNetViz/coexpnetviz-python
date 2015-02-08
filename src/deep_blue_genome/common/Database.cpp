@@ -106,5 +106,54 @@ Gene Database::get_gene(const std::string& name) {
 	throw NotFoundException("Gene not part of a known gene collection: " + name);
 }
 
+Gene Database::get_gene(GeneId id) {
+	auto query = prepare("SELECT gene_collection_id, ortholog_group_id, name FROM gene WHERE id = %0q");
+	query.parse();
+	auto result = query.store(id);
+
+	if (result.num_rows() == 0) {
+		throw NotFoundException("Gene id: " + id);
+	}
+
+	assert(result.num_rows() == 1);
+	auto row = *result.begin();
+	return Gene(id, row[0].conv<GeneCollectionId>(0), row[1].conv<NullableOrthologGroupId>(0), row[2].conv<std::string>("")); // Note: the arg to conv is ignored (you can check the source if paranoid)
+}
+
+GeneCollectionId Database::get_gene_collection_id(const std::string& name) {
+	auto query = prepare("SELECT id FROM gene_collection WHERE name = %0q");
+	query.parse();
+	auto result = query.store(name);
+
+	if (result.num_rows() == 0) {
+		throw NotFoundException("Gene collection with name '" + name + "' not found");
+	}
+
+	assert(result.num_rows() == 1);
+	auto row = *result.begin();
+	return row[0];
+}
+
+ExpressionMatrixId Database::get_gene_expression_matrix_id(GeneCollectionId gene_collection_id, const std::string& name) {
+	auto query = prepare("SELECT id FROM expression_matrix WHERE gene_collection_id = %0q AND name = %1q");
+	query.parse();
+	auto result = query.store(gene_collection_id, name);
+
+	if (result.num_rows() == 0) {
+		throw NotFoundException("Gene expression matrix with name '" + name + "' not found");
+	}
+
+	assert(result.num_rows() == 1);
+	auto row = *result.begin();
+	return row[0];
+}
+
+std::shared_ptr<GeneExpressionMatrix> Database::get_gene_expression_matrix(ExpressionMatrixId id) {
+	return load<GeneExpressionMatrix>(id);
+}
+
+std::shared_ptr<GeneCollection> Database::get_gene_collection(GeneCollectionId id) {
+	return load<GeneCollection>(id);
+}
 
 } // end namespace

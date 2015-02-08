@@ -72,7 +72,7 @@ public:
 	 * @param gene_collections Orthologs of gene collections to include in result
 	 */
 	template <class GeneCollectionsIterable>
-	std::vector<GeneId> get_orthologs(GeneId, const GeneCollectionsIterable&);
+	std::vector<GeneId> get_orthologs(OrthologGroupId, const GeneCollectionsIterable&);
 
 	/**
 	 * Get gene collection id by name
@@ -110,24 +110,51 @@ namespace DEEP_BLUE_GENOME {
 
 template <class Type, class Id>
 std::shared_ptr<Type> Database::load(Id id) {
-       using namespace std;
-       static unordered_map<Id, weak_ptr<Type>> instances;
+	using namespace std;
+	static unordered_map<Id, weak_ptr<Type>> instances;
 
-       // find instance
-       auto it = instances.find(id);
-       if (it == instances.end()) {
-               it = instances.emplace(piecewise_construct, forward_as_tuple(id), forward_as_tuple()).first;
-       }
-       auto& instance = it->second;
+	// find instance
+	auto it = instances.find(id);
+	if (it == instances.end()) {
+		it = instances.emplace(piecewise_construct, forward_as_tuple(id), forward_as_tuple()).first;
+	}
+	auto& instance = it->second;
 
-       // get existing shared ptr
-       if (auto ptr = instance.lock()) {
-               return ptr;
-       }
+	// get existing shared ptr
+	if (auto ptr = instance.lock()) {
+		return ptr;
+	}
 
-       // or make new shared ptr
-       auto ptr = make_shared<Type>(id, *this);
-       instance = ptr;
+	// or make new shared ptr
+	auto ptr = make_shared<Type>(id, *this);
+	instance = ptr;
+	return ptr;
 }
 
+template <class GeneCollectionsIterable>
+std::vector<GeneId> Database::get_orthologs(OrthologGroupId group_id, const GeneCollectionsIterable& gene_collections) {
+	std::ostringstream str;
+	str << "SELECT id FROM gene WHERE ortholog_group_id = " << group_id << " AND gene_collection_id NOT IN (";
+	for (auto id : gene_collections) {
+		str << id << ",";
+	}
+	str << 0 << ")"; // 0 is never used as an ortholog group id
+	std::string str_ = str.str();
+	str_.at(str_.length()-1) = ')';
+
+	auto query = prepare(str_);
+	auto result = query.store();
+
+	if (result.num_rows() == 0) {
+		throw NotFoundException("Ortholog group " + group_id);
+	}
+
+	std::vector<GeneId> orthologs;
+	for (auto row : result) {
+		orthologs.emplace_back(row[0]);
+	}
+
+	return orthologs;
 }
+
+} // end namespace

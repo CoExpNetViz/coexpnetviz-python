@@ -20,6 +20,8 @@ class Database;
 class GeneCollection : public boost::noncopyable
 {
 public:
+	GeneCollection(GeneCollectionId, Database&);
+
 	/**
 	 * @param gene_web_page Empty string denotes no web page
 	 */
