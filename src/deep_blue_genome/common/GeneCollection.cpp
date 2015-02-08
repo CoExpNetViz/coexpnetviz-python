@@ -44,7 +44,7 @@ bool GeneCollection::try_get_gene_by_name(const std::string& name, Gene& out) {
 			if (result.num_rows() > 0) {
 				assert(result.num_rows() == 1);
 				auto row = *result.begin();
-				out = Gene(row[0], id, name);
+				out = Gene(row[0], id, 0, name);
 				return true;
 			}
 		}
@@ -54,7 +54,7 @@ bool GeneCollection::try_get_gene_by_name(const std::string& name, Gene& out) {
 			auto query = database.prepare("INSERT INTO gene (gene_collection_id, name) VALUES (%0q, %1q)");
 			query.parse();
 			auto result = query.execute(id, name);
-			out = Gene(result.insert_id(), id, name);
+			out = Gene(result.insert_id(), id, 0, name);
 			return true;
 		}
 	}

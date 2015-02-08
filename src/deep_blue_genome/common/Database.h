@@ -3,7 +3,6 @@
 #pragma once
 
 #include <deep_blue_genome/common/util.h>
-#include <deep_blue_genome/common/Species.h>
 #include <deep_blue_genome/common/types.h>
 #include <deep_blue_genome/common/Gene.h>
 #include <boost/noncopyable.hpp>
@@ -57,7 +56,7 @@ public:
 	/**
 	 * @throws NotFoundException if doesn't exist
 	 */
-	ExpressionMatrixId get_expression_matrix_by_name(GeneCollectionId, const std::string& name);
+	ExpressionMatrixId get_gene_expression_matrix_id(GeneCollectionId, const std::string& name); // TODO rename ExpressionMatrixId -> Gene*
 
 	/**
 	 * Get gene by name, inserts gene if it doesn't exist yet
@@ -65,7 +64,27 @@ public:
 	 * @throws NotFoundException if name matches none of the gene collections
 	 * @param name Name of gene
 	 */
-	Gene get_gene_by_name(const std::string& name);
+	Gene get_gene(const std::string& name);
+
+	/**
+	 * Get orthologs of gene, filtered by their gene collection
+	 *
+	 * @param gene_collections Orthologs of gene collections to include in result
+	 */
+	template <class GeneCollectionsIterable>
+	std::vector<GeneId> get_orthologs(GeneId, const GeneCollectionsIterable&);
+
+	/**
+	 * Get gene collection id by name
+	 */
+	GeneCollectionId get_gene_collection_id(const std::string& name);
+
+	/**
+	 * Get gene by id
+	 *
+	 * @throws NotFoundException
+	 */
+	Gene get_gene(GeneId);
 
 private:
    /**

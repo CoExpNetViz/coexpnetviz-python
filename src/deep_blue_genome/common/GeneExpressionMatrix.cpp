@@ -50,7 +50,7 @@ GeneExpressionMatrix::GeneExpressionMatrix(const string& name, const std::string
 			);
 			i++;
 			if (!gene_collection) {
-				auto gene = this->database.get_gene_by_name(name);
+				auto gene = this->database.get_gene(name);
 				gene_collection_id = gene.get_gene_collection_id();
 				gene_collection = this->database.get_gene_collection(gene_collection_id);
 			}

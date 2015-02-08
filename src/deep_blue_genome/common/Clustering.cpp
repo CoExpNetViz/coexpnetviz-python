@@ -24,7 +24,7 @@ Clustering::Clustering(const std::string& name, const std::string& path, const s
 		auto on_cluster_item = [this, &clusters, &genes_missing, &gene_collection](const std::vector<std::string>& line) {
 			auto name = line.at(0);
 			if (!gene_collection) {
-				auto gene = this->database.get_gene_by_name(name);
+				auto gene = this->database.get_gene(name);
 				gene_collection_id = gene.get_gene_collection_id();
 				gene_collection = this->database.get_gene_collection(gene_collection_id);
 			}
@@ -56,7 +56,7 @@ Clustering::Clustering(const std::string& name, const std::string& path, const s
 	});
 
 	if (expression_matrix != "") {
-		expression_matrix_id = database.get_expression_matrix_by_name(gene_collection_id, expression_matrix);
+		expression_matrix_id = database.get_gene_expression_matrix_id(gene_collection_id, expression_matrix);
 	}
 }
 

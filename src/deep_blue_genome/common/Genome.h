@@ -5,7 +5,7 @@
 #include <boost/noncopyable.hpp>
 
 namespace DEEP_BLUE_GENOME {
-
+// TODO for now we needn't know which genome a gene collection is of, might as well leave it out now
 /**
  * Genome of a species.
  */

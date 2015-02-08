@@ -1,10 +1,14 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
+// TODO gene collection, expression matrix, ... names should be stored with case but matched without it
+
 #include <iostream>
+#include <fstream>
 #include <cstdlib>
 #include <unordered_set>
 #include <unordered_map>
 #include <boost/noncopyable.hpp>
+#include <boost/filesystem.hpp>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/Database.h>
 #include <deep_blue_genome/common/GeneExpressionMatrix.h>
@@ -14,78 +18,6 @@
 
 using namespace std;
 using namespace DEEP_BLUE_GENOME;
-
-// TODO if many applications require to know orthologs for one gene to that of all other species, we might want to redesign the ortholog mapping files to source_species -> all_other_species
-
-class GeneExpressionMatrixId // TODO unused atm
-{
-public:
-	GeneExpressionMatrixId(std::string species, std::string name)
-	:	species(species), name(name)
-	{
-	}
-
-	const string& get_species() const;
-	const string& get_name() const;
-
-private:
-	std::string species;
-	std::string name;
-};
-
-const string& GeneExpressionMatrixId::get_species() const {
-	return species;
-}
-
-const string& GeneExpressionMatrixId::get_name() const {
-	return name;
-}
-
-class Gene
-{
-public:
-	Gene(const string& species, const string& name);
-
-	const string& get_species() const;
-	const string& get_name() const;
-
-	bool operator==(const Gene& other) const {
-		return name == other.name;
-	}
-
-	bool operator<(const Gene& other) const {
-		return name < other.name;
-	}
-
-private:
-	string species;
-	string name;
-};
-
-Gene::Gene(const string& species, const string& name)
-:	species(species), name(name)
-{
-}
-
-const string& Gene::get_species() const {
-	return species;
-}
-
-const string& Gene::get_name() const {
-	return name;
-}
-
-namespace std {
-template <> struct hash<Gene>
-{
-	size_t operator()(const Gene& x) const
-	{
-		size_t hash = 0;
-		DEEP_BLUE_GENOME::hash_combine(hash, x.get_name());
-		return hash;
-	}
-};
-} // end namespace
 
 /**
  * A bait gene that 'owns' another gene by correlating sufficiently to it
@@ -141,11 +73,12 @@ public:
 	 * @param genes Iterable of distinct genes
 	 */
 	template<class IterableT>
-	Group(IterableT genes)
-	:	genes(genes.begin(), genes.end())
+	Group(Database& database, IterableT genes)
 	{
-		for (auto& gene : genes) {
-			name += gene.get_name() + ";";
+		this->genes.reserve(genes.size());
+		for (auto& gene_id : genes) {
+			this->genes.emplace_back(database.get_gene(gene_id));
+			name += this->genes.back().get_name() + ";";
 		}
 	}
 
@@ -165,8 +98,8 @@ public:
 	vector<Gene>::const_iterator end() const;
 
 private:
-	vector<Gene> genes; // ordered
-	set<Owner> owners; // ordered set of bait genes to which these genes are correlated
+	vector<Gene> genes;
+	set<Owner> owners;  // ordered set of bait genes to which these genes are correlated
 	string name;
 };
 
@@ -185,61 +118,35 @@ string Group::get_name() const {
 class GeneGroups
 {
 public:
-	template <class SpeciesIterable>
-	GeneGroups(Database& database, const SpeciesIterable& all_species)
-	:	all_species(all_species.begin(), all_species.end())
+	template <class GeneCollectionsIterable>
+	GeneGroups(Database& database, const GeneCollectionsIterable& all_gene_collections)
+	:	database(database), all_gene_collections(all_gene_collections.begin(), all_gene_collections.end())
 	{
-		for (auto& source_species : all_species) {
-			for (auto& target_species : all_species) {
-				auto mapping = database.get_ortholog_mapping(GeneMappingId(source_species, target_species));
-				ortholog_mappings.emplace(piecewise_construct, forward_as_tuple(source_species, target_species), forward_as_tuple(mapping));
-			}
-		}
 	}
 
 	/**
 	 * Get Group of gene
 	 */
 	Group& get(const Gene& gene) {
-		auto it = group_of_gene.find(gene);
-		if (it == group_of_gene.end()) {
+		auto group_id = gene.get_ortholog_group_id();
+		auto it = groups.find(group_id);
+		if (it == groups.end()) {
 			// make group
-			vector<Gene> orthologs;
-			orthologs.emplace_back(gene);
-			for (auto& target_species : all_species) {
-				auto mapping = ortholog_mappings.at(GeneMappingId(gene.get_species(), target_species));
-				assert(mapping);
-				if (mapping->has(gene.get_name())) {
-					auto& genes = mapping->get(gene.get_name());
-					for (auto& gene : genes) {
-						orthologs.emplace_back(target_species, gene);
-					}
-				}
-			}
-			sort(orthologs.begin(), orthologs.end());
-			auto uniq_end = unique(orthologs.begin(), orthologs.end());
-			groups.emplace_back(make_unique<Group>(make_iterable(orthologs.begin(), uniq_end)));
-			auto& group = *groups.back();
-
-			// add mappings
-			for (auto& gene : group) {
-				bool created = group_of_gene.emplace(gene, &group).second;
-				assert(created);
-			}
-
-			// return
-			return group;
+			auto p = groups.emplace(piecewise_construct,
+					forward_as_tuple(group_id),
+					forward_as_tuple(database, database.get_orthologs(gene.get_id(), all_gene_collections))
+			);
+			return p.first->second;
 		}
 		else {
-			return *it->second;
+			return it->second;
 		}
 	}
 
 private:
-	vector<string> all_species;
-	unordered_map<GeneMappingId, shared_ptr<GeneMapping>> ortholog_mappings;
-	unordered_map<Gene, Group*> group_of_gene;
-	vector<unique_ptr<Group>> groups;
+	Database& database;
+	vector<GeneCollectionId> all_gene_collections;
+	unordered_map<OrthologGroupId, Group> groups;
 };
 
 
@@ -259,7 +166,7 @@ int main(int argc, char** argv) {
 		}
 
 		// Load database
-		Database database("/home/limyreth/dbg_db"); // TODO not hardcoded
+		Database database;
 
 		// Read yaml
 		YAML::Node job_node = YAML::LoadFile(argv[1]);
@@ -271,33 +178,34 @@ int main(int argc, char** argv) {
 		double positive_treshold = job_node["positive_treshold"].as<double>();
 		ensure(fabs(positive_treshold) <= 1.0+1e-7, "positive_treshold must be a double between -1 and 1", ErrorType::GENERIC);
 
-		unordered_set<std::string> all_species;
-		map<string, shared_ptr<GeneExpressionMatrix>> expression_matrices; // species -> matrix
+		unordered_set<GeneCollectionId> all_gene_collections; // all collections needed for this run
+		map<GeneCollectionId, shared_ptr<GeneExpressionMatrix>> expression_matrices; // gene collection -> matrix
 		for (auto matrix_node : job_node["expression_matrices"]) {
-			string species = matrix_node["species"].as<string>();
+			GeneCollectionId gene_collection = database.get_gene_collection_id(matrix_node["gene_collection"].as<string>());
 			string matrix_name = matrix_node["name"].as<string>();
 
-			bool created = all_species.emplace(species).second;
-			ensure(created, "Specified more than 1 matrix for the same species", ErrorType::GENERIC);
+			bool created = all_gene_collections.emplace(gene_collection).second;
+			ensure(created, "Specified multiple matrices of the same gene collection", ErrorType::GENERIC);
 
-			expression_matrices.emplace(species, database.get_gene_expression_matrix(species, matrix_name));
+			auto matrix_id = database.get_gene_expression_matrix_id(gene_collection, matrix_name);
+			expression_matrices.emplace(gene_collection, database.get_gene_expression_matrix(matrix_id));
 		}
 
 		// Gene groups
-		GeneGroups groups(database, all_species);
+		GeneGroups groups(database, all_gene_collections);
 
 		// Load baits
 		vector<Group*> baits; // list of distinct baits
 		{
 			Baits baits_(baits_path);
 			for (auto& gene_name : baits_.get_genes()) {
-				Gene gene(database.get_species_of_gene(gene_name), gene_name);
+				Gene gene = database.get_gene(gene_name);
 				auto& group = groups.get(gene);
 
 				// if a member is missing from its corresponding expression matrix, drop the bait
 				bool drop = false;
 				for (auto& gene : group) {
-					if (!expression_matrices.at(gene.get_species())->has_gene(gene.get_name())) {
+					if (!expression_matrices.at(gene.get_gene_collection_id())->has_gene(gene.get_id())) {
 						cout << "Warning: bait gene '" << gene.get_name() << "' missing in expression matrix. Dropping bait and its orthologs." << "\n";
 						drop = true;
 						break;
@@ -310,28 +218,27 @@ int main(int argc, char** argv) {
 			}
 		}
 
-		// If baits are dropped, species might drop out too, so we rebuild all_species here
-		all_species.clear();
+		// If baits are dropped, gene collections might drop out too, so we rebuild all_gene_collections here
+		all_gene_collections.clear();
 		for (auto group : baits) {
 			for (auto& bait : *group) {
-				auto& species = bait.get_species();
-				all_species.emplace(species);
+				all_gene_collections.emplace(bait.get_gene_collection_id());
 			}
 		}
 
 		// Grab union of neighbours of each bait, where neighbour relation is sufficient (anti-)correlation
 		std::vector<Group*> neighbours;
-		unordered_map<string, vector<size_type>> bait_indices; // species -> gene indices of baits
+		unordered_map<GeneCollectionId, vector<size_type>> bait_indices; // species -> gene indices of baits
 		for (auto group : baits) {
 			for (auto bait : *group) {
 				// Calculate correlations
-				auto matrix = expression_matrices.at(bait.get_species());
-				bait_indices[bait.get_species()].emplace_back(matrix->get_gene_index(bait.get_name()));
+				auto matrix = expression_matrices.at(bait.get_gene_collection_id());
+				bait_indices[bait.get_gene_collection_id()].emplace_back(matrix->get_gene_row(bait.get_id()));
 			}
 		}
-		for (auto& species : all_species) {
-			auto expression_matrix = expression_matrices.at(species);
-			auto& indices = bait_indices.at(species);
+		for (auto& gene_collection_id : all_gene_collections) {
+			auto expression_matrix = expression_matrices.at(gene_collection_id);
+			auto& indices = bait_indices.at(gene_collection_id);
 
 			GeneCorrelationMatrix correlations(*expression_matrix, indices);
 			auto& correlations_ = correlations.get();
@@ -339,12 +246,12 @@ int main(int argc, char** argv) {
 			// Make edges to nodes with sufficient correlation
 			for (auto row_index : indices) {
 				auto col_index = correlations.get_column_index(row_index);
-				auto bait_name = expression_matrix->get_gene_name(row_index);
-				auto bait = Gene(species, bait_name);
+				auto bait_id = expression_matrix->get_gene_id(row_index);
+				auto bait = database.get_gene(bait_id);
 				for (size_type gene = 0; gene < correlations_.size1() && gene != row_index; gene++) {
 					auto corr = correlations_(gene, col_index);
 					if (corr < negative_treshold || corr > positive_treshold) {
-						Gene row_gene(species, expression_matrix->get_gene_name(gene));
+						auto row_gene = database.get_gene(expression_matrix->get_gene_id(gene));
 						auto& group = groups.get(row_gene);
 						group.add_owner(bait, corr);
 						neighbours.emplace_back(&group);

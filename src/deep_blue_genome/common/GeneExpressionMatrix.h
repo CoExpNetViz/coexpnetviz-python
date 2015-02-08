@@ -7,7 +7,6 @@
 #include <boost/noncopyable.hpp>
 #include <memory>
 #include <deep_blue_genome/common/ublas.h>
-#include <deep_blue_genome/common/Species.h>
 #include <deep_blue_genome/common/types.h>
 
 // TODO size_type is unsigned long long or such, we don't need thaaat much. Should swap it for a typedef of our own and then set that to uint32_t. You probably won't need more than uint, but there's not much extra effort in using a typedef

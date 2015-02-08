@@ -96,7 +96,7 @@ void Database::update(std::string yaml_path) {
 	// TODO allow removal (--rm-gene-mappings --rm-functional-annotations --rm-expression-matrices --rm-orthologs --rm-clusterings --rm-gene-collections)
 }
 
-Gene Database::get_gene_by_name(const std::string& name) {
+Gene Database::get_gene(const std::string& name) {
 	Gene gene;
 	for (auto& p : gene_collections) {
 		if (p.second->try_get_gene_by_name(name, gene)) {

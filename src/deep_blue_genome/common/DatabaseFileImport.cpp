@@ -25,8 +25,8 @@ void DatabaseFileImport::add_gene_mappings(const std::string& path, Database& da
 					ErrorType::GENERIC
 			);
 
-			auto gene1 = database.get_gene_by_name(line.at(0));
-			auto gene2 = database.get_gene_by_name(line.at(1));
+			auto gene1 = database.get_gene(line.at(0));
+			auto gene2 = database.get_gene(line.at(1));
 			ensure(gene1.get_gene_collection_id() != gene2.get_gene_collection_id(),
 					(make_string() << "Encountered mapping between 2 genes of the same gene collection: " << gene1.get_name() << ", " << gene2.get_name()).str(),
 					ErrorType::GENERIC
@@ -55,7 +55,7 @@ void DatabaseFileImport::add_functional_annotations(const string& path, Database
 					ErrorType::GENERIC
 			);
 
-			auto gene = database.get_gene_by_name(line.at(0));
+			auto gene = database.get_gene(line.at(0));
 			auto description = line.at(1);
 
 			query.execute(description, gene.get_id());
@@ -97,7 +97,7 @@ void DatabaseFileImport::add_orthologs(const std::string& path, Database& databa
 
 			for (auto& name : line) {
 				try {
-					auto gene = database.get_gene_by_name(name); // Note: doing get gene by name to ensure it exists when we'll update it
+					auto gene = database.get_gene(name); // Note: doing get gene by name to ensure it exists when we'll update it
 					query.execute(ortholog_group, gene.get_id());
 				}
 				catch (const NotFoundException&) {

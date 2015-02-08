@@ -48,11 +48,11 @@ target_link_libraries(database
 	common ncurses)
 	
 # morph
-file(GLOB_RECURSE morph_sources deep_blue_genome/morph/*.cpp)
-add_executable(morph ${morph_sources})
+#file(GLOB_RECURSE morph_sources deep_blue_genome/morph/*.cpp)
+#add_executable(morph ${morph_sources})
 
-target_link_libraries(morph
-	common)
+#target_link_libraries(morph
+#	common)
 	
 # coexpr
 file(GLOB_RECURSE coexpr_sources deep_blue_genome/coexpr/*.cpp)
