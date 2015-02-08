@@ -29,7 +29,7 @@ GeneExpressionMatrixClustering::GeneExpressionMatrixClustering(std::shared_ptr<G
 				genes_missing++;
 			}
 			else {
-				auto index = gene_expression_matrix->get_gene_index(gene);
+				auto index = gene_expression_matrix->get_gene_row(gene);
 				new_cluster.add(index);
 				genes.emplace_back(index);
 			}

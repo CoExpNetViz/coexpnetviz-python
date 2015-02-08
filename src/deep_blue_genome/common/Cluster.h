@@ -3,22 +3,20 @@
 #pragma once
 
 #include <vector>
-#include <utility>
-#include <boost/noncopyable.hpp>
-#include <deep_blue_genome/common/ublas.h>
+#include <deep_blue_genome/common/types.h>
 
 namespace DEEP_BLUE_GENOME {
 
 /**
  * A cluster of a Clustering
  */
-class Cluster //TODO: public boost::noncopyable
+class Cluster
 {
 public:
 	Cluster() {}  // boost::serialization uses this to construct an invalid Cluster before loading it
 	Cluster(std::string name);
 
-	void add(std::string gene);
+	void add(GeneId gene);
 
 	/**
 	 * Get whether cluster is empty
@@ -28,32 +26,16 @@ public:
 	/**
 	 * Get iterator to first gene
 	 */
-	std::vector<std::string>::const_iterator begin() const;
-	std::vector<std::string>::const_iterator end() const;
-	std::vector<std::string>::iterator begin();
-	std::vector<std::string>::iterator end();
+	std::vector<GeneId>::const_iterator begin() const;
+	std::vector<GeneId>::const_iterator end() const;
+	std::vector<GeneId>::iterator begin();
+	std::vector<GeneId>::iterator end();
 
 	std::string get_name() const;
 
-	template<class Archive>
-	void serialize(Archive& ar, const unsigned int version);
-
 private:
-	std::vector<std::string> genes;
+	std::vector<GeneId> genes;
 	std::string name;
-
-private:
-	friend class boost::serialization::access;
 };
-
-
-/////////////////////
-// hpp
-
-template<class Archive>
-void Cluster::serialize(Archive& ar, const unsigned int version) {
-	ar & name;
-	ar & genes;
-}
 
 } // end MORPHC

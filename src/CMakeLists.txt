@@ -15,6 +15,12 @@ include_directories(${GSL_INCLUDE_DIR})
 find_package(YAMLCpp REQUIRED COMPONENTS)
 include_directories(${YAMLCPP_INCLUDE_DIR})
 
+find_package(MySQL REQUIRED COMPONENTS)
+include_directories(${MYSQL_INCLUDE_DIR})
+
+find_package(MySQLpp REQUIRED COMPONENTS)
+include_directories(${MYSQLPP_INCLUDE_DIR})
+
 ############################################
 
 include_directories(BEFORE ${CMAKE_SOURCE_DIR})
@@ -30,7 +36,9 @@ target_link_libraries(common
 	${GSL_LIBRARIES}
 	${Boost_LIBRARIES}
 	${YAMLCPP_LIBRARY}
-    ${LIBS})
+    ${LIBS}
+    ${MYSQL_LIBRARIES}
+    ${MYSQLPP_LIBRARIES})
     
 # database
 file(GLOB_RECURSE database_sources deep_blue_genome/database/*.cpp)

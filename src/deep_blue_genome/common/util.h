@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <exception>
 #include <sstream>
 #include <map>
 #include <functional>
@@ -9,6 +10,14 @@
 #include <deep_blue_genome/common/ErrorType.h>
 
 namespace DEEP_BLUE_GENOME {
+
+class NotFoundException : public std::runtime_error {
+public:
+	NotFoundException(const std::string& kind)
+	:	runtime_error(kind)
+	{
+	}
+};
 
 // This class taken from: http://stackoverflow.com/a/25351759/1031434
 // Contributed by Jason R

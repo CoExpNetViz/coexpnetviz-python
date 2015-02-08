@@ -2,10 +2,11 @@
 
 #pragma once
 
-#include <string>
+// TODO rm
+#if false
+
 #include <vector>
 #include <unordered_map>
-#include <boost/regex.hpp>
 #include <deep_blue_genome/common/util.h>
 
 namespace DEEP_BLUE_GENOME {
@@ -90,9 +91,6 @@ public:
 
 	std::shared_ptr<GeneExpressionMatrix> get_gene_expression_matrix(std::string name) const;
 
-	template<class Archive>
-	void serialize(Archive& ar, const unsigned int version);
-
 private:
 	std::string name;
 	Database& database;
@@ -139,3 +137,4 @@ void Species::update_ortholog_mappings(IterableT species_names) {
 }
 
 }
+#endif

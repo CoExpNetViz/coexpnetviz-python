@@ -9,6 +9,9 @@
 
 namespace DEEP_BLUE_GENOME {
 
+// TODO attempt to simplify clustering made specific to GeneExpressionMatrix
+// TODO attempt to simplify many 'performance' decisions we made before actually profiling (i.e. check whether they truly gain us any decent performance)
+
 /**
  * A clustering specific to a GeneExpressionMatrix.
  *
@@ -41,23 +44,11 @@ public:
 
 	std::string get_name() const;
 
-	template<class Archive>
-	void serialize(Archive& ar, const unsigned int version);
-
 private:
 	std::string name;
 	Clusters clusters;  // mutually disjunct clusters
 	std::shared_ptr<GeneExpressionMatrix> gene_expression_matrix; // gene expression data we clustered
 };
-
-
-/////////////////////
-// hpp
-
-template<class Archive>
-void GeneExpressionMatrixClustering::serialize(Archive& ar, const unsigned int version) {
-	ar & clusters;
-}
 
 
 }

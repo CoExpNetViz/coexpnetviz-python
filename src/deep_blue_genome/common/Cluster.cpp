@@ -3,7 +3,6 @@
 #include "Cluster.h"
 
 using namespace std;
-namespace ublas = boost::numeric::ublas;
 
 namespace DEEP_BLUE_GENOME {
 
@@ -12,27 +11,27 @@ Cluster::Cluster(string name)
 {
 }
 
-void Cluster::add(string gene_index) {
-	genes.emplace_back(gene_index);
+void Cluster::add(GeneId gene_id) {
+	genes.emplace_back(gene_id);
 }
 
 bool Cluster::empty() const {
 	return genes.empty();
 }
 
-std::vector<string>::const_iterator Cluster::begin() const {
+std::vector<GeneId>::const_iterator Cluster::begin() const {
 	return genes.begin();
 }
 
-std::vector<string>::const_iterator Cluster::end() const {
+std::vector<GeneId>::const_iterator Cluster::end() const {
 	return genes.end();
 }
 
-std::vector<string>::iterator Cluster::begin() {
+std::vector<GeneId>::iterator Cluster::begin() {
 	return genes.begin();
 }
 
-std::vector<string>::iterator Cluster::end() {
+std::vector<GeneId>::iterator Cluster::end() {
 	return genes.end();
 }
 

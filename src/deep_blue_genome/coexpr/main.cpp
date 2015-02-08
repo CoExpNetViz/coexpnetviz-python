@@ -9,8 +9,6 @@
 #include <deep_blue_genome/common/Database.h>
 #include <deep_blue_genome/common/GeneExpressionMatrix.h>
 #include <deep_blue_genome/common/GeneCorrelationMatrix.h>
-#include <deep_blue_genome/common/GeneMapping.h>
-#include <deep_blue_genome/common/GeneMappingId.h>
 #include <deep_blue_genome/coexpr/Baits.h>
 #include <yaml-cpp/yaml.h>
 

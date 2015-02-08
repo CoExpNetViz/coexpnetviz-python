@@ -8,12 +8,15 @@
 #include <memory>
 #include <deep_blue_genome/common/ublas.h>
 #include <deep_blue_genome/common/Species.h>
+#include <deep_blue_genome/common/types.h>
 
 // TODO size_type is unsigned long long or such, we don't need thaaat much. Should swap it for a typedef of our own and then set that to uint32_t. You probably won't need more than uint, but there's not much extra effort in using a typedef
 namespace DEEP_BLUE_GENOME {
 
 class GeneExpressionMatrixClustering;
 class Database;
+
+typedef uint32_t GeneExpressionMatrixRow;
 
 /**
  * Gene expression matrix
@@ -26,64 +29,49 @@ class GeneExpressionMatrix : public boost::noncopyable, public std::enable_share
 {
 public:
 	/**
-	 * Construct invalid expression matrix (for loading via serialization)
+	 * Load from database
 	 */
-	GeneExpressionMatrix(std::string name, std::string species_name, Database&);
+	GeneExpressionMatrix(ExpressionMatrixId matrix_id, Database&);
 
 	/**
 	 * Construct an expression matrix from a TODO particular plain text format
 	 *
 	 * @param species_name Name of species to which the gene expressions belong
 	 */
-	GeneExpressionMatrix(std::string name, std::string species_name, std::string path, Database&);
+	GeneExpressionMatrix(const std::string& name, const std::string& path, Database&);
 
 	/**
 	 * Get index of row corresponding to given gene
 	 */
-	size_type get_gene_index(std::string name) const;
-	std::string get_gene_name(size_type gene_index) const;
-	bool has_gene(std::string name) const;
+	GeneExpressionMatrixRow get_gene_row(GeneId) const;
+	GeneId get_gene_id(GeneExpressionMatrixRow) const;
+	bool has_gene(GeneId) const;
 
 	std::string get_name() const;
 	std::string get_species_name() const;
 
 	void dispose_expression_data();
 
-	Iterable<Species::name_iterator> get_clusterings() const;
-	std::shared_ptr<GeneExpressionMatrixClustering> get_clustering(std::string clustering_name);
-
 	/**
 	 * Get inner matrix representation
 	 */
 	const matrix& get() const;
 
-	template<class Archive>
-	void serialize(Archive& ar, const unsigned int version);
+	/**
+	 * Insert into database
+	 */
+	void database_insert();
 
 private:
+	ExpressionMatrixId id;
 	std::string name; // name of dataset
-	std::string species_name;
+	GeneCollectionId gene_collection_id;
 	Database& database;
 
 	matrix expression_matrix; // row_major
 
-	std::vector<size_type> genes; // sorted list of genes
-	std::unordered_map<std::string, size_type> gene_indices; // all genes, name -> row index of gene in gene_correlations
-	std::unordered_map<size_type, std::string> gene_names;
-	std::unordered_map<size_type, size_type> gene_column_indices; // gene row index -> columng index of gene in gene_correlations
+	std::unordered_map<GeneExpressionMatrixRow, GeneId> gene_row_to_id;
+	std::unordered_map<GeneId, GeneExpressionMatrixRow> gene_id_to_row;
 };
-
-
-/////////////////////
-// hpp
-
-template<class Archive>
-void GeneExpressionMatrix::serialize(Archive& ar, const unsigned int version) {
-	ar & expression_matrix;
-	ar & genes;
-	ar & gene_indices;
-	ar & gene_names;
-	ar & gene_column_indices;
-}
 
 }
