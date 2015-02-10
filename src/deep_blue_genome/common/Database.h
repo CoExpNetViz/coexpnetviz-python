@@ -86,6 +86,11 @@ public:
 	 */
 	Gene get_gene(GeneId);
 
+	/**
+	 * Get path to file in which expression matrix values are dumped
+	 */
+	std::string get_gene_expression_matrix_values_file(GeneExpressionMatrixId);
+
 private:
    /**
 	* Load instance of given Type.
@@ -98,6 +103,7 @@ private:
 private:
 	mysqlpp::TCPConnection connection;
 	std::map<GeneCollectionId, std::shared_ptr<GeneCollection>> gene_collections;  // cache of all gene collections
+	std::string storage_path; // where big blobs of data are stored (which don't belong inside the actual database itself)
 };
 
 } // end namespace

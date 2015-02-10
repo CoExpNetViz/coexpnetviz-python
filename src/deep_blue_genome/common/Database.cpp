@@ -16,6 +16,7 @@ namespace DEEP_BLUE_GENOME {
 Database::Database()
 :	connection("psbsql05", "db_tidie_deep_blue_genome", "tidie", "4Ku8pxArMFzdS5Kt") // TODO don't hardcode username,password. Grab new password once this is no longer in here
 {
+	storage_path = "/home/limyreth/dbg_db"; // TODO grab from settings table instead of hardcode
 }
 
 void Database::execute(const std::string& query) {
@@ -44,10 +45,12 @@ void Database::update(std::string yaml_path) {
 
 	// Gene collections
 	// TODO allow removal/overwrite of all sorts of things
+	// TODO allow update of some things
 	for (auto gene_collection_node : config["gene_collections"]) {
 		// TODO when specified, it overwrites the previous definition of the gene collection. Do warn though. Also, makes it other than an update, since it kinda removes parts
-		GeneCollection gene_collection(gene_collection_node["name"].as<string>(), gene_collection_node["gene_format_match"].as<string>(), gene_collection_node["gene_format_replace"].as<string>(), gene_collection_node["gene_web_page"].as<string>(""), *this);
-		gene_collection.database_insert(*this); // TODO also update
+		NullableGeneWebPage gene_web_page = gene_collection_node["gene_web_page"] ? NullableGeneWebPage(gene_collection_node["gene_web_page"].as<std::string>()) : mysqlpp::null;
+		GeneCollection gene_collection(gene_collection_node["name"].as<string>(), gene_collection_node["species"].as<string>(), gene_collection_node["gene_format_match"].as<string>(), gene_collection_node["gene_format_replace"].as<string>(), gene_web_page, *this);
+		gene_collection.database_insert();
 	}
 
 	// Gene mappings
@@ -154,6 +157,10 @@ std::shared_ptr<GeneExpressionMatrix> Database::get_gene_expression_matrix(Expre
 
 std::shared_ptr<GeneCollection> Database::get_gene_collection(GeneCollectionId id) {
 	return load<GeneCollection>(id);
+}
+
+std::string Database::get_gene_expression_matrix_values_file(GeneExpressionMatrixId id) {
+	return (make_string() << storage_path << "/gene_expression_matrices/" << id << "/matrix").str();
 }
 
 } // end namespace

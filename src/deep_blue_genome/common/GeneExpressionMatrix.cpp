@@ -8,6 +8,7 @@
 #include <cmath>
 #include <iomanip>
 #include <deep_blue_genome/common/util.h>
+#include <deep_blue_genome/common/serialization.h>
 #include <deep_blue_genome/common/TabGrammarRules.h>
 #include <deep_blue_genome/common/Database.h>
 #include <deep_blue_genome/common/GeneCollection.h>
@@ -16,6 +17,45 @@ using namespace std;
 namespace ublas = boost::numeric::ublas;
 
 namespace DEEP_BLUE_GENOME {
+
+GeneExpressionMatrix::GeneExpressionMatrix(ExpressionMatrixId id, Database& database)
+:	id(id), database(database)
+{
+	// Load general info
+	{
+		auto query = database.prepare("SELECT name, gene_collection_id FROM expression_matrix WHERE id = %0q");
+		query.parse();
+		auto result = query.store(id);
+
+		if (result.num_rows() == 0) {
+			throw NotFoundException((make_string() << "Gene expression matrix with id " << id << " not found").str());
+		}
+
+		assert(result.num_rows() == 1);
+		auto row = *result.begin();
+		name = row[0].conv<std::string>("");
+		gene_collection_id = row[1];
+	}
+
+	// Load row <-> gene mapping
+	{
+		auto query = database.prepare("SELECT row, gene_id FROM expression_matrix_row WHERE matrix_id = %0q");
+		query.parse();
+		auto result = query.store(id);
+
+		assert(result.num_rows() > 0);
+
+		for (auto row : result) {
+			GeneExpressionMatrixRow gene_row = row[0];
+			GeneId gene_id = row[1];
+			gene_row_to_id.emplace(gene_row, gene_id);
+			gene_id_to_row.emplace(gene_id, gene_row);
+		}
+	}
+
+	// Load matrix
+	load_from_binary(database.get_gene_expression_matrix_values_file(id), expression_matrix);
+}
 
 GeneExpressionMatrix::GeneExpressionMatrix(const string& name, const std::string& path, Database& database)
 :	id(0), name(name), database(database)
@@ -103,19 +143,24 @@ const matrix& GeneExpressionMatrix::get() const {
 
 void GeneExpressionMatrix::database_insert() {
 	// Insert expression_matrix
-	auto stmt = database.prepare("INSERT INTO expression_matrix(name, gene_collection_id, rows, columns, values) VALUES (%0q, %1q, %2q, %3q, %4q)");
-	stmt.parse();
-	auto& array = expression_matrix.data();
-	mysqlpp::sql_blob matrix_data(reinterpret_cast<const char*>(array.begin()), sizeof(double) * array.size()); // Let the hax begin TODO avoid hax // TODO try to avoid copy
-	auto result = stmt.execute(name, gene_collection_id, expression_matrix.size1(), expression_matrix.size2(), matrix_data);
-	ExpressionMatrixId matrix_id = result.insert_id();
+	{
+		auto query = database.prepare("INSERT INTO expression_matrix(name, gene_collection_id) VALUES (%0q, %1q)");
+		query.parse();
+		auto result = query.execute(name, gene_collection_id);
+		id = result.insert_id();
+	}
 
 	// Insert expression matrix rows
-	stmt = database.prepare("INSERT INTO expression_matrix_row(matrix_id, row, gene_id) VALUES (%0q, %1q, %2q)");
-	stmt.parse();
-	for (auto& p : gene_id_to_row) {
-		stmt.execute(matrix_id, p.second, p.first);
+	{
+		auto query = database.prepare("INSERT INTO expression_matrix_row(matrix_id, row, gene_id) VALUES (%0q, %1q, %2q)");
+		query.parse();
+		for (auto& p : gene_id_to_row) {
+			query.execute(id, p.second, p.first);
+		}
 	}
+
+	// Dump matrix
+	save_to_binary(database.get_gene_expression_matrix_values_file(id), expression_matrix);
 }
 
 } // end namespace

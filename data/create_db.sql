@@ -3,8 +3,8 @@
 -- Note: MySQL doesn't support CHECK constraints (it does parse them though...)
 
 -- Drop all
-drop table if exists genome, gene_collection, gene, gene_mapping, expression_matrix, expression_matrix_row, clustering, cluster, cluster_item;
-drop table expression_matrix_cell, orthologs;
+drop table if exists gene_collection, gene, gene_mapping, expression_matrix, expression_matrix_row, clustering, cluster, cluster_item;
+drop table expression_matrix_cell, orthologs, genome;
 
 -- Set collation
 ALTER DATABASE db_tidie_deep_blue_genome
@@ -14,20 +14,21 @@ DEFAULT COLLATE utf8_general_ci;
 -- Use MyISAM (no transactions, no foreign key constraint checks, better performance)
 SET storage_engine = MyISAM;
 
--- Add all
-create table genome (
+-- General application settings 
+create table settings (
 	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-	species VARCHAR(100) NOT NULL COMMENT 'Name of species',
-	PRIMARY KEY (id)
+	name VARCHAR(250) NOT NULL COMMENT 'Name of setting',
+	value VARCHAR(500) NOT NULL COMMENT 'Value of setting',
+	PRIMARY KEY (id) 
 );
 
 -- A collection of genes from a single source with a common naming scheme
 create table gene_collection (
 	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
 	name VARCHAR(100) NOT NULL COMMENT 'Name of collection, e.g. RAP db',
-	genome_id INT UNSIGNED NOT NULL,
-	gene_formatter_match VARCHAR(250) NOT NULL COMMENT 'Genes whose name match this perl regex are part of the collection',
-	gene_formatter_replace VARCHAR(250) NOT NULL COMMENT 'Formats a gene name matched with gene_formatter_match to its user-presentable canonical form. See http://www.boost.org/doc/libs/1_57_0/libs/regex/doc/html/boost_regex/format/boost_format_syntax.html',
+	species VARCHAR(100) NOT NULL COMMENT 'Name of species',
+	gene_format_match VARCHAR(500) NOT NULL COMMENT 'Genes whose name match this perl regex are part of the collection',
+	gene_format_replace VARCHAR(500) NOT NULL COMMENT 'Formats a gene name matched with gene_formatter_match to its user-presentable canonical form. See http://www.boost.org/doc/libs/1_57_0/libs/regex/doc/html/boost_regex/format/boost_format_syntax.html',
 	PRIMARY KEY (id),
 	FOREIGN KEY (genome_id) REFERENCES genome(id)
 );
@@ -58,11 +59,8 @@ create table gene_mapping (
 -- Gene expression matrices
 create table expression_matrix (
 	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-	name VARCHAR(256) NOT NULL,
+	name VARCHAR(250) NOT NULL,
 	gene_collection_id INT UNSIGNED NOT NULL,
-	rows INT UNSIGNED NOT NULL COMMENT 'Number of rows of matrix',
-	columns INT UNSIGNED NOT NULL COMMENT 'Number of columns of matrix',
-	values ?binary,blob? NOT NULL COMMENT 'values in matrix, as doubles, in row major order'
 	PRIMARY KEY (id),
 	FOREIGN KEY (gene_collection_id) REFERENCES gene_collection(id)
 );

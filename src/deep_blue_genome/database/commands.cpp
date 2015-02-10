@@ -6,9 +6,6 @@
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/Database.h>
 #include <deep_blue_genome/common/TabGrammarRules.h>
-#include <deep_blue_genome/common/GeneMapping.h>
-#include <deep_blue_genome/common/GeneMappingId.h>
-#include <deep_blue_genome/common/Canonicaliser.h>
 
 
 using namespace std;

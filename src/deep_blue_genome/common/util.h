@@ -156,6 +156,8 @@ inline void hash_combine(std::size_t& seed, T const& v)
 
 } // end namespace
 
+
+
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args)
 {

@@ -62,7 +62,7 @@ public:
 	void database_insert();
 
 private:
-	ExpressionMatrixId id;
+	GeneExpressionMatrixId id;
 	std::string name; // name of dataset
 	GeneCollectionId gene_collection_id;
 	Database& database;

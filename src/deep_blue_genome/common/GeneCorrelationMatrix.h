@@ -14,7 +14,7 @@ typedef matrix GeneCorrelations;
 /**
  * Gene correlation matrix
  */
-class GeneCorrelationMatrix : public boost::noncopyable
+class GeneCorrelationMatrix : public boost::noncopyable // TODO probably should be in column major order
 {
 public:
 	/**
