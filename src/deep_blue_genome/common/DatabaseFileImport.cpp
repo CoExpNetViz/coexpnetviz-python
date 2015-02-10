@@ -13,6 +13,8 @@ namespace DEEP_BLUE_GENOME {
 // TODO input validation on all read plain files, allow easier formats. Plain = clean, well-documented format. Bin = fast binary format.
 
 void DatabaseFileImport::add_gene_mappings(const std::string& path, Database& database) {
+	// TODO splice variants are the same gene, but depending on the variant the mapping is different. There's also one 'variant' that includes non-coding regions as well. Should map: (gene, splice variant) -> (gene, splice variant).
+	// And even then it can still happen to map to multiple. Maybe there's info on which splice variant a certain gene name is, e.g. Os*g* seems to never have a .num suffix
 	read_file(path, [&database](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
 
@@ -20,10 +22,12 @@ void DatabaseFileImport::add_gene_mappings(const std::string& path, Database& da
 		query.parse();
 
 		auto on_line = [&database, &query](const std::vector<std::string>& line) {
-			ensure(line.size() == 2,
+			/*ensure(line.size() == 2,
 					(make_string() << "Encountered line in mapping with " << line.size() << " columns").str(),
 					ErrorType::GENERIC
 			);
+			TODO a gene from one collection can map to multiple genes of another collection. It seems that the mapping is determined by genes from separate collections overlapping in sequence start/end locations
+			*/
 
 			auto gene1 = database.get_gene(line.at(0));
 			auto gene2 = database.get_gene(line.at(1));

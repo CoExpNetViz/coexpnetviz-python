@@ -101,7 +101,7 @@ private:
 	std::shared_ptr<Type> load(Id);
 
 private:
-	mysqlpp::TCPConnection connection;
+	mysqlpp::Connection connection;
 	std::map<GeneCollectionId, std::shared_ptr<GeneCollection>> gene_collections;  // cache of all gene collections
 	std::string storage_path; // where big blobs of data are stored (which don't belong inside the actual database itself)
 };

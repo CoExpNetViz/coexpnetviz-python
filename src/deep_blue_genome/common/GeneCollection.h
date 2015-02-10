@@ -24,6 +24,7 @@ public:
 
 	GeneCollection(const std::string& name, const std::string& species, const std::string& gene_format_match, const std::string& gene_format_replace, const mysqlpp::sql_varchar_null& gene_web_page, Database&);
 
+	GeneCollectionId get_id() const;
 	std::string get_name() const;
 
 	/**

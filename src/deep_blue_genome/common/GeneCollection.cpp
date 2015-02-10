@@ -100,10 +100,14 @@ std::string GeneCollection::get_gene_web_page() const {
 }
 
 void GeneCollection::database_insert() {
-	auto query = database.prepare("INSERT INTO gene_collection(name, species, gene_format_match, gene_format_replace, gene_web_page) VALUES (%0q, %1q, %2q, %3q)");
+	auto query = database.prepare("INSERT INTO gene_collection(name, species, gene_format_match, gene_format_replace, gene_web_page) VALUES (%0q, %1q, %2q, %3q, %4q)");
 	query.parse();
 	auto result = query.execute(name, species, gene_format_match, gene_format_replace, gene_web_page);
 	id = result.insert_id();
+}
+
+GeneCollectionId GeneCollection::get_id() const {
+	return id;
 }
 
 

@@ -14,16 +14,20 @@ using namespace mysqlpp;
 namespace DEEP_BLUE_GENOME {
 
 Database::Database()
-:	connection("psbsql05", "db_tidie_deep_blue_genome", "tidie", "4Ku8pxArMFzdS5Kt") // TODO don't hardcode username,password. Grab new password once this is no longer in here
+:	connection("db_tidie_deep_blue_genome", "127.0.0.1:55000", "tidie", "4Ku8pxArMFzdS5Kt") // TODO don't hardcode username,password. Grab new password once this is no longer in here, psbsql05
 {
 	storage_path = "/home/limyreth/dbg_db"; // TODO grab from settings table instead of hardcode
+
+	// TODO load gene_collections, but careful with update further on
 }
 
 void Database::execute(const std::string& query) {
+	ensure(connection.connected(), connection.error(), ErrorType::GENERIC); // it turned out mysql++ doesn't check this...
 	connection.query(query).execute();
 }
 
 Query Database::prepare(const std::string& query) {
+	ensure(connection.connected(), connection.error(), ErrorType::GENERIC);
 	return connection.query(query);
 }
 
@@ -41,7 +45,6 @@ void Database::update(std::string yaml_path) {
 	execute("DELETE FROM gene_mapping");
 	execute("DELETE FROM gene");
 	execute("DELETE FROM gene_collection");
-	execute("DELETE FROM genome");
 
 	// Gene collections
 	// TODO allow removal/overwrite of all sorts of things
@@ -49,8 +52,9 @@ void Database::update(std::string yaml_path) {
 	for (auto gene_collection_node : config["gene_collections"]) {
 		// TODO when specified, it overwrites the previous definition of the gene collection. Do warn though. Also, makes it other than an update, since it kinda removes parts
 		NullableGeneWebPage gene_web_page = gene_collection_node["gene_web_page"] ? NullableGeneWebPage(gene_collection_node["gene_web_page"].as<std::string>()) : mysqlpp::null;
-		GeneCollection gene_collection(gene_collection_node["name"].as<string>(), gene_collection_node["species"].as<string>(), gene_collection_node["gene_format_match"].as<string>(), gene_collection_node["gene_format_replace"].as<string>(), gene_web_page, *this);
-		gene_collection.database_insert();
+		auto gene_collection = make_shared<GeneCollection>(gene_collection_node["name"].as<string>(), gene_collection_node["species"].as<string>(), gene_collection_node["gene_format_match"].as<string>(), gene_collection_node["gene_format_replace"].as<string>(), gene_web_page, *this);
+		gene_collection->database_insert();
+		gene_collections.emplace(gene_collection->get_id(), gene_collection);
 	}
 
 	// Gene mappings

@@ -3,8 +3,7 @@
 -- Note: MySQL doesn't support CHECK constraints (it does parse them though...)
 
 -- Drop all
-drop table if exists gene_collection, gene, gene_mapping, expression_matrix, expression_matrix_row, clustering, cluster, cluster_item;
-drop table expression_matrix_cell, orthologs, genome;
+drop table if exists settings, gene_collection, gene, gene_mapping, expression_matrix, expression_matrix_row, clustering, cluster, cluster_item;
 
 -- Set collation
 ALTER DATABASE db_tidie_deep_blue_genome
@@ -27,10 +26,10 @@ create table gene_collection (
 	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
 	name VARCHAR(100) NOT NULL COMMENT 'Name of collection, e.g. RAP db',
 	species VARCHAR(100) NOT NULL COMMENT 'Name of species',
+	gene_web_page VARCHAR(500) COMMENT 'Template for web page of gene',
 	gene_format_match VARCHAR(500) NOT NULL COMMENT 'Genes whose name match this perl regex are part of the collection',
 	gene_format_replace VARCHAR(500) NOT NULL COMMENT 'Formats a gene name matched with gene_formatter_match to its user-presentable canonical form. See http://www.boost.org/doc/libs/1_57_0/libs/regex/doc/html/boost_regex/format/boost_format_syntax.html',
-	PRIMARY KEY (id),
-	FOREIGN KEY (genome_id) REFERENCES genome(id)
+	PRIMARY KEY (id)
 );
 
 create table gene (
@@ -38,7 +37,7 @@ create table gene (
 	name VARCHAR(256) NOT NULL UNIQUE COMMENT 'Gene name formatted with gene_collection.gene_formatter', -- This name doesn't include a splice variant number (as those are considered variants of the same gene)
 	gene_collection_id INT UNSIGNED NOT NULL,
 	functional_annotation VARCHAR(1000),
-	ortholog_group BIGINT UNSIGNED COMMENT 'genes of the same ortholog_group are each other's orthologs',
+	ortholog_group_id BIGINT UNSIGNED COMMENT 'genes of the same ortholog group are each other''s orthologs',
 	PRIMARY KEY (id),
 	FOREIGN KEY (gene_collection_id) REFERENCES gene_collection(id)
 );
@@ -80,7 +79,8 @@ create table clustering (
 	gene_collection_id INT UNSIGNED NOT NULL,
 	expression_matrix_id INT UNSIGNED COMMENT 'Some clusterings can only be used with a specific matrix',
 	PRIMARY KEY (id),
-	FOREIGN KEY (gene_collection_id) REFERENCES gene_collection(id)
+	FOREIGN KEY (gene_collection_id) REFERENCES gene_collection(id),
+	FOREIGN KEY (expression_matrix_id) REFERENCES expression_matrix(id),
 	UNIQUE (name, gene_collection_id, expression_matrix_id)
 );
 
