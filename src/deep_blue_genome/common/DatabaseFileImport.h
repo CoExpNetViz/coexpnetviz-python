@@ -13,21 +13,26 @@ class Database;
  *
  * This class not intended to be used directly, use Database instead.
  *
- * TODO move doc GeneMapping:
- *
- * Maps gene names to other gene names (for mapping between different naming schemes)
- *
- * Format of gene mapping file: tab-separated, first column = src gene, each other columns is a dst gene (for src -> dst mapping)
- *
- * Gene names are matched in a case-insensitive manner.
+ * Loaded names are matched case-insensitively with
  */
 class DatabaseFileImport {
 public:
+	/**
+	 * Expected format:
+	 * - plain text
+	 * - tab-separated, columns = src gene\tdst gene
+	 */
 	static void add_gene_mappings(const std::string& path, Database&);
+
 	static void add_functional_annotations(const std::string& path, Database&);
 
 	/**
 	 * Add orthologs, genes of unknown collections are skipped
+	 *
+	 * Expected format:
+	 * - plain text
+	 * - Each line is a mapping from one gene to multiple genes, all of which are orthologs of the gene
+	 * - line format (regex style): gene\tgene(,gene)*
 	 */
 	static void add_orthologs(const std::string& path, Database&);
 

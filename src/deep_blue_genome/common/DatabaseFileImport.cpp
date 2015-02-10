@@ -68,6 +68,7 @@ void DatabaseFileImport::add_functional_annotations(const string& path, Database
 }
 
 void DatabaseFileImport::add_orthologs(const std::string& path, Database& database) {
+	// TODO when encountering 2 groups (=lines) of orthologs with an overlap, throw an error
 	read_file(path, [&database](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
 
