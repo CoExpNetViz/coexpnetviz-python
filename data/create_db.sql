@@ -3,7 +3,7 @@
 -- Note: MySQL doesn't support CHECK constraints (it does parse them though...)
 
 -- Drop all
-drop table if exists settings, gene_collection, gene, gene_mapping, expression_matrix, expression_matrix_row, clustering, cluster, cluster_item;
+drop table if exists settings, gene_parser_rule, gene_collection, gene_variant, gene, gene_mapping, expression_matrix, expression_matrix_row, clustering, cluster, cluster_item;
 
 -- Set collation
 ALTER DATABASE db_tidie_deep_blue_genome
@@ -27,31 +27,53 @@ create table gene_collection (
 	name VARCHAR(100) NOT NULL COMMENT 'Name of collection, e.g. RAP db',
 	species VARCHAR(100) NOT NULL COMMENT 'Name of species',
 	gene_web_page VARCHAR(500) COMMENT 'Template for web page of gene',
-	gene_format_match VARCHAR(500) NOT NULL COMMENT 'Genes whose name match this perl regex are part of the collection',
-	gene_format_replace VARCHAR(500) NOT NULL COMMENT 'Formats a gene name matched with gene_formatter_match to its user-presentable canonical form. See http://www.boost.org/doc/libs/1_57_0/libs/regex/doc/html/boost_regex/format/boost_format_syntax.html',
 	PRIMARY KEY (id)
+);
+
+-- Parser rule for parsing a gene into a well formatted gene name and a splice variant number
+create table gene_parser_rule (
+	id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+	gene_collection_id INT UNSIGNED NOT NULL,
+	matcher VARCHAR(500) NOT NULL COMMENT 'Genes whose name match this perl regex are part of the collection',
+	replace_format VARCHAR(500) NOT NULL COMMENT 'Formats a gene name matched with `match` to its user-presentable canonical form without splicing number suffix. See http://www.boost.org/doc/libs/1_57_0/libs/regex/doc/html/boost_regex/format/boost_format_syntax.html',
+	splice_variant_group INT UNSIGNED COMMENT '1-based index of sub-group of `match` that contains the splice variant number',
+	PRIMARY KEY (id),
+	FOREIGN KEY (gene_collection_id) REFERENCES gene_collection(id)
 );
 
 create table gene (
 	id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-	name VARCHAR(256) NOT NULL UNIQUE COMMENT 'Gene name formatted with gene_collection.gene_formatter', -- This name doesn't include a splice variant number (as those are considered variants of the same gene)
+	name VARCHAR(250) NOT NULL UNIQUE COMMENT 'Gene name formatted with gene_collection.gene_formatter', -- This name doesn't include a splice variant number (as those are considered variants of the same gene)
 	gene_collection_id INT UNSIGNED NOT NULL,
-	functional_annotation VARCHAR(1000),
 	ortholog_group_id BIGINT UNSIGNED COMMENT 'genes of the same ortholog group are each other''s orthologs',
 	PRIMARY KEY (id),
 	FOREIGN KEY (gene_collection_id) REFERENCES gene_collection(id)
 );
 -- TODO sorted index on ortholog_group
 
+-- Either a gene with all introns/exons, or a splicing variant of the gene
+create table gene_variant (
+	id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	gene_id BIGINT UNSIGNED NOT NULL,
+	splice_variant_id INT UNSIGNED, -- When NULL, it includes all introns/exons of the gene
+	functional_annotation VARCHAR(1000),
+	PRIMARY KEY (id),
+	UNIQUE (gene_id, splice_variant_id),
+	FOREIGN KEY (gene_id) REFERENCES gene(id)
+);
+
 -- Genes from a different gene collection with a similar locus and sequence.
 -- This is a symmetric relation
 -- E.g. MSU - RAP mapping
+-- Note: these mappings are usually generated via BLAST with some post-processing (PLAZA has it with post-processing done already)
 create table gene_mapping (
-	gene1_id BIGINT UNSIGNED NOT NULL,
-	gene2_id BIGINT UNSIGNED NOT NULL UNIQUE, -- Note: gene1.gene_collection != gene2.gene_collection 
-	PRIMARY KEY (gene1_id),
-	FOREIGN KEY (gene1_id) REFERENCES gene(id),
-	FOREIGN KEY (gene2_id) REFERENCES gene(id)
+	id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	gene_variant1_id BIGINT UNSIGNED NOT NULL,
+	gene_variant2_id BIGINT UNSIGNED NOT NULL, -- Note: gene1.gene_collection != gene2.gene_collection
+	PRIMARY KEY (id),
+	UNIQUE(gene_variant1_id, gene_variant2_id),
+	FOREIGN KEY (gene_variant1_id) REFERENCES gene_variant(id),
+	FOREIGN KEY (gene_variant2_id) REFERENCES gene_variant(id)
 );
 -- TODO put index on gene2_id as well (gene1 has one via primary key)
 
@@ -94,9 +116,9 @@ create table cluster (
 
 create table cluster_item (
 	cluster_id INT UNSIGNED NOT NULL,
-	gene_id BIGINT UNSIGNED NOT NULL,
-	PRIMARY KEY (cluster_id, gene_id),
+	gene_variant_id BIGINT UNSIGNED NOT NULL,
+	PRIMARY KEY (cluster_id, gene_variant_id),
 	FOREIGN KEY (cluster_id) REFERENCES cluster(id),
-	FOREIGN KEY (gene_id) REFERENCES gene(id)
+	FOREIGN KEY (gene_variant_id) REFERENCES gene_variant(id)
 );
 

@@ -4,9 +4,10 @@
 
 #include <string>
 #include <boost/noncopyable.hpp>
-#include <boost/regex.hpp>
+#include <yaml-cpp/yaml.h>
 #include <deep_blue_genome/common/types.h>
-#include <deep_blue_genome/common/Gene.h>
+#include <deep_blue_genome/common/GeneVariant.h>
+#include <deep_blue_genome/common/GeneParserRule.h>
 
 namespace DEEP_BLUE_GENOME {
 
@@ -22,7 +23,7 @@ class GeneCollection : public boost::noncopyable
 public:
 	GeneCollection(GeneCollectionId, Database&);
 
-	GeneCollection(const std::string& name, const std::string& species, const std::string& gene_format_match, const std::string& gene_format_replace, const mysqlpp::sql_varchar_null& gene_web_page, Database&);
+	GeneCollection(const std::string& name, const std::string& species, YAML::Node parser_rules, const mysqlpp::sql_varchar_null& gene_web_page, Database&);
 
 	GeneCollectionId get_id() const;
 	std::string get_name() const;
@@ -48,29 +49,23 @@ public:
 	 *
 	 * @throws NotFoundException if name doesn't match this gene collection
 	 */
-	Gene get_gene_by_name(const std::string& name); // TODO NotFoundException("Gene $name"),
+	GeneVariant get_gene_variant(const std::string& name); // TODO NotFoundException("Gene $name"),
 
 	/**
 	 * Returns true if name matches this gene collection
 	 *
 	 * Places resulting gene in out. Otherwise behaves the same as get_gene_by_name
 	 */
-	bool try_get_gene_by_name(const std::string& name, Gene& out);
-
-private:
-	void set_gene_format_match(const std::string& matcher);
+	bool try_get_gene_variant(const std::string& name, GeneVariant& out);
 
 private:
 	GeneCollectionId id;
 	std::string name;
 	std::string species;
 
-	std::string gene_format_match; // regex string that matches any gene that belongs to this gene collection
-	boost::regex gene_format_match_re;
-
-	std::string gene_format_replace; // used for s/gene_format_match/gene_format_replace/, for formatting gene names
-
 	NullableGeneWebPage gene_web_page;
+
+	std::vector<GeneParserRule> gene_parser_rules;
 
 	Database& database;
 };

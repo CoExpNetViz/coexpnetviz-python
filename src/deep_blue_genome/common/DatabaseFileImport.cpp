@@ -18,26 +18,27 @@ void DatabaseFileImport::add_gene_mappings(const std::string& path, Database& da
 	read_file(path, [&database](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
 
-		auto query = database.prepare("INSERT INTO gene_mapping (gene1_id, gene2_id) VALUES (%0q, %1q)");
+		auto query = database.prepare("INSERT INTO gene_mapping (gene1_id, gene1_splice_variant_id, gene2_id, gene2_splice_variant_id) VALUES (%0q, %1q, %2q, %3q)");
 		query.parse();
 
 		auto on_line = [&database, &query](const std::vector<std::string>& line) {
-			/*ensure(line.size() == 2,
-					(make_string() << "Encountered line in mapping with " << line.size() << " columns").str(),
-					ErrorType::GENERIC
-			);
-			TODO a gene from one collection can map to multiple genes of another collection. It seems that the mapping is determined by genes from separate collections overlapping in sequence start/end locations
-			*/
-
-			auto gene1 = database.get_gene(line.at(0));
-			auto gene2 = database.get_gene(line.at(1));
-			ensure(gene1.get_gene_collection_id() != gene2.get_gene_collection_id(),
-					(make_string() << "Encountered mapping between 2 genes of the same gene collection: " << gene1.get_name() << ", " << gene2.get_name()).str(),
+			ensure(line.size() < 2,
+					(make_string() << "Encountered line in mapping with " << line.size() << " < 2 columns").str(),
 					ErrorType::GENERIC
 			);
 
-			// TODO if exists, UPDATE with warning instead of INSERT
-			query.execute(gene1.get_id(), gene2.get_id());
+			auto gene1 = database.get_gene_variant(line.at(0));
+			for (int i=1; i<line.size(); i++) {
+				auto gene2 = database.get_gene_variant(line.at(i));
+
+				ensure(gene1.get_gene().get_gene_collection_id() != gene2.get_gene().get_gene_collection_id(),
+						(make_string() << "Encountered mapping between 2 genes of the same gene collection: " << gene1.get_gene().get_name() << ", " << gene2.get_gene().get_name()).str(),
+						ErrorType::GENERIC
+				);
+
+				// TODO if exists, UPDATE with warning instead of INSERT
+				query.execute(gene1.get_gene().get_id(), gene1.get_splice_variant_id(), gene2.get_gene().get_id(), gene2.get_splice_variant_id());
+			}
 		};
 
 		TabGrammarRules rules;
@@ -50,7 +51,7 @@ void DatabaseFileImport::add_functional_annotations(const string& path, Database
 	read_file(path, [&database](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
 
-		auto query = database.prepare("UPDATE gene SET functional_annotation = %0q WHERE id = %1q");
+		auto query = database.prepare("UPDATE gene_variant SET functional_annotation = %0q WHERE id = %1q");
 		query.parse();
 
 		auto on_line = [&database, &query](const std::vector<std::string>& line) {
@@ -59,10 +60,10 @@ void DatabaseFileImport::add_functional_annotations(const string& path, Database
 					ErrorType::GENERIC
 			);
 
-			auto gene = database.get_gene(line.at(0));
+			auto gene_variant = database.get_gene_variant(line.at(0));
 			auto description = line.at(1);
 
-			query.execute(description, gene.get_id());
+			query.execute(description, gene_variant.get_id());
 		};
 
 		TabGrammarRules rules;
@@ -102,7 +103,12 @@ void DatabaseFileImport::add_orthologs(const std::string& path, Database& databa
 
 			for (auto& name : line) {
 				try {
-					auto gene = database.get_gene(name); // Note: doing get gene by name to ensure it exists when we'll update it
+					auto gene_variant = database.get_gene_variant(name); // Note: doing get gene variant to ensure it exists when we'll update it
+					ensure(!gene_variant.is_splice_variant() || gene_variant.get_splice_variant_id() == 1,  // disallow specification of splice variants, except for splice variant 1 which gets interpreted as the entire gene. (The latter is an act of lenience)
+							(make_string() << "Member of ortholog group must be a gene, instead got: " << name).str(),
+							ErrorType::GENERIC
+					);
+					auto gene = gene_variant.get_gene();
 					query.execute(ortholog_group, gene.get_id());
 				}
 				catch (const NotFoundException&) {

@@ -18,5 +18,11 @@ typedef NullableGeneExpressionMatrixId NullableExpressionMatrixId;
 typedef mysqlpp::sql_int_unsigned ClusteringId;
 typedef mysqlpp::sql_int_unsigned ClusterId;
 typedef mysqlpp::sql_varchar_null NullableGeneWebPage;
+typedef mysqlpp::sql_int_unsigned SpliceVariantId;
+typedef mysqlpp::Null<SpliceVariantId> NullableSpliceVariantId;
+typedef mysqlpp::sql_bigint_unsigned GeneVariantId;
+typedef mysqlpp::sql_int_unsigned GeneParserRuleId;
+typedef mysqlpp::sql_int RegexGroup;
+typedef mysqlpp::Null<RegexGroup> NullableRegexGroup;
 
 } // end namespace

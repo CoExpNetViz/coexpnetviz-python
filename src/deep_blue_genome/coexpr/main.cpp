@@ -2,6 +2,8 @@
 
 // TODO gene collection, expression matrix, ... names should be stored with case but matched without it
 
+// Note: we work with orthologs, i.e. we work at the level of 'Gene's, not 'GeneVariant's
+
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
@@ -20,61 +22,62 @@ using namespace std;
 using namespace DEEP_BLUE_GENOME;
 
 /**
- * A bait gene that 'owns' another gene by correlating sufficiently to it
+ * Correlation to a bait gene
  *
  * Data class of Group.
  */
-class Owner {
+class BaitCorrelation {
 public:
-	Owner(const Gene& owner, double correlation)
-	:	owner(owner), correlation(correlation)
+	BaitCorrelation(const Gene& bait, double correlation)
+	:	bait(bait), correlation(correlation)
 	{
 	}
 
-	const Gene& get_gene() const;
+	const Gene& get_bait() const;
 	double get_correlation() const;
 
-	bool operator<(const Owner& other) const {
-		return owner < other.owner;
+	bool operator<(const BaitCorrelation& other) const {
+		return bait < other.bait;
 	}
 
 private:
-	Gene owner;
+	Gene bait;
 	double correlation; // correlation to owner
 };
 
-const Gene& Owner::get_gene() const {
-	return owner;
+const Gene& BaitCorrelation::get_bait() const {
+	return bait;
 }
 
-double Owner::get_correlation() const {
+double BaitCorrelation::get_correlation() const {
 	return correlation;
 }
 
 namespace std {
-template <> struct hash<Owner>
+template <> struct hash<BaitCorrelation>
 {
-	size_t operator()(const Owner& x) const
+	size_t operator()(const BaitCorrelation& x) const
 	{
 		size_t hash = 0;
-		DEEP_BLUE_GENOME::hash_combine(hash, x.get_gene());
+		DEEP_BLUE_GENOME::hash_combine(hash, x.get_bait());
 		return hash;
 	}
 };
 } // end namespace
 
 /**
- * Group of genes which are each other's orthologs
+ * A group of orthologs
  */
-class Group : public boost::noncopyable
+class OrthologGroup : public boost::noncopyable
 {
 public:
 	/**
 	 * @param genes Iterable of distinct genes
 	 */
-	template<class IterableT>
-	Group(Database& database, IterableT genes)
+	template <class GeneCollectionsIterable>
+	OrthologGroup(OrthologGroupId group_id, const GeneCollectionsIterable& all_gene_collections, Database& database)
 	{
+		auto genes = database.get_orthologs(group_id, all_gene_collections);
 		this->genes.reserve(genes.size());
 		for (auto& gene_id : genes) {
 			this->genes.emplace_back(database.get_gene(gene_id));
@@ -82,16 +85,16 @@ public:
 		}
 	}
 
-	bool operator==(const Group& other) const = delete;
+	bool operator==(const OrthologGroup& other) const = delete;
 
 	string get_name() const;
 
-	void add_owner(const Gene& owner, double correlation) {
-		owners.emplace(owner, correlation);
+	void add_bait_correlation(const Gene& bait, double correlation) {
+		bait_correlations.emplace(bait, correlation);
 	}
 
-	const set<Owner>& get_owners() {
-		return owners;
+	const set<BaitCorrelation>& get_bait_correlations() {
+		return bait_correlations;
 	}
 
 	vector<Gene>::const_iterator begin() const;
@@ -99,27 +102,30 @@ public:
 
 private:
 	vector<Gene> genes;
-	set<Owner> owners;  // ordered set of bait genes to which these genes are correlated
+	set<BaitCorrelation> bait_correlations;  // TODO why ordered?
 	string name;
 };
 
-vector<Gene>::const_iterator Group::begin() const {
+vector<Gene>::const_iterator OrthologGroup::begin() const {
 	return genes.begin();
 }
 
-vector<Gene>::const_iterator Group::end() const {
+vector<Gene>::const_iterator OrthologGroup::end() const {
 	return genes.end();
 }
 
-string Group::get_name() const {
+string OrthologGroup::get_name() const {
 	return name;
 }
 
-class GeneGroups
+/**
+ * Cache of ortholog groups
+ */
+class OrthologGroups
 {
 public:
 	template <class GeneCollectionsIterable>
-	GeneGroups(Database& database, const GeneCollectionsIterable& all_gene_collections)
+	OrthologGroups(Database& database, const GeneCollectionsIterable& all_gene_collections)
 	:	database(database), all_gene_collections(all_gene_collections.begin(), all_gene_collections.end())
 	{
 	}
@@ -127,14 +133,14 @@ public:
 	/**
 	 * Get Group of gene
 	 */
-	Group& get(const Gene& gene) {
+	OrthologGroup& get(const Gene& gene) {
 		auto group_id = gene.get_ortholog_group_id();
 		auto it = groups.find(group_id);
 		if (it == groups.end()) {
 			// make group
 			auto p = groups.emplace(piecewise_construct,
 					forward_as_tuple(group_id),
-					forward_as_tuple(database, database.get_orthologs(gene.get_id(), all_gene_collections))
+					forward_as_tuple(group_id, all_gene_collections, database)
 			);
 			return p.first->second;
 		}
@@ -146,10 +152,10 @@ public:
 private:
 	Database& database;
 	vector<GeneCollectionId> all_gene_collections;
-	unordered_map<OrthologGroupId, Group> groups;
+	unordered_map<OrthologGroupId, OrthologGroup> groups;
 };
 
-
+// TODO refactor into functions rather than many file sections
 int main(int argc, char** argv) {
 	using namespace DEEP_BLUE_GENOME;
 	using namespace DEEP_BLUE_GENOME::COEXPR;
@@ -192,31 +198,34 @@ int main(int argc, char** argv) {
 		}
 
 		// Gene groups
-		GeneGroups groups(database, all_gene_collections);
+		OrthologGroups groups(database, all_gene_collections);
 
 		// Load baits
-		vector<Group*> baits; // list of distinct baits
+		vector<OrthologGroup*> baits; // list of distinct baits
 		{
 			Baits baits_(baits_path);
-			for (auto& gene_name : baits_.get_genes()) {
-				Gene gene = database.get_gene(gene_name);
-				auto& group = groups.get(gene);
+			for (const auto& gene_name : baits_.get_genes()) {
+				GeneVariant gene_variant = database.get_gene_variant(gene_name);
+
+				ensure(!gene_variant.is_splice_variant() || gene_variant.get_splice_variant_id() == 1, // expect genes, but be lenient by accepting first splice variant as entire gene
+						(make_string() << "Baits must be genes, got splice variant instead: " << gene_name).str(),
+						ErrorType::GENERIC
+				);
 
 				// if a member is missing from its corresponding expression matrix, drop the bait
-				bool drop = false;
+				auto& group = groups.get(gene_variant.get_gene());
 				for (auto& gene : group) {
 					if (!expression_matrices.at(gene.get_gene_collection_id())->has_gene(gene.get_id())) {
-						cout << "Warning: bait gene '" << gene.get_name() << "' missing in expression matrix. Dropping bait and its orthologs." << "\n";
-						drop = true;
-						break;
+						cout << "Warning: Dropped bait gene '" << gene_name << "' due to: missing in expression matrix." << "\n";
+						continue;
 					}
 				}
 
-				if (!drop) {
-					baits.emplace_back(&group);
-				}
+				baits.emplace_back(&group);
 			}
 		}
+		sort(baits.begin(), baits.end());
+		unique(baits.begin(), baits.end());
 
 		// If baits are dropped, gene collections might drop out too, so we rebuild all_gene_collections here
 		all_gene_collections.clear();
@@ -226,8 +235,10 @@ int main(int argc, char** argv) {
 			}
 		}
 
+		cout.flush();
+
 		// Grab union of neighbours of each bait, where neighbour relation is sufficient (anti-)correlation
-		std::vector<Group*> neighbours;
+		std::vector<OrthologGroup*> neighbours;
 		unordered_map<GeneCollectionId, vector<size_type>> bait_indices; // species -> gene indices of baits
 		for (auto group : baits) {
 			for (auto bait : *group) {
@@ -253,14 +264,15 @@ int main(int argc, char** argv) {
 					if (corr < negative_treshold || corr > positive_treshold) {
 						auto row_gene = database.get_gene(expression_matrix->get_gene_id(gene));
 						auto& group = groups.get(row_gene);
-						group.add_owner(bait, corr);
+						group.add_bait_correlation(bait, corr);
 						neighbours.emplace_back(&group);
 					}
 				}
 			}
 		}
 
-		// TODO assert distinct(baits), distinct(neighbours)
+		sort(neighbours.begin(), neighbours.end());
+		unique(neighbours.begin(), neighbours.end());
 
 		//////////////////////
 		// Output cytoscape files using: baits, neighbours
@@ -291,24 +303,24 @@ int main(int argc, char** argv) {
 			}
 		}
 
-		unordered_set<string> owner_groups;
+		unordered_set<string> bait_groups;
 		for (auto neigh : neighbours) {
-			string owner_group_name;
-			for (auto& owner : neigh->get_owners()) {
-				auto owner_name = owner.get_gene().get_name();
-				owner_group_name += owner_name + ";";
-				out_sif << owner_name << "\tpd\t" << neigh->get_name() << "\n";
-				out_edge_attr << owner_name << " pd " << neigh->get_name() << " = " << owner.get_correlation() << "\n";
+			string bait_group_name;
+			for (auto& bait_correlation : neigh->get_bait_correlations()) {
+				auto bait_name = bait_correlation.get_bait().get_name();
+				bait_group_name += bait_name + ";";
+				out_sif << bait_name << "\tpd\t" << neigh->get_name() << "\n";
+				out_edge_attr << bait_name << " pd " << neigh->get_name() << " = " << bait_correlation.get_correlation() << "\n";
 			}
-			owner_groups.emplace(owner_group_name);
-			out_node_attr << neigh->get_name() << " = " << owner_group_name << "\n";
+			bait_groups.emplace(bait_group_name);
+			out_node_attr << neigh->get_name() << " = " << bait_group_name << "\n";
 		}
 
 		// Pick size(owner_groups) colors
 		// TODO include in thesis: alg for having N maximally orthogonal colours (though it's not a real fancy alg or idea...). We did the math on paper, translate it to latex
 		//colors;
 
-		for (auto& group_name : owner_groups) {
+		for (auto& group_name : bait_groups) {
 			// TODO color more cleverly, perhaps this helps: http://www.nps.edu/faculty/olsen/Remote_sensing/SPIE_2000_tyo_display.pdf
 			out_vizmap << "nodeFillColorCalculator.default-Node\\ Color-Discrete\\ Mapper.mapping.map." << group_name << "=" << rand() % 256 << "," << rand() % 256 << "," << rand() % 256 << "\n";
 

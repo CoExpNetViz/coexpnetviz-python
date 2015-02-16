@@ -17,6 +17,7 @@ class Database;
 
 typedef uint32_t GeneExpressionMatrixRow;
 
+// TODO each row label was originally a probe id, does that map to a gene in general, or rather a specific gene variant? What does it measure specifically? Currently we assume each row is a .1 gene
 /**
  * Gene expression matrix
  *

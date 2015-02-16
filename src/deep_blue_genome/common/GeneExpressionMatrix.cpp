@@ -90,15 +90,14 @@ GeneExpressionMatrix::GeneExpressionMatrix(const string& name, const std::string
 			);
 			i++;
 			if (!gene_collection) {
-				auto gene = this->database.get_gene(name);
-				gene_collection_id = gene.get_gene_collection_id();
+				gene_collection_id = this->database.get_gene_variant(name).get_gene().get_gene_collection_id();
 				gene_collection = this->database.get_gene_collection(gene_collection_id);
 			}
-			auto gene = gene_collection->get_gene_by_name(name);
-			ensure(gene_id_to_row.emplace(gene.get_id(), i).second,
+			auto gene_id = gene_collection->get_gene_variant(name).get_gene().get_id();
+			ensure(gene_id_to_row.emplace(gene_id, i).second,
 					(make_string() << "Duplicate gene: " << name).str(),
 					ErrorType::GENERIC);
-			gene_row_to_id[i] = gene.get_id();
+			gene_row_to_id[i] = gene_id;
 			j=-1;
 		};
 		auto on_gene_value = [this, &i, &j](double value) { // gene expression value
@@ -142,6 +141,8 @@ const matrix& GeneExpressionMatrix::get() const {
 }
 
 void GeneExpressionMatrix::database_insert() {
+	assert(id == 0);
+
 	// Insert expression_matrix
 	{
 		auto query = database.prepare("INSERT INTO expression_matrix(name, gene_collection_id) VALUES (%0q, %1q)");

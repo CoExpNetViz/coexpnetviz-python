@@ -4,7 +4,7 @@
 
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/types.h>
-#include <deep_blue_genome/common/Gene.h>
+#include <deep_blue_genome/common/GeneVariant.h>
 #include <boost/noncopyable.hpp>
 
 namespace DEEP_BLUE_GENOME {
@@ -13,6 +13,7 @@ class GeneExpressionMatrix;
 class Clustering;
 class GeneCollection;
 
+// TODO could identify genes (variants) with/to NCBI database, and use their id and data (we probably should, and cache the things we need if necessary)
 /**
  * Deep Blue Genome Database
  *
@@ -59,15 +60,25 @@ public:
 	ExpressionMatrixId get_gene_expression_matrix_id(GeneCollectionId, const std::string& name); // TODO rename ExpressionMatrixId -> Gene*
 
 	/**
-	 * Get gene by name, inserts gene if it doesn't exist yet
+	 * Get gene variant by name, inserts it (and its gene) if it doesn't exist yet
 	 *
 	 * @throws NotFoundException if name matches none of the gene collections
 	 * @param name Name of gene
 	 */
-	Gene get_gene(const std::string& name);
+	GeneVariant get_gene_variant(const std::string& name);
 
 	/**
-	 * Get orthologs of gene, filtered by their gene collection
+	 * Get gene variant by gene
+	 */
+	GeneVariantId get_gene_variant_id(GeneId, NullableSpliceVariantId);
+
+	/**
+	 * Get gene variant by id
+	 */
+	GeneVariant get_gene_variant(GeneVariantId);
+
+	/**
+	 * Get orthologs filtered by their gene collection
 	 *
 	 * @param gene_collections Orthologs of gene collections to include in result
 	 */

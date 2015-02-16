@@ -43,7 +43,9 @@ void Database::update(std::string yaml_path) {
 	execute("DELETE FROM expression_matrix_row");
 	execute("DELETE FROM expression_matrix");
 	execute("DELETE FROM gene_mapping");
+	execute("DELETE FROM gene_variant");
 	execute("DELETE FROM gene");
+	execute("DELETE FROM gene_parser_rule");
 	execute("DELETE FROM gene_collection");
 
 	// Gene collections
@@ -52,13 +54,15 @@ void Database::update(std::string yaml_path) {
 	for (auto gene_collection_node : config["gene_collections"]) {
 		// TODO when specified, it overwrites the previous definition of the gene collection. Do warn though. Also, makes it other than an update, since it kinda removes parts
 		NullableGeneWebPage gene_web_page = gene_collection_node["gene_web_page"] ? NullableGeneWebPage(gene_collection_node["gene_web_page"].as<std::string>()) : mysqlpp::null;
-		auto gene_collection = make_shared<GeneCollection>(gene_collection_node["name"].as<string>(), gene_collection_node["species"].as<string>(), gene_collection_node["gene_format_match"].as<string>(), gene_collection_node["gene_format_replace"].as<string>(), gene_web_page, *this);
+		auto gene_collection = make_shared<GeneCollection>(
+				gene_collection_node["name"].as<string>(), gene_collection_node["species"].as<string>(),
+				gene_collection_node["gene_parser"], gene_web_page, *this
+		);
 		gene_collection->database_insert();
 		gene_collections.emplace(gene_collection->get_id(), gene_collection);
 	}
 
 	// Gene mappings
-
 	for (auto node : config["gene_mappings"]) {
 		auto path = prepend_path(data_root, node.as<string>());
 		cout << "Loading gene mapping '" << path << "'\n";
@@ -103,10 +107,10 @@ void Database::update(std::string yaml_path) {
 	// TODO allow removal (--rm-gene-mappings --rm-functional-annotations --rm-expression-matrices --rm-orthologs --rm-clusterings --rm-gene-collections)
 }
 
-Gene Database::get_gene(const std::string& name) {
-	Gene gene;
+GeneVariant Database::get_gene_variant(const std::string& name) {
+	GeneVariant gene;
 	for (auto& p : gene_collections) {
-		if (p.second->try_get_gene_by_name(name, gene)) {
+		if (p.second->try_get_gene_variant(name, gene)) {
 			return gene;
 		}
 	}
@@ -114,7 +118,7 @@ Gene Database::get_gene(const std::string& name) {
 }
 
 Gene Database::get_gene(GeneId id) {
-	auto query = prepare("SELECT gene_collection_id, ortholog_group_id, name FROM gene WHERE id = %0q");
+	auto query = prepare("SELECT gene_collection_id, name, ortholog_group_id FROM gene WHERE id = %0q");
 	query.parse();
 	auto result = query.store(id);
 
@@ -124,7 +128,7 @@ Gene Database::get_gene(GeneId id) {
 
 	assert(result.num_rows() == 1);
 	auto row = *result.begin();
-	return Gene(id, row[0].conv<GeneCollectionId>(0), row[1].conv<NullableOrthologGroupId>(0), row[2].conv<std::string>("")); // Note: the arg to conv is ignored (you can check the source if paranoid)
+	return Gene(id, row[0].conv<GeneCollectionId>(0), row[1].conv<std::string>(""), row[2].conv<NullableOrthologGroupId>(mysqlpp::null)); // Note: the arg to conv is ignored (you can check the source if paranoid)
 }
 
 GeneCollectionId Database::get_gene_collection_id(const std::string& name) {
@@ -165,6 +169,24 @@ std::shared_ptr<GeneCollection> Database::get_gene_collection(GeneCollectionId i
 
 std::string Database::get_gene_expression_matrix_values_file(GeneExpressionMatrixId id) {
 	return (make_string() << storage_path << "/gene_expression_matrices/" << id << "/matrix").str();
+}
+
+GeneVariantId Database::get_gene_variant_id(GeneId gene, NullableSpliceVariantId splice_variant) {
+	auto query = prepare("SELECT id FROM gene_variant WHERE gene_id = %0q AND splice_variant_id = %1q");
+	query.parse();
+	auto result = query.store(gene, splice_variant);
+
+	if (result.num_rows() == 0) {
+		throw NotFoundException((make_string() << "Failed to find splice variant " << splice_variant << " of gene id " << gene).str());
+	}
+
+	assert(result.num_rows() == 1);
+	auto row = *result.begin();
+	return row[0];
+}
+
+GeneVariant Database::get_gene_variant(GeneVariantId id) {
+	return GeneVariant(id, *this);
 }
 
 } // end namespace

@@ -7,25 +7,33 @@
 
 namespace DEEP_BLUE_GENOME {
 
+class Database;
+
 class Gene
 {
 public:
-	Gene(); // Construct invalid gene. Used as null value, todo: refactor
-	Gene(GeneId, GeneCollectionId, NullableOrthologGroupId, const std::string& name);
+	/**
+	 * Construct invalid gene, a null value
+	 */
+	Gene();
+
+	Gene(GeneId, GeneCollectionId, const std::string& name, NullableOrthologGroupId);
+	Gene(GeneId, Database&);
 
 	GeneId get_id() const;
 	GeneCollectionId get_gene_collection_id() const;
+	std::string get_name() const;
+
 	bool has_orthologs() const;
 	OrthologGroupId get_ortholog_group_id() const;
-	std::string get_name() const;
 
 	bool operator<(const Gene&) const;
 
 private:
 	GeneId id;
 	GeneCollectionId gene_collection_id; // genes collection which this gene is part of
-	NullableOrthologGroupId ortholog_group_id; // genes collection which this gene is part of
 	std::string name; // unique name of gene
+	NullableOrthologGroupId ortholog_group_id;
 
 	// TODO exons: with sequence_begin,end for each exon; referring to the sequence data in Genome
 };

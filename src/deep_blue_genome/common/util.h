@@ -26,6 +26,7 @@ class make_string
 public:
 	make_string()
 	{
+		oss.exceptions(std::ios::failbit);
 	}
 
     template <typename T>

@@ -10,6 +10,7 @@ using namespace std;
 
 namespace DEEP_BLUE_GENOME {
 
+// TODO did we drop variants along the way as we read in clusterings? If so, should we?
 Clustering::Clustering(const std::string& name, const std::string& path, const std::string& expression_matrix, Database& database)
 :	id(0), expression_matrix_id(0), name(name), database(database)
 {
@@ -24,11 +25,10 @@ Clustering::Clustering(const std::string& name, const std::string& path, const s
 		auto on_cluster_item = [this, &clusters, &genes_missing, &gene_collection](const std::vector<std::string>& line) {
 			auto name = line.at(0);
 			if (!gene_collection) {
-				auto gene = this->database.get_gene(name);
-				gene_collection_id = gene.get_gene_collection_id();
+				gene_collection_id = this->database.get_gene_variant(name).get_gene().get_gene_collection_id();
 				gene_collection = this->database.get_gene_collection(gene_collection_id);
 			}
-			auto gene = gene_collection->get_gene_by_name(name);
+			auto gene_id = gene_collection->get_gene_variant(name).get_gene().get_id();
 
 			auto cluster_name = line.at(1);
 			auto it = clusters.find(cluster_name);
@@ -36,11 +36,11 @@ Clustering::Clustering(const std::string& name, const std::string& path, const s
 				it = clusters.emplace(piecewise_construct, make_tuple(cluster_name), make_tuple(cluster_name)).first;
 			}
 			auto& cluster = it->second;
-			ensure(!contains(cluster, gene.get_id()),
-					(make_string() << "Clustering adds same gene to cluster twice: gene=" << gene.get_id() <<
+			ensure(!contains(cluster, gene_id),
+					(make_string() << "Clustering adds same gene to cluster twice: gene=" << gene_id <<
 							", cluster=" << cluster_name).str(),
 					ErrorType::GENERIC);
-			cluster.add(gene.get_id());
+			cluster.add(gene_id);
 		};
 
 		TabGrammarRules rules;
@@ -69,6 +69,8 @@ Clustering::const_iterator Clustering::end() const {
 }
 
 void Clustering::database_insert() {
+	assert(id == 0);
+
 	// Insert clustering
 	auto query = database.prepare("INSERT INTO clustering(name, gene_collection_id, expression_matrix_id) VALUES (%0q, %1q, %2q)");
 	query.parse();
