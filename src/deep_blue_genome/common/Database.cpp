@@ -132,7 +132,7 @@ Gene Database::get_gene(GeneId id) {
 }
 
 GeneCollectionId Database::get_gene_collection_id(const std::string& name) {
-	auto query = prepare("SELECT id FROM gene_collection WHERE name = %0q");
+	auto query = prepare("SELECT id FROM gene_collection WHERE LOWER(name) = LOWER(%0q)");
 	query.parse();
 	auto result = query.store(name);
 

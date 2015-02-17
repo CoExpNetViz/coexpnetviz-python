@@ -23,6 +23,7 @@
 #include <boost/archive/archive_exception.hpp>
 #include <cctype>
 #include <yaml-cpp/yaml.h>
+#include <mysql++/mysql++.h>
 
 using namespace std;
 
@@ -106,31 +107,43 @@ private:
 };
 
 std::string exception_what(const exception& e) {
-	auto expectation_failure_ex = dynamic_cast<const boost::spirit::qi::expectation_failure<const char*>*>(&e);
-	if (expectation_failure_ex) {
-		auto& e = *expectation_failure_ex;
-		ostringstream str;
-		str << e.what() << ": \n";
+	{
+		auto expectation_failure_ex = dynamic_cast<const boost::spirit::qi::expectation_failure<const char*>*>(&e);
+		if (expectation_failure_ex) {
+			auto& e = *expectation_failure_ex;
+			ostringstream str;
+			str << e.what() << ": \n";
 
-		str << "Expected: \n";
-		SpiritPrinter printer(str);
-		boost::spirit::basic_info_walker<SpiritPrinter> walker(printer, e.what_.tag, 0);
-		boost::apply_visitor(walker, e.what_.value);
+			str << "Expected: \n";
+			SpiritPrinter printer(str);
+			boost::spirit::basic_info_walker<SpiritPrinter> walker(printer, e.what_.tag, 0);
+			boost::apply_visitor(walker, e.what_.value);
 
-		str << "Got: \"" << std::string(e.first, e.last) << '"' << endl;
+			str << "Got: \"" << std::string(e.first, e.last) << '"' << endl;
 
-		return str.str();
+			return str.str();
+		}
 	}
 
-	auto ios_clear_ex = dynamic_cast<const std::ios::failure*>(&e);
-	if (ios_clear_ex) {
-		return (make_string() << ios_clear_ex->what() << ": " << strerror(errno)).str();
+	{
+		auto ios_clear_ex = dynamic_cast<const std::ios::failure*>(&e);
+		if (ios_clear_ex) {
+			return (make_string() << ios_clear_ex->what() << ": " << strerror(errno)).str();
+		}
 	}
 
+	{
+		auto archive_ex = dynamic_cast<const boost::archive::archive_exception*>(&e);
+		if (archive_ex) {
+			return (make_string() << archive_ex->what() << ": " << strerror(errno)).str();
+		}
+	}
 
-	auto archive_ex = dynamic_cast<const boost::archive::archive_exception*>(&e);
-	if (archive_ex) {
-		return (make_string() << archive_ex->what() << ": " << strerror(errno)).str();
+	{
+		auto ex = dynamic_cast<const mysqlpp::Exception*>(&e);
+		if (ex) {
+			return (make_string() << "Database error: " << ex->what()).str();
+		}
 	}
 
 	return e.what();

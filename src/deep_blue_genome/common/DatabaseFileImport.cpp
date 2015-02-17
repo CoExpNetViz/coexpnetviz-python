@@ -18,33 +18,38 @@ void DatabaseFileImport::add_gene_mappings(const std::string& path, Database& da
 	read_file(path, [&database](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
 
-		auto query = database.prepare("INSERT INTO gene_mapping (gene1_id, gene1_splice_variant_id, gene2_id, gene2_splice_variant_id) VALUES (%0q, %1q, %2q, %3q)");
+		//database.execute("BEGIN"); // TODO may need a class that upon dtor does rollback if not committed yet
+		auto query = database.prepare("INSERT INTO gene_mapping (gene_variant1_id, gene_variant2_id) VALUES (%0q, %1q)");
 		query.parse();
 
 		auto on_line = [&database, &query](const std::vector<std::string>& line) {
-			ensure(line.size() < 2,
+			cout << ".";
+			cout.flush();
+			ensure(line.size() >= 2,
 					(make_string() << "Encountered line in mapping with " << line.size() << " < 2 columns").str(),
 					ErrorType::GENERIC
 			);
 
-			auto gene1 = database.get_gene_variant(line.at(0));
+			auto gene_variant1 = database.get_gene_variant(line.at(0));
 			for (int i=1; i<line.size(); i++) {
-				auto gene2 = database.get_gene_variant(line.at(i));
+				auto gene_variant2 = database.get_gene_variant(line.at(i));
 
-				ensure(gene1.get_gene().get_gene_collection_id() != gene2.get_gene().get_gene_collection_id(),
-						(make_string() << "Encountered mapping between 2 genes of the same gene collection: " << gene1.get_gene().get_name() << ", " << gene2.get_gene().get_name()).str(),
+				ensure(gene_variant1.get_gene().get_gene_collection_id() != gene_variant2.get_gene().get_gene_collection_id(),
+						(make_string() << "Encountered mapping between 2 genes of the same gene collection: " << gene_variant1.get_gene().get_name() << ", " << gene_variant2.get_gene().get_name()).str(),
 						ErrorType::GENERIC
 				);
 
 				// TODO if exists, UPDATE with warning instead of INSERT
-				query.execute(gene1.get_gene().get_id(), gene1.get_splice_variant_id(), gene2.get_gene().get_id(), gene2.get_splice_variant_id());
+				query.execute(gene_variant1.get_id(), gene_variant2.get_id());
 			}
 		};
 
 		TabGrammarRules rules;
 		parse(begin, end, rules.line[on_line] % eol);
+		//database.execute("COMMIT");
 		return begin;
 	});
+
 }
 
 void DatabaseFileImport::add_functional_annotations(const string& path, Database& database) {
@@ -96,7 +101,7 @@ void DatabaseFileImport::add_orthologs(const std::string& path, Database& databa
 		query.parse();
 
 		auto on_line = [&database, &query, &ortholog_group](const std::vector<std::string>& line) {
-			ensure(line.size() < 2,
+			ensure(line.size() >= 2,
 					(make_string() << "Encountered line in mapping with " << line.size() << " < 2 columns").str(),
 					ErrorType::GENERIC
 			);

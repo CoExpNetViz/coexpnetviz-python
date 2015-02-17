@@ -17,7 +17,6 @@ gene_collections:
           # You can specify multiple match, replace (see rice below)
           - match: 'AT([0-9])G([0-9]{5})'  # Genes are part of the gene collection iff they match this regex pattern (perl syntax, case-insensitive). http://www.boost.org/doc/libs/1_57_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html
             replace: 'AT$1G$2'  # As a gene is read into the database, it will be formatted by s/gene_format_match/gene_format_replace/ using boost-extended format string syntax. This results in just the gene name, no splice variant suffix. (http://www.boost.org/doc/libs/1_33_1/libs/regex/doc/format_boost_syntax.html)
-            splice_variant_group: null  # Number of subgroup (1-based) in match which contains the splice variant number
 
     - name: 'Potato - ITAG'
       species: Potato
@@ -26,7 +25,7 @@ gene_collections:
       gene_parser:
           - match: 'Sotub([0-9]{2})g([0-9]{6})[.][0-9][.]([0-9])' #TODO deal properly with .num suffixes
             replace: 'Sotub$1g$2'
-            splice_variant_group: 3
+            splice_variant_group: 3  # Number of subgroup (1-based) in match which contains the splice variant number
             # TODO check we pick the correct .num group
 
     - name: 'Potato - PGSC'

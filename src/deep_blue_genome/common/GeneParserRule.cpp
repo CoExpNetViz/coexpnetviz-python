@@ -36,18 +36,30 @@ GeneParserRule::GeneParserRule(const std::string& match, const std::string& repl
 bool GeneParserRule::try_parse(std::string& name, NullableSpliceVariantId& splice_variant_id) {
 	match_results<string::const_iterator> results;
 	if (regex_match(name, results, matcher_re)) {
-		name = results.format(replace_format);
+		// get splice variant
 		if (!splice_variant_group.is_null) {
 			auto variant_str = results.format((make_string() << "$" << splice_variant_group.data).str());
-			istringstream str(variant_str);
-			str.exceptions(std::ios::failbit);
-			SpliceVariantId id;
-			str >> id;
-			splice_variant_id = id;
+			if (!variant_str.empty()) {
+				istringstream str(variant_str);
+				SpliceVariantId id;
+				str >> id;
+				ensure(!str.fail(),
+						(make_string() << "Error parsing gene variant '" << name << "': '" << variant_str << "' is not a splice variant id").str(),
+						ErrorType::GENERIC
+				);
+				splice_variant_id = id;
+			}
+			else {
+				splice_variant_id = mysqlpp::null;
+			}
 		}
 		else {
 			splice_variant_id = mysqlpp::null;
 		}
+
+		// get gene name
+		name = results.format(replace_format);
+
 		return true;
 	}
 	return false;
