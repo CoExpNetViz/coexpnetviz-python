@@ -15,7 +15,7 @@ gene_collections:
       gene_web_page: 'http://www.arabidopsis.org/servlets/TairObject?name=$name&type=locus'  # url to page of gene, use $name as placeholder for the gene name
       gene_parser:  # description of how to parse genes of this collection into (gene-id, splice variant)
           # You can specify multiple match, replace (see rice below)
-          - match: 'AT([0-9])G([0-9]{5})'  # Genes are part of the gene collection iff they match this regex pattern (perl syntax, case-insensitive). http://www.boost.org/doc/libs/1_57_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html
+          - match: 'AT([C0-9])G([0-9]{5})'  # Genes are part of the gene collection iff they match this regex pattern (perl syntax, case-insensitive). http://www.boost.org/doc/libs/1_57_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html
             replace: 'AT$1G$2'  # As a gene is read into the database, it will be formatted by s/gene_format_match/gene_format_replace/ using boost-extended format string syntax. This results in just the gene name, no splice variant suffix. (http://www.boost.org/doc/libs/1_33_1/libs/regex/doc/format_boost_syntax.html)
 
     - name: 'Potato - ITAG'
