@@ -14,7 +14,8 @@ using namespace mysqlpp;
 namespace DEEP_BLUE_GENOME {
 
 Database::Database()
-:	connection("db_tidie_deep_blue_genome", "127.0.0.1:55000", "tidie", "4Ku8pxArMFzdS5Kt") // TODO don't hardcode username,password. Grab new password once this is no longer in here, psbsql05
+:	connection("db_tidie_deep_blue_genome", "127.0.0.1", "tidie", "4Ku8pxArMFzdS5Kt") // TODO don't hardcode username,password. Grab new password once this is no longer in here, psbsql05
+//:	connection("db_tidie_deep_blue_genome", "127.0.0.1:55000", "tidie", "4Ku8pxArMFzdS5Kt") // TODO don't hardcode username,password. Grab new password once this is no longer in here, psbsql05
 {
 	storage_path = "/home/limyreth/dbg_db"; // TODO grab from settings table instead of hardcode
 
@@ -42,16 +43,16 @@ void Database::update(std::string yaml_path) {
 	execute("DELETE FROM clustering");
 	execute("DELETE FROM expression_matrix_row");
 	execute("DELETE FROM expression_matrix");
-	execute("DELETE FROM gene_mapping");
-	execute("DELETE FROM gene_variant");
-	execute("DELETE FROM gene");
-	execute("DELETE FROM gene_parser_rule");
-	execute("DELETE FROM gene_collection");
+	//execute("DELETE FROM gene_mapping");
+	//execute("DELETE FROM gene_variant");
+	//execute("DELETE FROM gene");
+	//execute("DELETE FROM gene_parser_rule");
+	//execute("DELETE FROM gene_collection");
 
 	// Gene collections
 	// TODO allow removal/overwrite of all sorts of things
 	// TODO allow update of some things
-	for (auto gene_collection_node : config["gene_collections"]) {
+	/*for (auto gene_collection_node : config["gene_collections"]) {
 		// TODO when specified, it overwrites the previous definition of the gene collection. Do warn though. Also, makes it other than an update, since it kinda removes parts
 		NullableGeneWebPage gene_web_page = gene_collection_node["gene_web_page"] ? NullableGeneWebPage(gene_collection_node["gene_web_page"].as<std::string>()) : mysqlpp::null;
 		auto gene_collection = make_shared<GeneCollection>(
@@ -60,14 +61,14 @@ void Database::update(std::string yaml_path) {
 		);
 		gene_collection->database_insert();
 		gene_collections.emplace(gene_collection->get_id(), gene_collection);
-	}
+	}*/
 
 	// Gene mappings
-	for (auto node : config["gene_mappings"]) {
+	/*for (auto node : config["gene_mappings"]) {
 		auto path = prepend_path(data_root, node.as<string>());
 		cout << "Loading gene mapping '" << path << "'\n";
 		DatabaseFileImport::add_gene_mappings(path, *this);
-	}
+	}*/
 
 	// Functional annotations
 	for (auto node : config["functional_annotations"]) {

@@ -2,10 +2,11 @@
 
 #pragma once
 
+#include <odb/session.hxx>
+#include <boost/noncopyable.hpp>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/types.h>
 #include <deep_blue_genome/common/GeneVariant.h>
-#include <boost/noncopyable.hpp>
 
 namespace DEEP_BLUE_GENOME {
 
@@ -39,7 +40,6 @@ public:
 	Database();
 
 	void execute(const std::string& query);
-	mysqlpp::Query prepare(const std::string& query);
 
 	/**
 	 * Update database with new data
@@ -48,16 +48,10 @@ public:
 	 */
 	void update(std::string yaml_path); // TODO move this to cli/database
 
-	std::shared_ptr<GeneExpressionMatrix> get_gene_expression_matrix(ExpressionMatrixId);
-
-	std::shared_ptr<Clustering> get_clustering(ClusteringId);
-
-	std::shared_ptr<GeneCollection> get_gene_collection(GeneCollectionId);
-
 	/**
 	 * @throws NotFoundException if doesn't exist
 	 */
-	ExpressionMatrixId get_gene_expression_matrix_id(GeneCollectionId, const std::string& name); // TODO rename ExpressionMatrixId -> Gene*
+	GeneExpressionMatrixId get_gene_expression_matrix_id(GeneCollectionId, const std::string& name); // TODO rename ExpressionMatrixId -> Gene*
 
 	/**
 	 * Get gene variant by name, inserts it (and its gene) if it doesn't exist yet
@@ -65,17 +59,12 @@ public:
 	 * @throws NotFoundException if name matches none of the gene collections
 	 * @param name Name of gene
 	 */
-	GeneVariant get_gene_variant(const std::string& name);
+	std::shared_ptr<GeneVariant> get_gene_variant(const std::string& name);
 
 	/**
 	 * Get gene variant by gene
 	 */
 	GeneVariantId get_gene_variant_id(GeneId, NullableSpliceVariantId);
-
-	/**
-	 * Get gene variant by id
-	 */
-	GeneVariant get_gene_variant(GeneVariantId);
 
 	/**
 	 * Get orthologs filtered by their gene collection
@@ -89,13 +78,6 @@ public:
 	 * Get gene collection id by name
 	 */
 	GeneCollectionId get_gene_collection_id(const std::string& name);
-
-	/**
-	 * Get gene by id
-	 *
-	 * @throws NotFoundException
-	 */
-	Gene get_gene(GeneId);
 
 	/**
 	 * Get path to file in which expression matrix values are dumped
@@ -112,9 +94,9 @@ private:
 	std::shared_ptr<Type> load(Id);
 
 private:
-	mysqlpp::Connection connection;
 	std::map<GeneCollectionId, std::shared_ptr<GeneCollection>> gene_collections;  // cache of all gene collections
 	std::string storage_path; // where big blobs of data are stored (which don't belong inside the actual database itself)
+	odb::session session;  // currently during the whole application run everything used so far, will remain in cache. We may need to change this later
 };
 
 } // end namespace
@@ -150,7 +132,8 @@ std::shared_ptr<Type> Database::load(Id id) {
 
 template <class GeneCollectionsIterable>
 std::vector<GeneId> Database::get_orthologs(OrthologGroupId group_id, const GeneCollectionsIterable& gene_collections) {
-	std::ostringstream str;
+	assert(false);
+	/*std::ostringstream str;
 	str << "SELECT id FROM gene WHERE ortholog_group_id = " << group_id << " AND gene_collection_id NOT IN (";
 	for (auto id : gene_collections) {
 		str << id << ",";
@@ -171,7 +154,7 @@ std::vector<GeneId> Database::get_orthologs(OrthologGroupId group_id, const Gene
 		orthologs.emplace_back(row[0]);
 	}
 
-	return orthologs;
+	return orthologs;*/
 }
 
 } // end namespace

@@ -11,6 +11,7 @@
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/unordered_map.hpp>
 #include <boost/serialization/shared_ptr.hpp>
+#include <deep_blue_genome/common/util.h>
 
 namespace DEEP_BLUE_GENOME {
 

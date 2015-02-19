@@ -6,17 +6,21 @@
 #include <unordered_map>
 #include <boost/noncopyable.hpp>
 #include <memory>
+#include <odb/lazy-ptr.hxx>
 #include <deep_blue_genome/common/ublas.h>
 #include <deep_blue_genome/common/types.h>
+#include <deep_blue_genome/common/GeneCollection.h>
 
 // TODO size_type is unsigned long long or such, we don't need thaaat much. Should swap it for a typedef of our own and then set that to uint32_t. You probably won't need more than uint, but there's not much extra effort in using a typedef
 namespace DEEP_BLUE_GENOME {
 
 class GeneExpressionMatrixClustering;
+class Gene;
 class Database;
 
 typedef uint32_t GeneExpressionMatrixRow;
 
+#pragma db object
 // TODO each row label was originally a probe id, does that map to a gene in general, or rather a specific gene variant? What does it measure specifically? Currently we assume each row is a .1 gene
 /**
  * Gene expression matrix
@@ -31,7 +35,7 @@ public:
 	/**
 	 * Load from database
 	 */
-	GeneExpressionMatrix(ExpressionMatrixId matrix_id, Database&);
+	GeneExpressionMatrix(GeneExpressionMatrixId matrix_id, Database&);
 
 	/**
 	 * Construct an expression matrix from a TODO particular plain text format
@@ -63,14 +67,26 @@ public:
 	void database_insert();
 
 private:
-	GeneExpressionMatrixId id;
-	std::string name; // name of dataset
-	GeneCollectionId gene_collection_id;
-	Database& database;
+	friend class odb::access;
 
+	GeneExpressionMatrix() {};  // for ODB
+
+	#pragma db id auto
+	GeneExpressionMatrixId id;
+
+	#pragma db not_null
+	std::shared_ptr<GeneCollection> gene_collection;
+
+	std::string name; // name of dataset
+
+	#pragma db transient
 	matrix expression_matrix; // row_major
 
-	std::unordered_map<GeneExpressionMatrixRow, GeneId> gene_row_to_id;
+	// TODO db map... uh... eh?
+	// TODO pragma unordered or stuff maaaybe needed?
+	std::unordered_map<GeneExpressionMatrixRow, odb::lazy_shared_ptr<Gene>> gene_row_to_id;
+
+	#pragma db transient
 	std::unordered_map<GeneId, GeneExpressionMatrixRow> gene_id_to_row;
 };
 

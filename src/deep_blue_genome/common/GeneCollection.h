@@ -13,6 +13,7 @@ namespace DEEP_BLUE_GENOME {
 
 class Database;
 
+#pragma db object
 /**
  * Identified genes in a genome
  *
@@ -23,9 +24,8 @@ class GeneCollection : public boost::noncopyable
 public:
 	GeneCollection(GeneCollectionId, Database&);
 
-	GeneCollection(const std::string& name, const std::string& species, YAML::Node parser_rules, const mysqlpp::sql_varchar_null& gene_web_page, Database&);
+	GeneCollection(const std::string& name, const std::string& species, YAML::Node parser_rules, const NullableGeneWebPage& gene_web_page, Database&);
 
-	GeneCollectionId get_id() const;
 	std::string get_name() const;
 
 	/**
@@ -59,15 +59,22 @@ public:
 	bool try_get_gene_variant(const std::string& name, GeneVariant& out);
 
 private:
+	friend class odb::access;
+
+	GeneCollection() {};  // for ODB
+
+	#pragma db id auto
 	GeneCollectionId id;
+
+	#pragma db unique
 	std::string name;
+
 	std::string species;
 
 	NullableGeneWebPage gene_web_page;
 
-	std::vector<GeneParserRule> gene_parser_rules;
-
-	Database& database;
+	#pragma db value_not_null
+	std::vector<std::unique_ptr<GeneParserRule>> gene_parser_rules;
 };
 
 

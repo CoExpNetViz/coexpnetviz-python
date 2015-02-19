@@ -11,27 +11,27 @@ Cluster::Cluster(string name)
 {
 }
 
-void Cluster::add(GeneId gene_id) {
-	genes.emplace_back(gene_id);
+void Cluster::add(odb::lazy_shared_ptr<Gene> gene) {
+	genes.emplace_back(gene);
 }
 
 bool Cluster::empty() const {
 	return genes.empty();
 }
 
-std::vector<GeneId>::const_iterator Cluster::begin() const {
+Cluster::Genes::const_iterator Cluster::begin() const {
 	return genes.begin();
 }
 
-std::vector<GeneId>::const_iterator Cluster::end() const {
+Cluster::Genes::const_iterator Cluster::end() const {
 	return genes.end();
 }
 
-std::vector<GeneId>::iterator Cluster::begin() {
+Cluster::Genes::iterator Cluster::begin() {
 	return genes.begin();
 }
 
-std::vector<GeneId>::iterator Cluster::end() {
+Cluster::Genes::iterator Cluster::end() {
 	return genes.end();
 }
 

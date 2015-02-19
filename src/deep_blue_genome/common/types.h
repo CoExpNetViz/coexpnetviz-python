@@ -2,27 +2,26 @@
 
 #pragma once
 
-#include <mysql++/mysql++.h>
+#include <odb/nullable.hxx>
 
 namespace DEEP_BLUE_GENOME {
 
-typedef mysqlpp::sql_bigint_unsigned GeneId;
-typedef mysqlpp::sql_bigint_unsigned OrthologGroupId;
-typedef mysqlpp::Null<OrthologGroupId> NullableOrthologGroupId;
-typedef mysqlpp::sql_int_unsigned GenomeId;
-typedef mysqlpp::sql_int_unsigned GeneCollectionId;
-typedef mysqlpp::sql_int_unsigned GeneExpressionMatrixId;
-typedef GeneExpressionMatrixId ExpressionMatrixId;
-typedef mysqlpp::Null<ExpressionMatrixId> NullableGeneExpressionMatrixId;
-typedef NullableGeneExpressionMatrixId NullableExpressionMatrixId;
-typedef mysqlpp::sql_int_unsigned ClusteringId;
-typedef mysqlpp::sql_int_unsigned ClusterId;
-typedef mysqlpp::sql_varchar_null NullableGeneWebPage;
-typedef mysqlpp::sql_int_unsigned SpliceVariantId;
-typedef mysqlpp::Null<SpliceVariantId> NullableSpliceVariantId;
-typedef mysqlpp::sql_bigint_unsigned GeneVariantId;
-typedef mysqlpp::sql_int_unsigned GeneParserRuleId;
-typedef mysqlpp::sql_int RegexGroup;
-typedef mysqlpp::Null<RegexGroup> NullableRegexGroup;
+// TODO rm unused
+typedef uint64_t GeneId;
+typedef uint64_t OrthologGroupId;
+typedef odb::nullable<OrthologGroupId> NullableOrthologGroupId;
+typedef uint32_t GenomeId;
+typedef uint32_t GeneCollectionId;
+typedef uint32_t GeneExpressionMatrixId;
+typedef odb::nullable<GeneExpressionMatrixId> NullableGeneExpressionMatrixId;
+typedef uint32_t ClusteringId;
+typedef uint32_t ClusterId;
+typedef odb::nullable<std::string> NullableGeneWebPage;
+typedef uint32_t SpliceVariantId;
+typedef odb::nullable<SpliceVariantId> NullableSpliceVariantId;
+typedef uint64_t GeneVariantId;
+typedef uint32_t GeneParserRuleId;
+typedef uint32_t RegexGroup;
+typedef odb::nullable<RegexGroup> NullableRegexGroup;
 
 } // end namespace

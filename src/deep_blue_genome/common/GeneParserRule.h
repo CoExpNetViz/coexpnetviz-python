@@ -10,6 +10,7 @@ namespace DEEP_BLUE_GENOME {
 
 class Database;
 
+#pragma db object
 /**
  * Parsing rules for genes of a gene collection
  */
@@ -35,13 +36,19 @@ private:
 	void set_matcher(const std::string& matcher);
 
 private:
-	GeneParserRuleId id;
+	friend class odb::access;
+
+	GeneParserRule() {};  // for ODB
+
+	#pragma db id auto
+	GeneParserRuleId id; // TODO Much later: can totally place ids inline, given that elsewhere we don't actually use them...
+
 	std::string matcher; // See create_db.sql for meaning of these fields
-	boost::regex matcher_re;
 	std::string replace_format;
 	NullableRegexGroup splice_variant_group;
 
-	Database& database;
+	#pragma db transient
+	boost::regex matcher_re;
 };
 
 

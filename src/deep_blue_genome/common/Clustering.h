@@ -9,13 +9,14 @@
 
 namespace DEEP_BLUE_GENOME {
 
+#pragma db object
 /**
  * A clustering of genes
  */
 class Clustering : public boost::noncopyable
 {
 public:
-	typedef std::vector<Cluster> Clusters;
+	typedef std::vector<std::unique_ptr<Cluster>> Clusters;
 	typedef Clusters::const_iterator const_iterator;
 
 public:
@@ -46,12 +47,24 @@ public:
 	void database_insert();
 
 private:
+	friend class odb::access;
+
+	Clustering() {};  // for ODB
+
+	#pragma db id auto
 	ClusteringId id;
-	GeneCollectionId gene_collection_id;
-	ExpressionMatrixId expression_matrix_id; // 0 if not associated with a matrix
-	std::string name;
+
+	#pragma db not_null
+	std::shared_ptr<GeneCollection> gene_collection;
+
+	#pragma db null
+	std::shared_ptr<GeneExpressionMatrix> expression_matrix; // null if not associated with a matrix
+
+	// TODO make value_not_null default for all containers if possible
+	#pragma db value_not_null
 	Clusters clusters;  // mutually disjunct clusters
-	Database& database;
+
+	std::string name;
 };
 
 
