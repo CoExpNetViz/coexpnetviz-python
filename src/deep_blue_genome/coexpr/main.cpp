@@ -186,21 +186,18 @@ void read_yaml(std::string path, Database& database, string& baits_path, double&
 /**
  * Load baits as distinct list of groups
  */
-std::vector<OrthologGroupInfo*> load_baits(Database& database, OrthologGroups& groups, std::string baits_path) {
-	vector<OrthologGroupInfo*> baits;
+std::vector<Gene*> load_baits(Database& database, std::string baits_path) {
+	vector<Gene*> baits;
 
+	// read file
 	Baits baits_(baits_path);
 	for (const auto& gene_name : baits_.get_genes()) {
 		auto& gene_variant = database.get_gene_variant(gene_name);
 		auto& gene = gene_variant.as_gene();
-		auto group = groups.get(gene);
-		if (!group) {
-			cerr << "Warning: dropping bait '" << gene << "': has no orthologs" << endl;
-			continue;
-		}
-		baits.emplace_back(group);
+		baits.emplace_back(&gene);
 	}
 
+	// get rid of duplicates in input
 	sort(baits.begin(), baits.end());
 	unique(baits.begin(), baits.end());
 
@@ -232,7 +229,7 @@ int main(int argc, char** argv) {
 		vector<GeneExpressionMatrix*> expression_matrices;
 		read_yaml(argv[1], database, baits_path, negative_treshold, positive_treshold, groups, expression_matrices);
 
-		vector<OrthologGroupInfo*> baits = load_baits(database, *groups, baits_path);
+		vector<Gene*> baits = load_baits(database, baits_path);
 
 		cout.flush();
 
@@ -252,12 +249,10 @@ int main(int argc, char** argv) {
 
 		// Group bait genes by expression matrix
 		unordered_map<GeneExpressionMatrix*, vector<GeneExpressionMatrixRow>> bait_indices;
-		for (auto group : baits) {
-			for (auto bait : *group) {
-				auto matrix = get_matrix(bait->get_gene_collection());
-				if (matrix && matrix->has_gene(*bait)) {
-					bait_indices[matrix].emplace_back(matrix->get_gene_row(*bait));
-				}
+		for (auto bait : baits) {
+			auto matrix = get_matrix(bait->get_gene_collection());
+			if (matrix && matrix->has_gene(*bait)) {
+				bait_indices[matrix].emplace_back(matrix->get_gene_row(*bait));
 			}
 		}
 
@@ -317,11 +312,9 @@ int main(int argc, char** argv) {
 		ofstream out_vizmap(vizmap, ios::app);
 		out_vizmap.exceptions(ofstream::failbit | ofstream::badbit);
 
-		for (auto group : baits) {
-			for (auto bait : *group) {
-				out_sif << bait->get_name() << "\n";
-				out_node_attr << bait->get_name() << " = Bait\n";
-			}
+		for (auto bait : baits) {
+			out_sif << bait->get_name() << "\n";
+			out_node_attr << bait->get_name() << " = Bait\n";
 		}
 
 		unordered_set<string> bait_groups;
