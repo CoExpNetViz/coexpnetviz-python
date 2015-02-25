@@ -12,11 +12,12 @@ namespace DEEP_BLUE_GENOME {
 enum class ErrorType : int {
 	NONE = 0,
 	GENERIC,
-	INVALID_GOI_GENE
+	INVALID_GOI_GENE,
+	SPLICE_VARIANT_INSTEAD_OF_GENE
 };
 
 // XXX in a normal world one'd use inheritance to add types..., derived types...
-class TypedException : public std::runtime_error
+class TypedException : public std::runtime_error // TODO cpp
 {
 public:
 	TypedException(std::string what, ErrorType error_type)
@@ -26,6 +27,10 @@ public:
 
 	int get_exit_code() const {
 		return static_cast<int>(error_type);
+	}
+
+	ErrorType get_type() const {
+		return error_type;
 	}
 
 private:

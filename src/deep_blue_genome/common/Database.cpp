@@ -2,87 +2,73 @@
 
 #include "Database.h"
 #include <yaml-cpp/yaml.h>
+#include <boost/filesystem.hpp>
 #include <deep_blue_genome/common/GeneCollection.h>
 #include <deep_blue_genome/common/GeneExpressionMatrix.h>
 #include <deep_blue_genome/common/Clustering.h>
-#include <deep_blue_genome/common/DatabaseFileImport.h>
+#include <deep_blue_genome/common/DataFileImport.h>
+#include <deep_blue_genome/common/SpliceVariant.h>
+#include <deep_blue_genome/common/Serialization.h>
+#include <deep_blue_genome/common/OrthologGroup.h>
 
 using namespace std;
-using namespace mysqlpp;
 
 // TODO const string& everywhere except in returns
 namespace DEEP_BLUE_GENOME {
 
-Database::Database()
-:	connection("db_tidie_deep_blue_genome", "127.0.0.1", "tidie", "4Ku8pxArMFzdS5Kt") // TODO don't hardcode username,password. Grab new password once this is no longer in here, psbsql05
-//:	connection("db_tidie_deep_blue_genome", "127.0.0.1:55000", "tidie", "4Ku8pxArMFzdS5Kt") // TODO don't hardcode username,password. Grab new password once this is no longer in here, psbsql05
+Database::Database(std::string path)
+:	database_path(std::move(path))
 {
-	storage_path = "/home/limyreth/dbg_db"; // TODO grab from settings table instead of hardcode
-
-	// TODO load gene_collections, but careful with update further on
-}
-
-void Database::execute(const std::string& query) {
-	ensure(connection.connected(), connection.error(), ErrorType::GENERIC); // it turned out mysql++ doesn't check this...
-	connection.query(query).execute();
-}
-
-Query Database::prepare(const std::string& query) {
-	ensure(connection.connected(), connection.error(), ErrorType::GENERIC);
-	return connection.query(query);
+	auto main_file = get_main_file();
+	if (boost::filesystem::exists(main_file)) {
+		Serialization::load_from_binary(main_file, *this);
+	}
 }
 
 void Database::update(std::string yaml_path) {
-	YAML::Node config = YAML::LoadFile(yaml_path);
-	string data_root = config["species_data_path"].as<string>(".");
+	// TODO rm all previous data first?
 
-	// TODO don't clear first
-	// for testing, clear db first
-	execute("DELETE FROM cluster_item");
-	execute("DELETE FROM cluster");
-	execute("DELETE FROM clustering");
-	execute("DELETE FROM expression_matrix_row");
-	execute("DELETE FROM expression_matrix");
-	//execute("DELETE FROM gene_mapping");
-	//execute("DELETE FROM gene_variant");
-	//execute("DELETE FROM gene");
-	//execute("DELETE FROM gene_parser_rule");
-	//execute("DELETE FROM gene_collection");
-
-	// Gene collections
 	// TODO allow removal/overwrite of all sorts of things
 	// TODO allow update of some things
-	/*for (auto gene_collection_node : config["gene_collections"]) {
+
+	YAML::Node config = YAML::LoadFile(yaml_path);
+	string data_root = config["species_data_path"].as<string>(".");
+	DataFileImport importer(*this);
+
+	// Gene collections
+	for (auto gene_collection_node : config["gene_collections"]) {
 		// TODO when specified, it overwrites the previous definition of the gene collection. Do warn though. Also, makes it other than an update, since it kinda removes parts
-		NullableGeneWebPage gene_web_page = gene_collection_node["gene_web_page"] ? NullableGeneWebPage(gene_collection_node["gene_web_page"].as<std::string>()) : mysqlpp::null;
-		auto gene_collection = make_shared<GeneCollection>(
+		NullableGeneWebPage gene_web_page;
+		if (gene_collection_node["gene_web_page"]) {
+			gene_web_page = gene_collection_node["gene_web_page"].as<std::string>();
+		}
+
+		gene_collections.emplace_back(make_unique<GeneCollection>(
 				gene_collection_node["name"].as<string>(), gene_collection_node["species"].as<string>(),
-				gene_collection_node["gene_parser"], gene_web_page, *this
-		);
-		gene_collection->database_insert();
-		gene_collections.emplace(gene_collection->get_id(), gene_collection);
-	}*/
+				gene_collection_node["gene_parser"], gene_web_page
+		));
+	}
 
 	// Gene mappings
-	/*for (auto node : config["gene_mappings"]) {
+	for (auto node : config["gene_mappings"]) {
 		auto path = prepend_path(data_root, node.as<string>());
 		cout << "Loading gene mapping '" << path << "'\n";
-		DatabaseFileImport::add_gene_mappings(path, *this);
-	}*/
+		importer.add_gene_mappings(path);
+	}
 
 	// Functional annotations
 	for (auto node : config["functional_annotations"]) {
 		auto path = prepend_path(data_root, node.as<string>());
 		cout << "Loading gene descriptions '" << path << "'\n";
 
-		DatabaseFileImport::add_functional_annotations(path, *this);
+		importer.add_functional_annotations(path);
 	}
 
 	// Orthologs
 	for (auto node : config["orthologs"]) { // TODO use some orthologs in our debug config will ya
 		auto path = prepend_path(data_root, node.as<string>());
 		cout << "Loading orthologs '" << path << "'\n";
-		DatabaseFileImport::add_orthologs(path, *this);
+		importer.add_orthologs(path);
 	}
 
 	// Expression matrices
@@ -91,8 +77,7 @@ void Database::update(std::string yaml_path) {
 		string matrix_path = prepend_path(data_root, matrix_node["path"].as<string>());
 
 		cout << "Loading gene expression matrix '" << matrix_name << "'\n";
-		GeneExpressionMatrix matrix(matrix_name, matrix_path, *this);
-		matrix.database_insert();
+		importer.add_gene_expression_matrix(matrix_name, matrix_path);
 	}
 
 	// Clusterings
@@ -101,93 +86,61 @@ void Database::update(std::string yaml_path) {
 		string clustering_path = prepend_path(data_root, clustering_node["path"].as<string>());
 
 		cout << "Loading clustering '" << clustering_name << "'\n";
-		Clustering clustering(clustering_name, clustering_path, clustering_node["expression_matrix"].as<string>(""), *this);
-		clustering.database_insert();
+		importer.add_clustering(clustering_name, clustering_path, clustering_node["expression_matrix"].as<string>(""));
 	}
 
 	// TODO allow removal (--rm-gene-mappings --rm-functional-annotations --rm-expression-matrices --rm-orthologs --rm-clusterings --rm-gene-collections)
+
+	Serialization::save_to_binary(get_main_file(), *this);
 }
 
-GeneVariant Database::get_gene_variant(const std::string& name) {
-	GeneVariant gene;
-	for (auto& p : gene_collections) {
-		if (p.second->try_get_gene_variant(name, gene)) {
-			return gene;
+GeneVariant& Database::get_gene_variant(const std::string& name) {
+	auto variant = try_get_gene_variant(name);
+	if (variant)
+		return *variant;
+	else
+		throw NotFoundException("Gene not part of a known gene collection: " + name);
+}
+
+GeneVariant* Database::try_get_gene_variant(const std::string& name) {
+	for (auto& gene_collection : gene_collections) {
+		auto variant = gene_collection->try_get_gene_variant(name);
+		if (variant) {
+			return variant;
 		}
 	}
-	throw NotFoundException("Gene not part of a known gene collection: " + name);
+	return nullptr;
 }
 
-Gene Database::get_gene(GeneId id) {
-	auto query = prepare("SELECT gene_collection_id, name, ortholog_group_id FROM gene WHERE id = %0q");
-	query.parse();
-	auto result = query.store(id);
-
-	if (result.num_rows() == 0) {
-		throw NotFoundException("Gene id: " + id);
-	}
-
-	assert(result.num_rows() == 1);
-	auto row = *result.begin();
-	return Gene(id, row[0].conv<GeneCollectionId>(0), row[1].conv<std::string>(""), row[2].conv<NullableOrthologGroupId>(mysqlpp::null)); // Note: the arg to conv is ignored (you can check the source if paranoid)
+OrthologGroup& Database::add_ortholog_group(std::string external_id) {
+	// TODO no 2 ortholog groups should have the same external id
+	ortholog_groups.emplace_back(make_unique<OrthologGroup>(std::move(external_id)));
+	return *ortholog_groups.back();
 }
 
-GeneCollectionId Database::get_gene_collection_id(const std::string& name) {
-	auto query = prepare("SELECT id FROM gene_collection WHERE LOWER(name) = LOWER(%0q)");
-	query.parse();
-	auto result = query.store(name);
-
-	if (result.num_rows() == 0) {
-		throw NotFoundException("Gene collection with name '" + name + "' not found");
-	}
-
-	assert(result.num_rows() == 1);
-	auto row = *result.begin();
-	return row[0];
+GeneCollection& Database::get_gene_collection(const std::string& name) {
+	return **find_if(gene_collections.begin(), gene_collections.end(), [name](unique_ptr<GeneCollection>& gene_collection) {
+		return gene_collection->get_name() == name;
+	});
 }
 
-ExpressionMatrixId Database::get_gene_expression_matrix_id(GeneCollectionId gene_collection_id, const std::string& name) {
-	auto query = prepare("SELECT id FROM expression_matrix WHERE gene_collection_id = %0q AND name = %1q");
-	query.parse();
-	auto result = query.store(gene_collection_id, name);
-
-	if (result.num_rows() == 0) {
-		throw NotFoundException("Gene expression matrix with name '" + name + "' not found");
-	}
-
-	assert(result.num_rows() == 1);
-	auto row = *result.begin();
-	return row[0];
+void Database::erase(OrthologGroup& group) {
+	auto it = find_if(ortholog_groups.begin(), ortholog_groups.end(), [&group](unique_ptr<OrthologGroup>& g) {
+		return g.get() == &group;
+	});
+	assert(it != ortholog_groups.end());
+	ortholog_groups.erase(it);
 }
 
-std::shared_ptr<GeneExpressionMatrix> Database::get_gene_expression_matrix(ExpressionMatrixId id) {
-	return load<GeneExpressionMatrix>(id);
+string Database::get_main_file() const {
+	return database_path + "/db";
 }
 
-std::shared_ptr<GeneCollection> Database::get_gene_collection(GeneCollectionId id) {
-	return load<GeneCollection>(id);
-}
-
-std::string Database::get_gene_expression_matrix_values_file(GeneExpressionMatrixId id) {
-	return (make_string() << storage_path << "/gene_expression_matrices/" << id << "/matrix").str();
-}
-
-GeneVariantId Database::get_gene_variant_id(GeneId gene, NullableSpliceVariantId splice_variant) {
-	auto query = prepare("SELECT id FROM gene_variant WHERE gene_id = %0q AND splice_variant_id = %1q");
-	query.parse();
-	auto result = query.store(gene, splice_variant);
-
-	if (result.num_rows() == 0) {
-		throw NotFoundException((make_string() << "Failed to find splice variant " << splice_variant << " of gene id " << gene).str());
-	}
-
-	assert(result.num_rows() == 1);
-	auto row = *result.begin();
-	return row[0];
-}
-
-GeneVariant Database::get_gene_variant(GeneVariantId id) {
-	return GeneVariant(id, *this);
-}
+/*
+ * Validate everything that constructors could not have checked (uniqueness, ...)
+ * Validate:
+ * - unique(GeneCollection.name)
+ * Some of these can be ensured via invariants... But uniqueness checks are preferably only done after done loading all data (e.g. when adding in bulk to the database)
+ */
 
 } // end namespace

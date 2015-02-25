@@ -3,8 +3,8 @@
 #include "GeneExpressionMatrixCluster.h"
 
 using namespace std;
-namespace ublas = boost::numeric::ublas;
 
+#if false
 namespace DEEP_BLUE_GENOME {
 
 GeneExpressionMatrixCluster::GeneExpressionMatrixCluster(string name)
@@ -41,3 +41,4 @@ string GeneExpressionMatrixCluster::get_name() const {
 }
 
 }
+#endif

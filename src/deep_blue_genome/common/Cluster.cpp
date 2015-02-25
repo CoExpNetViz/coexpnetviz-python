@@ -6,13 +6,17 @@ using namespace std;
 
 namespace DEEP_BLUE_GENOME {
 
-Cluster::Cluster(string name)
+Cluster::Cluster()
+{
+}
+
+Cluster::Cluster(const string& name)
 :	name(name)
 {
 }
 
-void Cluster::add(odb::lazy_shared_ptr<Gene> gene) {
-	genes.emplace_back(gene);
+void Cluster::add(Gene& gene) {
+	genes.emplace_back(&gene);
 }
 
 bool Cluster::empty() const {

@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <deep_blue_genome/common/util.h>
-#include <deep_blue_genome/common/Database.h>
+#include <deep_blue_genome/common/database_all.h>
 #include <boost/program_options.hpp>
 
 using namespace std;

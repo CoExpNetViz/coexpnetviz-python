@@ -23,7 +23,6 @@
 #include <boost/archive/archive_exception.hpp>
 #include <cctype>
 #include <yaml-cpp/yaml.h>
-#include <mysql++/mysql++.h>
 
 using namespace std;
 
@@ -136,13 +135,6 @@ std::string exception_what(const exception& e) {
 		auto archive_ex = dynamic_cast<const boost::archive::archive_exception*>(&e);
 		if (archive_ex) {
 			return (make_string() << archive_ex->what() << ": " << strerror(errno)).str();
-		}
-	}
-
-	{
-		auto ex = dynamic_cast<const mysqlpp::Exception*>(&e);
-		if (ex) {
-			return (make_string() << "Database error: " << ex->what()).str();
 		}
 	}
 

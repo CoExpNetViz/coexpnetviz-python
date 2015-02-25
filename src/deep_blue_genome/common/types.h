@@ -2,26 +2,22 @@
 
 #pragma once
 
-#include <odb/nullable.hxx>
+#include <boost/optional.hpp>
+#include <boost/variant.hpp>
+#include <deep_blue_genome/common/ublas.h>
 
 namespace DEEP_BLUE_GENOME {
 
-// TODO rm unused
-typedef uint64_t GeneId;
-typedef uint64_t OrthologGroupId;
-typedef odb::nullable<OrthologGroupId> NullableOrthologGroupId;
-typedef uint32_t GenomeId;
-typedef uint32_t GeneCollectionId;
-typedef uint32_t GeneExpressionMatrixId;
-typedef odb::nullable<GeneExpressionMatrixId> NullableGeneExpressionMatrixId;
-typedef uint32_t ClusteringId;
-typedef uint32_t ClusterId;
-typedef odb::nullable<std::string> NullableGeneWebPage;
-typedef uint32_t SpliceVariantId;
-typedef odb::nullable<SpliceVariantId> NullableSpliceVariantId;
-typedef uint64_t GeneVariantId;
-typedef uint32_t GeneParserRuleId;
 typedef uint32_t RegexGroup;
-typedef odb::nullable<RegexGroup> NullableRegexGroup;
+typedef boost::optional<RegexGroup> NullableRegexGroup;
+
+typedef uint32_t SpliceVariantId;
+typedef boost::optional<SpliceVariantId> NullableSpliceVariantId;
+
+typedef boost::optional<std::string> NullableGeneWebPage;
+
+typedef array::value_type GeneExpressionMatrixRow;
+
+
 
 } // end namespace

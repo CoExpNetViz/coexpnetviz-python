@@ -2,27 +2,27 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
-#include <odb/core.hxx>
-#include <odb/lazy-ptr.hxx>
-#include <deep_blue_genome/common/Gene.h>
-#include <deep_blue_genome/common/types.h>
+#include <deep_blue_genome/common/Serialization.h>
 
 namespace DEEP_BLUE_GENOME {
 
-#pragma db object
+class Gene;
+
 /**
  * A cluster of a Clustering
  */
 class Cluster
 {
 public:
-	typedef std::vector<odb::lazy_shared_ptr<Gene>> Genes;
+	typedef std::vector<Gene*> Genes;
 
 public:
-	Cluster(std::string name);
+	Cluster(const std::string& name);
 
-	void add(odb::lazy_shared_ptr<Gene>);
+	void add(Gene&);
+	std::string get_name() const;
 
 	/**
 	 * Get whether cluster is empty
@@ -37,22 +37,29 @@ public:
 	Genes::iterator begin();
 	Genes::iterator end();
 
-	std::string get_name() const;
+public: // treat as private (failed to friend boost::serialization)
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version);
+
+	Cluster();
 
 private:
-	friend class odb::access;
-
-	// TODO Pimpl pattern may help performance, i.e. operator new grabs from a pool
-	Cluster() {}  // for ODB
-
-	#pragma db id auto
-	ClusterId id;
-
-	#pragma db value_not_null
 	Genes genes;
-
-	#pragma db unique
 	std::string name;
 };
 
-} // end MORPHC
+} // end namespace
+
+
+/////////////////////////
+// hpp
+
+namespace DEEP_BLUE_GENOME {
+
+template<class Archive>
+void Cluster::serialize(Archive& ar, const unsigned int version) {
+	ar & genes;
+	ar & name;
+}
+
+}

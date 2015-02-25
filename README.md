@@ -14,6 +14,16 @@ TODO longer description
 
 Supported platforms: Linux
 
+# Dependencies
+
+TODO
+- CMake
+- boost: filesystem iostreams system serialization
+- gsl
+- yamlcpp
+
+- boost 1.55
+
 # Compilation
 
 ## For use at psb servers
@@ -25,13 +35,6 @@ Run:
 
 
 ## For use elsewhere
-
-Dependencies:
-
-- CMake
-- boost: filesystem iostreams system serialization
-- gsl
-- yamlcpp
 
 Compilation:
 

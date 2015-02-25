@@ -4,78 +4,94 @@
 
 #include <string>
 #include <boost/noncopyable.hpp>
+#include <boost/operators.hpp>
 #include <yaml-cpp/yaml.h>
+#include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/types.h>
-#include <deep_blue_genome/common/GeneVariant.h>
+#include <deep_blue_genome/common/Gene.h>
 #include <deep_blue_genome/common/GeneParserRule.h>
 
 namespace DEEP_BLUE_GENOME {
 
-class Database;
+class GeneExpressionMatrix;
+class Clustering;
 
-#pragma db object
 /**
  * Identified genes in a genome
  *
- * All of which originate from a single data source, e.g. the rice RAP db
+ * All of which originate from a single data source, e.g. the rice RAP db.
+ *
+ * There should never be 2 gene collection instances with the same name (in memory)
+ *
+ * Invariant: no 2 genes shall have the same name
  */
-class GeneCollection : public boost::noncopyable
+class GeneCollection : public boost::noncopyable, private boost::equality_comparable<GeneCollection>
 {
 public:
-	GeneCollection(GeneCollectionId, Database&);
-
-	GeneCollection(const std::string& name, const std::string& species, YAML::Node parser_rules, const NullableGeneWebPage& gene_web_page, Database&);
+	GeneCollection(const std::string& name, const std::string& species, YAML::Node parser_rules, const NullableGeneWebPage& gene_web_page);
 
 	std::string get_name() const;
+	boost::optional<std::string> get_gene_web_page() const;
 
 	/**
-	 * Get whether or not a gene web page pattern is known
-	 */
-	bool has_gene_web_page() const;
-	std::string get_gene_web_page() const;
-
-	/**
-	 * Insert into database, also insert genome if it doesn't exist yet
-	 */
-	void database_insert();
-
-	/**
-	 * Overwrite gene collection id with this one's data
-	 */
-	void database_update(GeneCollectionId, Database&) const; // TODO assert(id==0)
-
-	/**
-	 * Get gene by name, inserts gene if it doesn't exist yet
+	 * Get gene variant by name
 	 *
-	 * @throws NotFoundException if name doesn't match this gene collection
+	 * A variant is created if it doesn't exist, but matches the naming scheme of this gene collection.
+	 *
+	 * @throws NotFoundException Variant doesn't match naming scheme of this gene collection
 	 */
-	GeneVariant get_gene_variant(const std::string& name); // TODO NotFoundException("Gene $name"),
+	GeneVariant& get_gene_variant(const std::string& name);
 
 	/**
-	 * Returns true if name matches this gene collection
+	 * Get gene variant
 	 *
-	 * Places resulting gene in out. Otherwise behaves the same as get_gene_by_name
+	 * Like get_gene_variant, but returns nullptr instead of throwing
 	 */
-	bool try_get_gene_variant(const std::string& name, GeneVariant& out);
+	GeneVariant* try_get_gene_variant(const std::string& name);
+
+	/**
+	 * @throws NotFoundException if doesn't exist
+	 */
+	GeneExpressionMatrix& get_gene_expression_matrix(const std::string& name);
+
+	void add_gene_expression_matrix(std::unique_ptr<GeneExpressionMatrix>&& );
+	void add_clustering(std::unique_ptr<Clustering>&&);
+
+	bool operator==(const GeneCollection&) const;
+
+public: // treat as private (failed to friend boost::serialization)
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version);
+
+	GeneCollection();
 
 private:
-	friend class odb::access;
-
-	GeneCollection() {};  // for ODB
-
-	#pragma db id auto
-	GeneCollectionId id;
-
-	#pragma db unique
 	std::string name;
-
 	std::string species;
-
 	NullableGeneWebPage gene_web_page;
-
-	#pragma db value_not_null
-	std::vector<std::unique_ptr<GeneParserRule>> gene_parser_rules;
+	std::unordered_map<std::string, std::unique_ptr<Gene>> name_to_gene; // gene name to gene, for all genes
+	std::vector<GeneParserRule> gene_parser_rules;
+	std::unordered_map<std::string, std::unique_ptr<GeneExpressionMatrix>> gene_expression_matrices; // name -> matrix
+	std::unordered_map<std::string, std::unique_ptr<Clustering>> clusterings; // name -> clustering. General clusterings and those specific to a gene expression matrix
 };
 
-
 } // end namespace
+
+
+/////////////////////////
+// hpp
+
+namespace DEEP_BLUE_GENOME {
+
+template<class Archive>
+void GeneCollection::serialize(Archive& ar, const unsigned int version) {
+	ar & name;
+	ar & species;
+	ar & gene_web_page;
+	ar & name_to_gene;
+	ar & gene_parser_rules;
+	ar & gene_expression_matrices;
+	ar & clusterings;
+}
+
+}

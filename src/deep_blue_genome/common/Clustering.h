@@ -2,37 +2,31 @@
 
 #pragma once
 
-#include <list>
 #include <boost/noncopyable.hpp>
-#include <deep_blue_genome/common/GeneExpressionMatrix.h>
+#include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/Cluster.h>
 
 namespace DEEP_BLUE_GENOME {
 
-#pragma db object
+class GeneCollection;
+class GeneExpressionMatrix;
+
 /**
  * A clustering of genes
  */
 class Clustering : public boost::noncopyable
 {
 public:
-	typedef std::vector<std::unique_ptr<Cluster>> Clusters;
+	typedef std::vector<Cluster> Clusters;
 	typedef Clusters::const_iterator const_iterator;
+
+	friend class DataFileImport;
 
 public:
 	/**
-	 * Load from database
+	 * Construct empty clustering
 	 */
-	Clustering(ClusteringId);
-
-	/**
-	 * Construct a clustering from plain text file
-	 *
-	 * TODO describe plain text format
-	 *
-	 * @param expression_matrix If it can only be used with a specific matrix, specify it here, otherwise pass "".
-	 */
-	Clustering(const std::string& name, const std::string& path, const std::string& expression_matrix, Database&);
+	Clustering();
 
 	/**
 	 * Get iterator to first cluster
@@ -40,32 +34,36 @@ public:
 	const_iterator begin() const;
 	const_iterator end() const;
 
-	std::string get_name() const {
-		return name;
-	}
+	std::string get_name() const;
 
-	void database_insert();
+	GeneCollection& get_gene_collection() const;
+
+public: // treat as private (failed to friend boost::serialization)
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version);
 
 private:
-	friend class odb::access;
-
-	Clustering() {};  // for ODB
-
-	#pragma db id auto
-	ClusteringId id;
-
-	#pragma db not_null
-	std::shared_ptr<GeneCollection> gene_collection;
-
-	#pragma db null
-	std::shared_ptr<GeneExpressionMatrix> expression_matrix; // null if not associated with a matrix
-
-	// TODO make value_not_null default for all containers if possible
-	#pragma db value_not_null
+	GeneCollection* gene_collection; // not null
+	GeneExpressionMatrix* expression_matrix; // nullable
 	Clusters clusters;  // mutually disjunct clusters
-
 	std::string name;
 };
 
+
+}
+
+
+/////////////////////////
+// hpp
+
+namespace DEEP_BLUE_GENOME {
+
+template<class Archive>
+void Clustering::serialize(Archive& ar, const unsigned int version) {
+	ar & gene_collection;
+	ar & expression_matrix;
+	ar & clusters;
+	ar & name;
+}
 
 }

@@ -5,6 +5,7 @@
 
 using namespace std;
 
+#if false
 namespace DEEP_BLUE_GENOME {
 
 GeneExpressionMatrixClustering::GeneExpressionMatrixClustering(std::shared_ptr<GeneExpressionMatrix> matrix, std::string name)
@@ -79,3 +80,4 @@ std::string GeneExpressionMatrixClustering::get_name() const {
 }
 
 }
+#endif

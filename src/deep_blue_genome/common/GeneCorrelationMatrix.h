@@ -27,7 +27,7 @@ public:
 	 * @param gene_indices expression_matrix's gene indices to compare all genes with.
 	 * 		Must be a subset of expression_matrix's gene indices.
 	 */
-	GeneCorrelationMatrix(const GeneExpressionMatrix& expression_matrix, const std::vector<size_type>& gene_indices);
+	GeneCorrelationMatrix(const GeneExpressionMatrix& expression_matrix, const std::vector<GeneExpressionMatrixRow>& gene_indices);
 
 	/**
 	 * Get inner matrix
@@ -37,14 +37,14 @@ public:
 	/**
 	 * Get column index of corresponding to given row_index (if any, segfaults otherwise)
 	 */
-	size_type get_column_index(size_type row_index) const;
+	GeneExpressionMatrixRow get_column_index(GeneExpressionMatrixRow row_index) const;
 
-	size_type get_row_index(size_type column_index) const;
+	GeneExpressionMatrixRow get_row_index(GeneExpressionMatrixRow column_index) const;
 
 private:
-	matrix gene_correlations;
-	std::unordered_map<size_type, size_type> row_to_column_indices; // gene row index -> column index
-	std::vector<size_type> column_to_row_indices;
+	matrix gene_correlations; // TODO column major
+	std::unordered_map<GeneExpressionMatrixRow, GeneExpressionMatrixRow> row_to_column_indices; // gene row index -> column index
+	std::vector<GeneExpressionMatrixRow> column_to_row_indices;
 };
 
 }

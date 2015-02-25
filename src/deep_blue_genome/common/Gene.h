@@ -2,67 +2,84 @@
 
 #pragma once
 
+#include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/util.h>
-#include <deep_blue_genome/common/types.h>
+#include <deep_blue_genome/common/GeneVariant.h>
 
 namespace DEEP_BLUE_GENOME {
 
-class Database;
+class OrthologGroup;
+class SpliceVariant;
 
-#pragma db object
-class Gene
+class Gene : public GeneVariant
 {
 public:
 	/**
-	 * Construct invalid gene, a null value
+	 * @param ortholog_group Ortholog group the gene is part of (Optional)
 	 */
-	Gene(); // TODO after ODB still need this public?
+	Gene(const std::string& name, GeneCollection&, OrthologGroup*);
 
-	Gene(GeneId, GeneCollectionId, const std::string& name, NullableOrthologGroupId);
-	Gene(GeneId, Database&);
-
-	std::shared_ptr<GeneCollectionId> get_gene_collection() const;
 	std::string get_name() const;
 
-	bool has_orthologs() const;
-	OrthologGroupId get_ortholog_group_id() const;
+	/**
+	 * Get ortholog group
+	 *
+	 * @returns group if any, nullptr otherwise
+	 */
+	OrthologGroup* get_ortholog_group() const;
 
-	bool operator<(const Gene&) const;
+	/**
+	 * Set ortholog group
+	 *
+	 * @throws if already part of an ortholog group
+	 */
+	void set_ortholog_group(OrthologGroup& group);
 
-	// TODO cpp
-	size_t get_hash() const {
-		size_t hash = 0;
-		DEEP_BLUE_GENOME::hash_combine(hash, id);
-		return hash;
-	}
+	/**
+	 * Get splice variant
+	 *
+	 * The variant is created if it doesn't exist yet
+	 *
+	 * @throws NotFoundException Variant doesn't match naming scheme of this gene collection
+	 */
+	SpliceVariant& get_splice_variant(SpliceVariantId);
+
+	GeneCollection& get_gene_collection() const;
+	Gene& get_gene();
+	Gene& as_gene();
+
+protected:
+	void print(std::ostream&) const;
+
+public: // treat as private (failed to friend boost::serialization)
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version);
+
+	Gene();
 
 private:
-	friend class odb::access;
-
-	#pragma db id auto
-	GeneId id;
-
-	#pragma db not_null
-	std::shared_ptr<GeneCollectionId> gene_collection_id; // genes collection which this gene is part of
-
-	#pragma db unique
+	// Note: we use pointers instead of references as Gene needs to be default constructible to be conveniently usable with boost serialization
 	std::string name; // unique name of gene
-
-	NullableOrthologGroupId ortholog_group_id;
-
-	// TODO exons: with sequence_begin,end for each exon; referring to the sequence data in Genome
+	GeneCollection* gene_collection; // genes collection which this gene is part of. Not null
+	OrthologGroup* ortholog_group; // ortholog group this gene is part of. Nullable
+	std::vector<std::unique_ptr<SpliceVariant>> splice_variants;
 };
 
 
 } // end namespace
 
 
-namespace std {
-template <> struct hash<DEEP_BLUE_GENOME::Gene>  // Template syntax, pretty as ever
-{
-	size_t operator()(const DEEP_BLUE_GENOME::Gene& x) const
-	{
-		return x.get_hash();
-	}
-};
-} // end namespace
+/////////////////////////
+// hpp
+
+namespace DEEP_BLUE_GENOME {
+
+template<class Archive>
+void Gene::serialize(Archive& ar, const unsigned int version) {
+	ar & name;
+	ar & gene_collection;
+	ar & ortholog_group;
+	ar & splice_variants;
+}
+
+}
