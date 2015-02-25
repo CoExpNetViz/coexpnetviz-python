@@ -14,6 +14,7 @@
 #include <yaml-cpp/yaml.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/database_all.h>
+#include <deep_blue_genome/common/DataFileImport.h>
 #include <deep_blue_genome/coexpr/Baits.h>
 
 using namespace std;
@@ -165,18 +166,22 @@ void read_yaml(std::string path, Database& database, string& baits_path, double&
 	positive_treshold = job_node["positive_treshold"].as<double>();
 	ensure(fabs(positive_treshold) <= 1.0+1e-7, "positive_treshold must be a double between -1 and 1", ErrorType::GENERIC);
 
-	vector<GeneCollection*> gene_collections;
-	for (auto matrix_node : job_node["expression_matrices"]) {
-		auto& gene_collection = database.get_gene_collection(matrix_node["gene_collection"].as<string>());
-		string matrix_name = matrix_node["name"].as<string>();
+	DataFileImport importer(database);
 
+	vector<GeneCollection*> gene_collections;
+	int i=0;
+	for (auto matrix_node : job_node["expression_matrices"]) {
+		string matrix_path = matrix_node.as<string>();
+		string matrix_name = "tmp:matrix" + (i++);
+		auto& matrix = importer.add_gene_expression_matrix(matrix_name, matrix_path);
+
+		auto& gene_collection = matrix.get_gene_collection();
 		ensure(!contains(gene_collections, &gene_collection),
 				"Specified multiple matrices of the same gene collection",
 				ErrorType::GENERIC
 		);
 		gene_collections.emplace_back(&gene_collection);
 
-		auto& matrix = gene_collection.get_gene_expression_matrix(matrix_name);
 		expression_matrices.emplace_back(&matrix);
 	}
 
@@ -206,6 +211,8 @@ std::vector<Gene*> load_baits(Database& database, std::string baits_path) {
 
 // TODO refactor into functions rather than many file sections
 int main(int argc, char** argv) {
+	// TODO could merging of ortho groups be done badly? Look at DataFileImport
+	// TODO allow custom orthologs files
 	graceful_main([argc, argv](){
 		// Read args
 		if (argc != 2) {
@@ -313,7 +320,7 @@ int main(int argc, char** argv) {
 		out_vizmap.exceptions(ofstream::failbit | ofstream::badbit);
 
 		for (auto bait : baits) {
-			out_sif << bait->get_name() << "\n";
+			out_sif << bait->get_name() << "\n"; // TODO don't print this and don't output baits that correlate with nothing (although that's a really edgy edge case)
 			out_node_attr << bait->get_name() << " = Bait\n";
 		}
 

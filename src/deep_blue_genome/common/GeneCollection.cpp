@@ -91,12 +91,12 @@ bool GeneCollection::operator==(const GeneCollection& other) const {
 	return this == &other;
 }
 
-void GeneCollection::add_gene_expression_matrix(unique_ptr<GeneExpressionMatrix>&& matrix) {
+GeneExpressionMatrix& GeneCollection::add_gene_expression_matrix(unique_ptr<GeneExpressionMatrix>&& matrix) {
 	ensure(gene_expression_matrices.find(matrix->get_name()) == gene_expression_matrices.end(),
 			(make_string() << "Cannot add 2 gene expression matrices with the same name '" << matrix->get_name() << "' to gene collection '" << name << "'").str(),
 			ErrorType::GENERIC
 	);
-	gene_expression_matrices[matrix->get_name()] = std::move(matrix);
+	return *gene_expression_matrices.emplace(matrix->get_name(), std::move(matrix)).first->second;
 }
 
 void GeneCollection::add_clustering(unique_ptr<Clustering>&& clustering) {

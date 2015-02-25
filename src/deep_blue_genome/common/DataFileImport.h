@@ -7,6 +7,7 @@
 namespace DEEP_BLUE_GENOME {
 
 class Database;
+class GeneExpressionMatrix;
 
 /**
  * Functions for importing data files to database
@@ -54,8 +55,10 @@ public:
 
 	/**
 	 * Add expression matrix from a TODO particular plain text format
+	 *
+	 * @return the added matrix
 	 */
-	void add_gene_expression_matrix(const std::string& name, const std::string& path);
+	GeneExpressionMatrix& add_gene_expression_matrix(const std::string& name, const std::string& path);
 
 	/**
 	 * Add clustering from plain text file

@@ -126,7 +126,7 @@ void DataFileImport::add_orthologs(const std::string& path) {
 	});
 }
 
-void DataFileImport::add_gene_expression_matrix(const std::string& name, const std::string& path) {
+GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::string& name, const std::string& path) {
 	auto gem = make_unique<GeneExpressionMatrix>();
 
 	gem->name = name;
@@ -208,7 +208,7 @@ void DataFileImport::add_gene_expression_matrix(const std::string& name, const s
 		return current;
 	});
 
-	gem->get_gene_collection().add_gene_expression_matrix(move(gem));
+	return gem->get_gene_collection().add_gene_expression_matrix(move(gem));
 }
 
 // TODO did we drop variants along the way as we read in clusterings? If so, should we?

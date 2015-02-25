@@ -54,7 +54,13 @@ public:
 	 */
 	GeneExpressionMatrix& get_gene_expression_matrix(const std::string& name);
 
-	void add_gene_expression_matrix(std::unique_ptr<GeneExpressionMatrix>&& );
+	/**
+	 * Add gene expression matrix
+	 *
+	 * @return the new matrix (now stored in GeneCollection)
+	 */
+	GeneExpressionMatrix& add_gene_expression_matrix(std::unique_ptr<GeneExpressionMatrix>&& );
+
 	void add_clustering(std::unique_ptr<Clustering>&&);
 
 	bool operator==(const GeneCollection&) const;
