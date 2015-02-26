@@ -111,5 +111,9 @@ GeneExpressionMatrix& GeneCollection::get_gene_expression_matrix(const std::stri
 	return *gene_expression_matrices.at(name);
 }
 
+std::string GeneCollection::get_species() const {
+	return species;
+}
+
 
 } // end namespace

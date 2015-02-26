@@ -25,8 +25,13 @@ Database::Database(std::string path)
 	}
 }
 
+void Database::clear() {
+	ortholog_groups.clear();
+	gene_collections.clear();
+}
+
 void Database::update(std::string yaml_path) {
-	// TODO rm all previous data first?
+	clear();
 
 	// TODO allow removal/overwrite of all sorts of things
 	// TODO allow update of some things

@@ -50,6 +50,11 @@ public:
 	void execute(const std::string& query);
 
 	/**
+	 * Erase everything in the database
+	 */
+	void clear();
+
+	/**
 	 * Update database with new data
 	 *
 	 * TODO specify expected yaml format

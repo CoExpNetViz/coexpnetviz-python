@@ -33,6 +33,8 @@ public:
 	std::string get_name() const;
 	boost::optional<std::string> get_gene_web_page() const;
 
+	std::string get_species() const;
+
 	/**
 	 * Get gene variant by name
 	 *

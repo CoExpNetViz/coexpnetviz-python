@@ -9,152 +9,24 @@
 #include <cstdlib>
 #include <unordered_set>
 #include <unordered_map>
-#include <boost/noncopyable.hpp>
-#include <boost/filesystem.hpp>
+#include <boost/filesystem.hpp> // TODO remove unused includes here
 #include <yaml-cpp/yaml.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/common/DataFileImport.h>
 #include <deep_blue_genome/coexpr/Baits.h>
+#include <deep_blue_genome/coexpr/BaitCorrelation.h>
+#include <deep_blue_genome/coexpr/OrthologGroupInfo.h>
+#include <deep_blue_genome/coexpr/OrthologGroupInfos.h>
+#include <deep_blue_genome/coexpr/BaitGroups.h>
 
 using namespace std;
 using namespace DEEP_BLUE_GENOME;
-
-/**
- * Correlation to a bait gene
- *
- * Data class of Group.
- */
-class BaitCorrelation {
-public:
-	BaitCorrelation(const Gene& bait, double correlation)
-	:	bait(bait), correlation(correlation)
-	{
-	}
-
-	const Gene& get_bait() const;
-	double get_correlation() const;
-
-private:
-	const Gene& bait;
-	double correlation; // correlation to owner
-};
-
-const Gene& BaitCorrelation::get_bait() const {
-	return bait;
-}
-
-double BaitCorrelation::get_correlation() const {
-	return correlation;
-}
-
-/**
- * A group of orthologs
- */
-class OrthologGroupInfo : public boost::noncopyable
-{
-public:
-	/**
-	 * @param genes Iterable of distinct genes
-	 */
-	OrthologGroupInfo(OrthologGroup& group, const vector<GeneCollection*>& gene_collections)
-	:	group(group)
-	{
-		for (auto& gene : group) {
-			name += gene->get_name() + ";";
-		}
-	}
-
-	bool operator==(const OrthologGroup& other) const = delete;
-
-	string get_name() const;
-
-	void add_bait_correlation(const Gene& bait, double correlation);
-
-	const vector<BaitCorrelation>& get_bait_correlations() const;
-
-	vector<Gene*>::const_iterator begin() const;
-	vector<Gene*>::const_iterator end() const;
-
-private:
-	OrthologGroup& group;
-	vector<BaitCorrelation> bait_correlations;
-	string name;
-};
-
-vector<Gene*>::const_iterator OrthologGroupInfo::begin() const {
-	return group.begin();
-}
-
-vector<Gene*>::const_iterator OrthologGroupInfo::end() const {
-	return group.end();
-}
-
-string OrthologGroupInfo::get_name() const {
-	return name;
-}
-
-void OrthologGroupInfo::add_bait_correlation(const Gene& bait, double correlation) {
-	auto match_bait = [&bait](const BaitCorrelation& bait_correlation) {
-		return &bait_correlation.get_bait() == &bait;
-	};
-
-	if (find_if(bait_correlations.begin(), bait_correlations.end(), match_bait) != bait_correlations.end())
-		return; // TODO should this even be allowed?
-
-	bait_correlations.emplace_back(bait, correlation);
-}
-
-const vector<BaitCorrelation>& OrthologGroupInfo::get_bait_correlations() const {
-	return bait_correlations;
-}
-
-
-class OrthologGroups
-{
-public:
-	typedef vector<GeneCollection*> GeneCollections;
-
-	OrthologGroups(GeneCollections gene_collections)
-	:	gene_collections(std::move(gene_collections))
-	{
-	}
-
-	/**
-	 * Get Group of gene
-	 */
-	OrthologGroupInfo* get(const Gene& gene) {
-		auto group = gene.get_ortholog_group();
-
-		if (!group) {
-			return nullptr;
-		}
-
-		auto it = groups.find(group);
-		if (it == groups.end()) {
-			// make group
-			auto p = groups.emplace(piecewise_construct,
-					forward_as_tuple(group),
-					forward_as_tuple(*group, gene_collections)
-			);
-			return &p.first->second;
-		}
-		else {
-			return &it->second;
-		}
-	}
-
-private:
-	GeneCollections gene_collections;
-	unordered_map<OrthologGroup*, OrthologGroupInfo> groups;
-};
+using namespace DEEP_BLUE_GENOME::COEXPR;
 
 
 //////////////////////////
 // Funcs
-
-using namespace DEEP_BLUE_GENOME;
-using namespace DEEP_BLUE_GENOME::COEXPR;
 
 void read_yaml(std::string path, Database& database, string& baits_path, double& negative_treshold, double& positive_treshold, unique_ptr<OrthologGroups>& groups, vector<GeneExpressionMatrix*>& expression_matrices) {
 	YAML::Node job_node = YAML::LoadFile(path);
@@ -306,47 +178,79 @@ int main(int argc, char** argv) {
 		ofstream out_sif(network_name + ".sif");
 		out_sif.exceptions(ofstream::failbit | ofstream::badbit);
 
-		ofstream out_edge_attr(network_name + ".eda");
+		// TODO new edge attr, sif output. See tmp2
+		ofstream out_edge_attr(network_name + ".attr");
 		out_edge_attr.exceptions(ofstream::failbit | ofstream::badbit);
-		out_edge_attr << "R_VALUE (class=Double)" << "\n";
+		out_edge_attr << "link\tR_value\n";
 
-		ofstream out_node_attr(network_name + ".noa");
+		ofstream out_node_attr(network_name + ".attr");
 		out_node_attr.exceptions(ofstream::failbit | ofstream::badbit);
-		out_node_attr << "Node_Information (class=java.lang.String)" << "\n";
+		out_node_attr << "Gene\tCorrelation_to_baits\tType\tNode_Information\tColor\tSpecies\tHomologs\n";
 
-		auto vizmap = network_name + ".props";
-		boost::filesystem::copy_file(install_dir + "/data/templates/coexpr_vizmap.props", vizmap, boost::filesystem::copy_option::overwrite_if_exists);
-		ofstream out_vizmap(vizmap, ios::app);
-		out_vizmap.exceptions(ofstream::failbit | ofstream::badbit);
-
+		// output bait node attributes
 		for (auto bait : baits) {
-			out_sif << bait->get_name() << "\n"; // TODO don't print this and don't output baits that correlate with nothing (although that's a really edgy edge case)
-			out_node_attr << bait->get_name() << " = Bait\n";
+			out_node_attr << bait->get_name() << "\t"; // TODO this should be 'Id', meaning node id
+			out_node_attr << "\t"; // Skip: correlations to bait
+			out_node_attr << "Bait\t";
+			out_node_attr << "\t"; // Skip: function annotation (TODO this column will be removed later)
+			out_node_attr << "#FFFFFF\t";
+			out_node_attr << bait->get_gene_collection().get_species() << "\t";
+			// Skip: homologs
+			out_node_attr << "\n";
 		}
 
-		unordered_set<string> bait_groups;
+		// have each neigh figure out what its bait group is
+		BaitGroups bait_groups;
 		for (auto neigh : neighbours) {
-			string bait_group_name;
+			neigh->init_bait_group(bait_groups);
+		}
+
+		// assign colours to bait groups
+		for (auto& p : bait_groups) {
+			auto& group = p.second;
+
+			ostringstream str;
+			str << "#";
+			for (int i=0; i<3; i++) {
+				str << hex << static_cast<uint8_t>(rand() % 256);
+			}
+
+			group.set_colour(str.str());
+		}
+
+		// output neighbours
+		for (auto neigh : neighbours) {
 			for (auto& bait_correlation : neigh->get_bait_correlations()) {
 				auto bait_name = bait_correlation.get_bait().get_name();
-				bait_group_name += bait_name + ";";
 				out_sif << bait_name << "\tpd\t" << neigh->get_name() << "\n";
 				out_edge_attr << bait_name << " pd " << neigh->get_name() << " = " << bait_correlation.get_correlation() << "\n";
 			}
-			bait_groups.emplace(bait_group_name);
-			out_node_attr << neigh->get_name() << " = " << bait_group_name << "\n";
+
+			// node attr
+			out_node_attr << neigh->get_name() << "\t";
+
+			{
+				bool first = true;
+				for (auto& bait_correlation : neigh->get_bait_correlations()) {
+					if (!first) {
+						out_node_attr << " ";
+					}
+					out_node_attr << bait_correlation.get_bait().get_name();
+					first = false;
+				}
+				out_node_attr << "\t";
+			}
+
+			out_node_attr << "Target\t";
+			out_node_attr << "\t"; // Skipping func annotation for now (col will be removed later)
+			out_node_attr << neigh->get_bait_group().get_colour() << "\t";
+			out_node_attr << "\t"; // Skip species, these are of multiple
+			// TODO Need we output homologs? Or was gene web page sufficient?
+			out_node_attr << "\n";
 		}
 
 		// Pick size(owner_groups) colors
 		// TODO include in thesis: alg for having N maximally orthogonal colours (though it's not a real fancy alg or idea...). We did the math on paper, translate it to latex
 		//colors;
-
-		for (auto& group_name : bait_groups) {
-			// TODO color more cleverly, perhaps this helps: http://www.nps.edu/faculty/olsen/Remote_sensing/SPIE_2000_tyo_display.pdf
-			out_vizmap << "nodeFillColorCalculator.default-Node\\ Color-Discrete\\ Mapper.mapping.map." << group_name << "=" << rand() % 256 << "," << rand() % 256 << "," << rand() % 256 << "\n";
-
-			// size
-			out_vizmap << "nodeUniformSizeCalculator.default-Node\\ Size-Discrete\\ Mapper.mapping.map." << group_name << "=80.0\n";
-		}
 	});
 }
