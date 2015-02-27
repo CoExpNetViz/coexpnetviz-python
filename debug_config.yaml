@@ -352,3 +352,4 @@ gene_mappings:
 # You're allowed to specify a gene on multiple lines, as long as the corresponding groups are equal (same set of genes)
 orthologs:
     - '/mnt/midas/group/biocomp/projects/morph/coexpr/data/plaza_source/plaza_orthologs'
+    - '/mnt/midas/group/biocomp/projects/morph/coexpr/data/pgsc_itag/orthologs'
