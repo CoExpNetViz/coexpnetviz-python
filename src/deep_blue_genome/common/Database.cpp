@@ -57,22 +57,18 @@ void Database::update(std::string yaml_path) {
 	// Gene mappings
 	for (auto node : config["gene_mappings"]) {
 		auto path = prepend_path(data_root, node.as<string>());
-		cout << "Loading gene mapping '" << path << "'\n";
 		importer.add_gene_mappings(path);
 	}
 
 	// Functional annotations
 	for (auto node : config["functional_annotations"]) {
 		auto path = prepend_path(data_root, node.as<string>());
-		cout << "Loading gene descriptions '" << path << "'\n";
-
 		importer.add_functional_annotations(path);
 	}
 
 	// Orthologs
 	for (auto node : config["orthologs"]) { // TODO use some orthologs in our debug config will ya
 		auto path = prepend_path(data_root, node.as<string>());
-		cout << "Loading orthologs '" << path << "'\n";
 		importer.add_orthologs(path);
 	}
 
@@ -81,7 +77,6 @@ void Database::update(std::string yaml_path) {
 		string matrix_name = matrix_node["name"].as<string>();
 		string matrix_path = prepend_path(data_root, matrix_node["path"].as<string>());
 
-		cout << "Loading gene expression matrix '" << matrix_name << "'\n";
 		importer.add_gene_expression_matrix(matrix_name, matrix_path);
 	}
 
@@ -90,7 +85,6 @@ void Database::update(std::string yaml_path) {
 		string clustering_name = clustering_node["name"].as<string>();
 		string clustering_path = prepend_path(data_root, clustering_node["path"].as<string>());
 
-		cout << "Loading clustering '" << clustering_name << "'\n";
 		importer.add_clustering(clustering_name, clustering_path, clustering_node["expression_matrix"].as<string>(""));
 	}
 

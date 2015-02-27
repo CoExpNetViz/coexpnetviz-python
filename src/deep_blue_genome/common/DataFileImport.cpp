@@ -20,6 +20,7 @@ DataFileImport::DataFileImport(Database& db)
 }
 
 void DataFileImport::add_gene_mappings(const std::string& path) {
+	cout << "Loading gene mapping '" << path << "'\n";
 	read_file(path, [this](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
 
@@ -44,6 +45,7 @@ void DataFileImport::add_gene_mappings(const std::string& path) {
 }
 
 void DataFileImport::add_functional_annotations(const string& path) {
+	cout << "Loading functional annotations '" << path << "'\n";
 	read_file(path, [this](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
 
@@ -68,6 +70,8 @@ void DataFileImport::add_functional_annotations(const string& path) {
 }
 
 void DataFileImport::add_orthologs(const std::string& path) {
+	cout << "Loading orthologs '" << path << "'\n";
+
 	read_file(path, [this](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
 
@@ -127,6 +131,7 @@ void DataFileImport::add_orthologs(const std::string& path) {
 }
 
 GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::string& name, const std::string& path) {
+	cout << "Loading gene expression matrix '" << path << "'\n";
 	auto gem = make_unique<GeneExpressionMatrix>();
 
 	gem->name = name;
@@ -158,7 +163,7 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 					ErrorType::GENERIC
 			);
 
-			auto gene_variant = database.try_get_gene_variant(name);
+			GeneVariant* gene_variant = database.try_get_gene_variant(name);
 			if (!gene_variant) {
 				cerr << "Warning: Gene of unknown collection '" << name << "'\n";
 				skip_line = true;
@@ -214,6 +219,8 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 // TODO did we drop variants along the way as we read in clusterings? If so, should we?
 // TODO should clusters allow splice variants or not? This code hasn't decided yet; though cluster has, it uses genes
 void DataFileImport::add_clustering(const std::string& name, const std::string& path, const std::string& expression_matrix_name) {
+	cout << "Loading clustering '" << path << "'\n";
+
 	auto clustering = make_unique<Clustering>();
 
 	clustering->gene_collection = nullptr;
