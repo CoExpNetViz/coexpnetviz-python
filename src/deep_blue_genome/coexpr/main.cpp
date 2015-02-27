@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <unordered_set>
 #include <unordered_map>
+#include <random>
 #include <boost/filesystem.hpp> // TODO remove unused includes here
 #include <yaml-cpp/yaml.h>
 #include <deep_blue_genome/common/util.h>
@@ -178,12 +179,11 @@ int main(int argc, char** argv) {
 		ofstream out_sif(network_name + ".sif");
 		out_sif.exceptions(ofstream::failbit | ofstream::badbit);
 
-		// TODO new edge attr, sif output. See tmp2
-		ofstream out_edge_attr(network_name + ".attr");
+		ofstream out_edge_attr(network_name + ".edge.attr");
 		out_edge_attr.exceptions(ofstream::failbit | ofstream::badbit);
 		out_edge_attr << "link\tR_value\n";
 
-		ofstream out_node_attr(network_name + ".attr");
+		ofstream out_node_attr(network_name + ".node.attr");
 		out_node_attr.exceptions(ofstream::failbit | ofstream::badbit);
 		out_node_attr << "Gene\tCorrelation_to_baits\tType\tNode_Information\tColor\tSpecies\tHomologs\n";
 
@@ -199,6 +199,17 @@ int main(int argc, char** argv) {
 			out_node_attr << "\n";
 		}
 
+		// bait homologs TODO this would only make sense if actually adding homologs of baits
+		/*for (auto bait : baits) {
+			OrthologGroup* group = bait.get_ortholog_group();
+			if (group) {
+				out_edge_attr << bait->get_name() << "\t";
+				out_node_attr << "\t";
+				out_node_attr << "Bait\t";
+				out_node_attr << "\n";
+			}
+		}*/
+
 		// have each neigh figure out what its bait group is
 		BaitGroups bait_groups;
 		for (auto neigh : neighbours) {
@@ -206,24 +217,32 @@ int main(int argc, char** argv) {
 		}
 
 		// assign colours to bait groups
+		std::default_random_engine generator;
+		std::uniform_int_distribution<int> distribution(0, 0x00FFFFFF);
 		for (auto& p : bait_groups) {
 			auto& group = p.second;
 
 			ostringstream str;
+			int colour = distribution(generator);
 			str << "#";
-			for (int i=0; i<3; i++) {
-				str << hex << static_cast<uint8_t>(rand() % 256);
-			}
+			str.width(6);
+			str.fill('0');
+			str << hex << colour;
 
 			group.set_colour(str.str());
 		}
 
 		// output neighbours
 		for (auto neigh : neighbours) {
-			for (auto& bait_correlation : neigh->get_bait_correlations()) {
-				auto bait_name = bait_correlation.get_bait().get_name();
-				out_sif << bait_name << "\tpd\t" << neigh->get_name() << "\n";
-				out_edge_attr << bait_name << " pd " << neigh->get_name() << " = " << bait_correlation.get_correlation() << "\n";
+			// edge attr and sif
+			if (!neigh->get_bait_correlations().empty()) {
+				out_sif << neigh->get_name() << "\tcor";
+				for (auto& bait_correlation : neigh->get_bait_correlations()) {
+					auto bait_name = bait_correlation.get_bait().get_name();
+					out_sif << "\t" << bait_name;
+					out_edge_attr << neigh->get_name() << " (cor) " << bait_name << "\t" << bait_correlation.get_correlation() << "\n";
+				}
+				out_sif << "\n";
 			}
 
 			// node attr
