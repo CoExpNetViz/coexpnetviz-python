@@ -24,13 +24,9 @@ Baits::Baits(string path)
 		separator.name("gene separator");
 		gene.name("gene");
 
-		parse(begin, end, gene % separator, genes);
+		phrase_parse(begin, end, +gene, separator, genes); // TODO they return false upon failure, so we should check for that (or do they have exceptions? Because they do throw them; so it's probably alright without the check on return)
 		return begin;
 	});
-
-	for (auto& gene : genes) {
-		to_lower(gene);
-	}
 }
 
 const vector<std::string>& Baits::get_genes() const {

@@ -25,7 +25,7 @@ GenesOfInterest::GenesOfInterest(string name, string path, const boost::regex& g
 		separator.name("gene separator");
 		gene.name("gene");
 
-		parse(begin, end, gene % separator, genes);
+		phrase_parse(begin, end, +gene, separator, genes);
 		return begin;
 	});
 
