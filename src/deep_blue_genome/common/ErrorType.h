@@ -3,8 +3,7 @@
 #pragma once
 
 #include <string>
-#include <unordered_map>
-#include <map>
+#include <stdexcept>
 
 namespace DEEP_BLUE_GENOME {
 
@@ -17,24 +16,16 @@ enum class ErrorType : int {
 };
 
 // XXX in a normal world one'd use inheritance to add types..., derived types...
-class TypedException : public std::runtime_error // TODO cpp
+class TypedException : public std::runtime_error
 {
 public:
-	TypedException(std::string what, ErrorType error_type)
-	:	std::runtime_error(what), error_type(error_type)
-	{
-	}
+	TypedException(std::string what, ErrorType error_type);
 
-	int get_exit_code() const {
-		return static_cast<int>(error_type);
-	}
-
-	ErrorType get_type() const {
-		return error_type;
-	}
+	int get_exit_code() const;
+	ErrorType get_type() const;
 
 private:
 	ErrorType error_type;
 };
 
-} // end MORPHC
+} // end namespace

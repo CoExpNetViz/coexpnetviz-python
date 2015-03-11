@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <unordered_map>
 #include <boost/filesystem.hpp>
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/stream_buffer.hpp>
