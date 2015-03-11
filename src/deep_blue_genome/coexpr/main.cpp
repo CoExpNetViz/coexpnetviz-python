@@ -166,7 +166,7 @@ int main(int argc, char** argv) {
 		}
 
 		sort(neighbours.begin(), neighbours.end());
-		unique(neighbours.begin(), neighbours.end());
+		neighbours.erase(unique(neighbours.begin(), neighbours.end()), neighbours.end());
 
 		// TODO remove baits with no edges (these can be from gene collections we didn't even check)
 
@@ -186,6 +186,8 @@ int main(int argc, char** argv) {
 		ofstream out_node_attr(network_name + ".node.attr");
 		out_node_attr.exceptions(ofstream::failbit | ofstream::badbit);
 		out_node_attr << "Gene\tCorrelation_to_baits\tType\tNode_Information\tColor\tSpecies\tHomologs\n";
+
+		// TODO copy vizmap, without using boost copy_file (or try with a new header)
 
 		// output bait node attributes
 		for (auto bait : baits) {

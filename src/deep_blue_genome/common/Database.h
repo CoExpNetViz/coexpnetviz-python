@@ -17,7 +17,7 @@ class GeneVariant;
 // TODO Pimpl pattern may help performance, i.e. operator new grabs from a pool
 // TODO could identify genes (variants) with/to NCBI database, and use their id and data (we probably should, and cache the things we need if necessary)
 
-// Notes on many-fold usage of std::unique_ptr: the choice to use: boost::shared_ptr:
+// Notes on usage of std::unique_ptr:
 // - Firstly, unique_ptr was needed to not invalidate pointers to items upon a capacity change, as these pointers are kept by many classes in the 'OO graph of data'.
 // - Even for maps, a unique_ptr was needed as boost serialization throws 'pointer conflict' when the same object is serialized as reference and as pointer
 // - std::unique_ptr inside containers is not supported inside containers by boost::serialization, but boost::shared_ptr is... And that's why we use boost::shared_ptr
@@ -34,14 +34,14 @@ class GeneVariant;
  *
  * Invariant: a gene is part of 0 or 1 ortholog group
  */ // TODO add a validate with all our constraints, to be called manually by the user
-class Database : public boost::noncopyable { // TODO data store is probably a better name as it is just a database minus nearly all the features of a database
+class Database : public boost::noncopyable {
 public:
 	typedef std::vector<std::string>::const_iterator name_iterator;
 
 	/**
 	 * Construct database
 	 *
-	 * The previous state of database will be loaded at database_path, if any.
+	 * The previous state of database at database_path will be loaded, if any.
 	 *
 	 * @param database_path location of database. Currently this is a config with paths to all db files
 	 */
@@ -53,13 +53,6 @@ public:
 	 * Erase everything in the database
 	 */
 	void clear();
-
-	/**
-	 * Update database with new data
-	 *
-	 * TODO specify expected yaml format
-	 */
-	void update(std::string yaml_path); // TODO move this to cli/database
 
 	/**
 	 * Get gene variant by name, inserts it if it doesn't exist yet
@@ -84,6 +77,13 @@ public:
 	 * Delete ortholog group
 	 */
 	void erase(OrthologGroup&);
+
+	void add(std::unique_ptr<GeneCollection>&&);
+
+	/**
+	 * Save to disk
+	 */
+	void save();
 
 public: // treat as private (failed to friend boost::serialization)
 	template<class Archive>

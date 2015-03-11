@@ -1,1 +1,1 @@
-command=(./database --update ../../debug_config.yaml)
+command=(./database --create ../../debug_config.yaml)

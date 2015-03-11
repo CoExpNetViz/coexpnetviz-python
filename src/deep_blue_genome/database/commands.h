@@ -6,13 +6,19 @@
 
 #pragma once
 
+#include <string>
+
 namespace DEEP_BLUE_GENOME {
 
-namespace COMMON {
-	class Database;
-}
+class Database;
 
 namespace DATABASE {
+	/**
+	 * Create database with new data, overwrite if it exists
+	 *
+	 * TODO specify expected yaml format
+	 */
+	void create(Database&, std::string yaml_path);
+}
 
-
-}} // end namespace
+} // end namespace
