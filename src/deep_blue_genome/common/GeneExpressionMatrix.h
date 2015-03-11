@@ -10,7 +10,6 @@
 #include <deep_blue_genome/common/types.h>
 #include <deep_blue_genome/common/ublas.h> // TODO would compile speed up much without this in many headers?
 
-// TODO size_type is unsigned long long or such, we don't need thaaat much. Should swap it for a typedef of our own and then set that to uint32_t. You probably won't need more than uint, but there's not much extra effort in using a typedef
 namespace DEEP_BLUE_GENOME {
 
 class GeneCollection;

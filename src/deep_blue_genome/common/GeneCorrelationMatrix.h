@@ -6,7 +6,6 @@
 #include <boost/noncopyable.hpp>
 #include <deep_blue_genome/common/GeneExpressionMatrix.h>
 
-// TODO size_type is unsigned long long or such, we don't need thaaat much. Should swap it for a typedef of our own and then set that to uint32_t. You probably won't need more than uint, but there's not much extra effort in using a typedef
 namespace DEEP_BLUE_GENOME {
 
 typedef matrix GeneCorrelations;
@@ -14,7 +13,7 @@ typedef matrix GeneCorrelations;
 /**
  * Gene correlation matrix
  */
-class GeneCorrelationMatrix : public boost::noncopyable // TODO probably should be in column major order
+class GeneCorrelationMatrix : public boost::noncopyable
 {
 public:
 	/**

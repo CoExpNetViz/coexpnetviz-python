@@ -13,7 +13,7 @@
 
 namespace DEEP_BLUE_GENOME {
 
-// TODO 32 bit row count is sufficient, but perhaps 64 bit works best on 64 bit systems. Not sure what the default is
+// TODO 32 bit row count is sufficient
 typedef boost::numeric::ublas::matrix<double> matrix;
 typedef boost::numeric::ublas::matrix_indirect<matrix> matrix_indirect;
 typedef boost::numeric::ublas::indirect_array<> indirect_array;

@@ -161,6 +161,12 @@ void graceful_main(std::function<void()> fragile_main) {
 	exit(EXIT_SUCCESS);
 }
 
+template <typename T>
+auto as_printable_integer(T i) -> decltype(+i)
+{
+  return +i;
+}
+
 std::string to_file_name(const std::string& in) {
 	std::stringstream out;
 	for (auto c : in) {
@@ -175,7 +181,7 @@ std::string to_file_name(const std::string& in) {
 		case '|':
 		case '?':
 		case '*':
-			out << "%" << std::hex << +c; // %XX, (about +c, it prints the char as a number: http://www.parashift.com/c++-faq/print-char-or-ptr-as-number.html; TODO if this works, make a function for it)
+			out << "%" << std::hex << as_printable_integer(c); // %XX, (+c prints the char as a number: http://www.parashift.com/c++-faq/print-char-or-ptr-as-number.html)
 			break;
 
 		default:
