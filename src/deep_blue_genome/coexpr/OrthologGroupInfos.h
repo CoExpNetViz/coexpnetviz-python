@@ -15,7 +15,7 @@ class OrthologGroup;
 
 namespace COEXPR {
 
-class OrthologGroupInfos : public boost::noncopyable // TODO rename +Info
+class OrthologGroupInfos : public boost::noncopyable
 {
 public:
 	typedef std::vector<GeneCollection*> GeneCollections;

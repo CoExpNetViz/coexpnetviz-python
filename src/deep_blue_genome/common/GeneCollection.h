@@ -54,7 +54,7 @@ public:
 	/**
 	 * @throws NotFoundException if doesn't exist
 	 */
-	GeneExpressionMatrix& get_gene_expression_matrix(const std::string& name);
+	GeneExpressionMatrix& get_gene_expression_matrix(std::string name);
 
 	/**
 	 * Add gene expression matrix

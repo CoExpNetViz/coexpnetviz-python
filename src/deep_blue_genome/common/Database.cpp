@@ -46,9 +46,12 @@ OrthologGroup& Database::add_ortholog_group(std::string external_id) {
 	return *ortholog_groups.back();
 }
 
-GeneCollection& Database::get_gene_collection(const std::string& name) {
+GeneCollection& Database::get_gene_collection(std::string name) {
+	to_lower(name);
 	return **find_if(gene_collections.begin(), gene_collections.end(), [name](unique_ptr<GeneCollection>& gene_collection) {
-		return gene_collection->get_name() == name;
+		std::string name_ = gene_collection->get_name();
+		to_lower(name_);
+		return name_ == name;
 	});
 }
 

@@ -96,7 +96,10 @@ GeneExpressionMatrix& GeneCollection::add_gene_expression_matrix(unique_ptr<Gene
 			(make_string() << "Cannot add 2 gene expression matrices with the same name '" << matrix->get_name() << "' to gene collection '" << name << "'").str(),
 			ErrorType::GENERIC
 	);
-	return *gene_expression_matrices.emplace(matrix->get_name(), std::move(matrix)).first->second;
+
+	std::string name_lower = matrix->get_name();
+	to_lower(name_lower);
+	return *gene_expression_matrices.emplace(name_lower, std::move(matrix)).first->second;
 }
 
 void GeneCollection::add_clustering(unique_ptr<Clustering>&& clustering) {
@@ -104,10 +107,14 @@ void GeneCollection::add_clustering(unique_ptr<Clustering>&& clustering) {
 			(make_string() << "Cannot add 2 clusterings with the same name '" << clustering->get_name() << "' to gene collection '" << name << "'").str(),
 			ErrorType::GENERIC
 	);
-	clusterings[clustering->get_name()] = std::move(clustering);
+
+	std::string name_lower = clustering->get_name();
+	to_lower(name_lower);
+	clusterings[name_lower] = std::move(clustering);
 }
 
-GeneExpressionMatrix& GeneCollection::get_gene_expression_matrix(const std::string& name) {
+GeneExpressionMatrix& GeneCollection::get_gene_expression_matrix(std::string name) {
+	to_lower(name);
 	return *gene_expression_matrices.at(name);
 }
 

@@ -29,8 +29,7 @@ class GeneVariant;
  *
  * Constraints are supported through the validate() method.
  *
- * Naming notes:
- * - update_* implies data will be added or changed, never removed.
+ * Note: names of data are stored case-sensitive, but any lookup by name is case-insensitive
  *
  * Invariant: a gene is part of 0 or 1 ortholog group
  */ // TODO add a validate with all our constraints, to be called manually by the user
@@ -64,7 +63,7 @@ public:
 
 	GeneVariant* try_get_gene_variant(const std::string& name);
 
-	GeneCollection& get_gene_collection(const std::string& name);
+	GeneCollection& get_gene_collection(std::string name);
 
 	/**
 	 * Create ortholog group
