@@ -29,7 +29,7 @@ using namespace DEEP_BLUE_GENOME::COEXPR;
 //////////////////////////
 // Funcs
 
-void read_yaml(std::string path, Database& database, string& baits_path, double& negative_treshold, double& positive_treshold, unique_ptr<OrthologGroups>& groups, vector<GeneExpressionMatrix*>& expression_matrices) {
+void read_yaml(std::string path, Database& database, string& baits_path, double& negative_treshold, double& positive_treshold, unique_ptr<OrthologGroupInfos>& groups, vector<GeneExpressionMatrix*>& expression_matrices) {
 	YAML::Node job_node = YAML::LoadFile(path);
 	baits_path = job_node["baits"].as<string>();
 
@@ -58,7 +58,7 @@ void read_yaml(std::string path, Database& database, string& baits_path, double&
 		expression_matrices.emplace_back(&matrix);
 	}
 
-	groups = make_unique<OrthologGroups>(gene_collections);
+	groups = make_unique<OrthologGroupInfos>(gene_collections);
 }
 
 /**
@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
 		string baits_path;
 		double negative_treshold;
 		double positive_treshold;
-		unique_ptr<OrthologGroups> groups;
+		unique_ptr<OrthologGroupInfos> groups;
 		vector<GeneExpressionMatrix*> expression_matrices;
 		read_yaml(argv[1], database, baits_path, negative_treshold, positive_treshold, groups, expression_matrices);
 

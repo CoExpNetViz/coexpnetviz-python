@@ -15,12 +15,12 @@ class OrthologGroup;
 
 namespace COEXPR {
 
-class OrthologGroups : public boost::noncopyable // TODO rename +Info
+class OrthologGroupInfos : public boost::noncopyable // TODO rename +Info
 {
 public:
 	typedef std::vector<GeneCollection*> GeneCollections;
 
-	OrthologGroups(GeneCollections gene_collections);
+	OrthologGroupInfos(GeneCollections gene_collections);
 
 	/**
 	 * Get Group of gene

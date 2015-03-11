@@ -36,8 +36,7 @@ void OrthologGroupInfo::add_bait_correlation(const Gene& bait, double correlatio
 		return &bait_correlation.get_bait() == &bait;
 	};
 
-	if (find_if(bait_correlations.begin(), bait_correlations.end(), match_bait) != bait_correlations.end())
-		return; // TODO should this even be allowed?
+	assert(find_if(bait_correlations.begin(), bait_correlations.end(), match_bait) == bait_correlations.end());
 
 	bait_correlations.emplace_back(bait, correlation);
 }

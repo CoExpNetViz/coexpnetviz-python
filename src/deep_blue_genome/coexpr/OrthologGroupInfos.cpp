@@ -9,12 +9,12 @@ using namespace DEEP_BLUE_GENOME;
 namespace DEEP_BLUE_GENOME {
 namespace COEXPR {
 
-OrthologGroups::OrthologGroups(GeneCollections gene_collections)
+OrthologGroupInfos::OrthologGroupInfos(GeneCollections gene_collections)
 :	gene_collections(std::move(gene_collections))
 {
 }
 
-OrthologGroupInfo* OrthologGroups::get(const Gene& gene) {
+OrthologGroupInfo* OrthologGroupInfos::get(const Gene& gene) {
 	auto group = gene.get_ortholog_group();
 
 	if (!group) {
