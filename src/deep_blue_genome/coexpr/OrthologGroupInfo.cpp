@@ -14,9 +14,6 @@ namespace COEXPR {
 OrthologGroupInfo::OrthologGroupInfo(OrthologGroup& group, const vector<GeneCollection*>& gene_collections)
 :	group(group)
 {
-	for (auto& gene : group) {
-		name += gene->get_name() + ";";
-	}
 }
 
 vector<Gene*>::const_iterator OrthologGroupInfo::begin() const {
@@ -28,10 +25,19 @@ vector<Gene*>::const_iterator OrthologGroupInfo::end() const {
 }
 
 string OrthologGroupInfo::get_name() const {
+	string name;
+	bool first=true;
+	for (auto& gene : correlating_genes) {
+		if (!first) {
+			name += ";";
+		}
+		name += gene->get_name();
+		first = false;
+	}
 	return name;
 }
 
-void OrthologGroupInfo::add_bait_correlation(const Gene& bait, double correlation) {
+void OrthologGroupInfo::add_bait_correlation(const Gene& target, const Gene& bait, double correlation) {
 	auto match_bait = [&bait](const BaitCorrelation& bait_correlation) {
 		return &bait_correlation.get_bait() == &bait;
 	};
@@ -39,6 +45,7 @@ void OrthologGroupInfo::add_bait_correlation(const Gene& bait, double correlatio
 	assert(find_if(bait_correlations.begin(), bait_correlations.end(), match_bait) == bait_correlations.end());
 
 	bait_correlations.emplace_back(bait, correlation);
+	correlating_genes.emplace_back(&target);
 }
 
 const vector<BaitCorrelation>& OrthologGroupInfo::get_bait_correlations() const {

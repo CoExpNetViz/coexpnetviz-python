@@ -33,7 +33,7 @@ public:
 
 	std::string get_name() const;
 
-	void add_bait_correlation(const Gene& bait, double correlation);
+	void add_bait_correlation(const Gene& target, const Gene& bait, double correlation);
 
 	const std::vector<BaitCorrelation>& get_bait_correlations() const;
 
@@ -50,8 +50,8 @@ public:
 private:
 	OrthologGroup& group;
 	std::vector<BaitCorrelation> bait_correlations;
-	std::string name;
 	BaitGroup* bait_group;
+	std::vector<const Gene*> correlating_genes; // genes in ortholog group which actually correlate with a bait
 };
 
 }} // end namespace

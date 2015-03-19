@@ -1,5 +1,9 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
+// Vocab note:
+// - bait gene: One of the genes provided by the user to which target genes are compared in terms of co-expression
+// - target gene: any gene that's not a bait gene
+
 // Note: we work with orthologs, i.e. we work at the level of 'Gene's, not 'GeneVariant's
 
 #include <iostream>
@@ -259,7 +263,7 @@ int main(int argc, char** argv) {
 						auto& gene = expression_matrix->get_gene(row);
 						auto group = groups->get(gene);
 						if (group) { // Note: if gene has no orthologs, don't return it in the output. We assume it won't be interesting and would just add clutter
-							group->add_bait_correlation(bait, corr);
+							group->add_bait_correlation(gene, bait, corr);
 							neighbours.emplace_back(group);
 						}
 					}
