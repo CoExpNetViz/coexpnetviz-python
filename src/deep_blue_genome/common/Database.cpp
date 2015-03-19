@@ -74,7 +74,7 @@ void Database::add(std::unique_ptr<GeneCollection>&& gene_collection) {
 	auto it = find_if(gene_collections.begin(), gene_collections.end(), [&gene_collection](unique_ptr<GeneCollection>& g) {
 		return g->get_name() == gene_collection->get_name();
 	});
-	ensure(it != gene_collections.end(),
+	ensure(it == gene_collections.end(),
 			"Gene collection with name '" + gene_collection->get_name() + "' already exists",
 			ErrorType::GENERIC
 	);
@@ -84,12 +84,5 @@ void Database::add(std::unique_ptr<GeneCollection>&& gene_collection) {
 void Database::save() {
 	Serialization::save_to_binary(get_main_file(), *this);
 }
-
-/*
- * Validate everything that constructors could not have checked (uniqueness, ...)
- * Validate:
- * - unique(GeneCollection.name)
- * Some of these can be ensured via invariants... But uniqueness checks are preferably only done after done loading all data (e.g. when adding in bulk to the database)
- */
 
 } // end namespace

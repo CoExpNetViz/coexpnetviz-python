@@ -32,7 +32,7 @@ class GeneVariant;
  * Note: names of data are stored case-sensitive, but any lookup by name is case-insensitive
  *
  * Invariant: a gene is part of 0 or 1 ortholog group
- */ // TODO add a validate with all our constraints, to be called manually by the user
+ */
 class Database : public boost::noncopyable {
 public:
 	typedef std::vector<std::string>::const_iterator name_iterator;

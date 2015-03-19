@@ -25,7 +25,7 @@ public:
 };*/
 
 void create(Database& database, std::string yaml_path) {
-	clear();
+	database.clear();
 
 	YAML::Node config = YAML::LoadFile(yaml_path);
 	string data_root = config["species_data_path"].as<string>(".");
