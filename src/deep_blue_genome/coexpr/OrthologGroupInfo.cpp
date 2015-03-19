@@ -38,17 +38,21 @@ string OrthologGroupInfo::get_name() const {
 }
 
 void OrthologGroupInfo::add_bait_correlation(const Gene& target, const Gene& bait, double correlation) {
-	auto match_bait = [&bait](const BaitCorrelation& bait_correlation) {
+	auto match_bait = [&bait](const BaitCorrelations& bait_correlation) {
 		return &bait_correlation.get_bait() == &bait;
 	};
 
-	assert(find_if(bait_correlations.begin(), bait_correlations.end(), match_bait) == bait_correlations.end());
+	auto it = find_if(bait_correlations.begin(), bait_correlations.end(), match_bait);
+	if (it == bait_correlations.end()) {
+		bait_correlations.emplace_back(bait);
+		it = bait_correlations.end()-1;
+	}
 
-	bait_correlations.emplace_back(bait, correlation);
+	it->add_correlation(target, correlation);
 	correlating_genes.emplace_back(&target);
 }
 
-const vector<BaitCorrelation>& OrthologGroupInfo::get_bait_correlations() const {
+const vector<BaitCorrelations>& OrthologGroupInfo::get_bait_correlations() const {
 	return bait_correlations;
 }
 

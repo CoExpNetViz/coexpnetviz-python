@@ -18,7 +18,7 @@
 #include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/common/DataFileImport.h>
 #include <deep_blue_genome/coexpr/Baits.h>
-#include <deep_blue_genome/coexpr/BaitCorrelation.h>
+#include <deep_blue_genome/coexpr/BaitCorrelations.h>
 #include <deep_blue_genome/coexpr/OrthologGroupInfo.h>
 #include <deep_blue_genome/coexpr/OrthologGroupInfos.h>
 #include <deep_blue_genome/coexpr/BaitGroups.h>
@@ -158,7 +158,7 @@ void write_cytoscape_network(string install_dir, const vector<Gene*>& baits, con
 			for (auto& bait_correlation : neigh->get_bait_correlations()) {
 				auto bait_name = bait_correlation.get_bait().get_name();
 				out_sif << "\t" << bait_name;
-				out_edge_attr << neigh->get_name() << " (cor) " << bait_name << "\t" << bait_correlation.get_correlation() << "\n";
+				out_edge_attr << neigh->get_name() << " (cor) " << bait_name << "\t" << bait_correlation.get_max_correlation() << "\n";
 			}
 			out_sif << "\n";
 		}
@@ -168,11 +168,11 @@ void write_cytoscape_network(string install_dir, const vector<Gene*>& baits, con
 
 		{
 			bool first = true;
-			for (auto& bait_correlation : neigh->get_bait_correlations()) {
+			for (auto& bait_correlations : neigh->get_bait_correlations()) {
 				if (!first) {
 					out_node_attr << " ";
 				}
-				out_node_attr << bait_correlation.get_bait().get_name();
+				out_node_attr << bait_correlations.get_bait().get_name();
 				first = false;
 			}
 			out_node_attr << "\t";

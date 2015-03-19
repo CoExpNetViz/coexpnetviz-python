@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <boost/noncopyable.hpp>
-#include <deep_blue_genome/coexpr/BaitCorrelation.h>
+#include <deep_blue_genome/coexpr/BaitCorrelations.h>
 
 namespace DEEP_BLUE_GENOME {
 
@@ -35,7 +35,7 @@ public:
 
 	void add_bait_correlation(const Gene& target, const Gene& bait, double correlation);
 
-	const std::vector<BaitCorrelation>& get_bait_correlations() const;
+	const std::vector<BaitCorrelations>& get_bait_correlations() const;
 
 	/**
 	 * Figures out which bait group it's part of
@@ -49,7 +49,7 @@ public:
 
 private:
 	OrthologGroup& group;
-	std::vector<BaitCorrelation> bait_correlations;
+	std::vector<BaitCorrelations> bait_correlations;
 	BaitGroup* bait_group;
 	std::vector<const Gene*> correlating_genes; // genes in ortholog group which actually correlate with a bait
 };
