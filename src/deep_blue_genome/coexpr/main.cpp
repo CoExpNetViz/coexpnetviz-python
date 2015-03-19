@@ -83,9 +83,10 @@ std::vector<Gene*> load_baits(Database& database, std::string baits_path) {
 /**
  * Write out a cytoscape network
  */
-void write_cytoscape_network(const vector<Gene*>& baits, const std::vector<OrthologGroupInfo*>& neighbours) {
-	string install_dir = "/home/limyreth/doc/internship/deep_blue_genome"; // TODO don't hardcode, instead install_dir/... or something. with structure: ./bin, ./data; so dirname(argv[0])/..
-	string network_name = "network1"; // TODO
+void write_cytoscape_network(string install_dir, const vector<Gene*>& baits, const std::vector<OrthologGroupInfo*>& neighbours) {
+	// TODO remove baits with no edges (these can be from gene collections we didn't even check)
+
+	string network_name = "network";
 
 	ofstream out_sif(network_name + ".sif");
 	out_sif.exceptions(ofstream::failbit | ofstream::badbit);
@@ -185,6 +186,9 @@ int main(int argc, char** argv) {
 	// TODO could merging of ortho groups be done badly? Look at DataFileImport
 	// TODO allow custom orthologs files
 	graceful_main([argc, argv](){
+		namespace fs = boost::filesystem;
+		string install_dir = fs::canonical(fs::path(argv[0])).remove_filename().parent_path().native();
+
 		// Read args
 		if (argc != 2) {
 			cout
@@ -266,9 +270,7 @@ int main(int argc, char** argv) {
 		sort(neighbours.begin(), neighbours.end());
 		neighbours.erase(unique(neighbours.begin(), neighbours.end()), neighbours.end());
 
-		// TODO remove baits with no edges (these can be from gene collections we didn't even check)
-
 		// Output cytoscape files
-		write_cytoscape_network(baits, neighbours);
+		write_cytoscape_network(install_dir, baits, neighbours);
 	});
 }
