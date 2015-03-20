@@ -1,1 +1,1 @@
-command=(./coexpr ../../data/test/coexpr/job2.yaml)
+command=(./coexpr ~/dbg_db ../../data/test/coexpr/job2.yaml)

@@ -194,10 +194,11 @@ int main(int argc, char** argv) {
 		string install_dir = fs::canonical(fs::path(argv[0])).remove_filename().parent_path().native();
 
 		// Read args
-		if (argc != 2) {
+		if (argc != 3) {
 			cout
-				<< "Usage: coexpr yaml_file\n"
+				<< "Usage: coexpr database_path yaml_file\n"
 				<< "\n"
+				<< "- database_path: path to database directory created with the database command\n"
 				<< "- yaml_file: path to file in yaml format with description of what to calculate\n"
 				<< endl;
 
@@ -205,7 +206,7 @@ int main(int argc, char** argv) {
 		}
 
 		// Load database
-		Database database;
+		Database database(argv[1]);
 
 		// Read input
 		string baits_path;
@@ -213,7 +214,7 @@ int main(int argc, char** argv) {
 		double positive_treshold;
 		unique_ptr<OrthologGroupInfos> groups;
 		vector<GeneExpressionMatrix*> expression_matrices;
-		read_yaml(argv[1], database, baits_path, negative_treshold, positive_treshold, groups, expression_matrices);
+		read_yaml(argv[2], database, baits_path, negative_treshold, positive_treshold, groups, expression_matrices);
 
 		vector<Gene*> baits = load_baits(database, baits_path);
 

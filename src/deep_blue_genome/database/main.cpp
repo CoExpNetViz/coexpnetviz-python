@@ -19,14 +19,19 @@ int main(int argc, char** argv) {
 		desc.add_options()
 		    ("help", "produce help message")
 		    ("create", po::value<string>(), "Create database using a yaml update description file")
+		    ("database-path", po::value<string>(), "Path to directory where database is or should be stored")
 		;
 
+		po::positional_options_description positional;
+		positional.add("database-path", 1);
+
 		po::variables_map vm;
-		po::store(po::parse_command_line(argc, argv, desc), vm);
+		po::store(po::command_line_parser(argc, argv).
+		          options(desc).positional(positional).run(), vm);
 		po::notify(vm);
 
 		// Execute given command
-		Database database;
+		Database database(vm["database-path"].as<string>());
 
 		if (vm.count("create")) {
 			create(database, vm["create"].as<string>());
