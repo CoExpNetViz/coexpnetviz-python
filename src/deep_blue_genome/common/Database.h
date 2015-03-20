@@ -44,7 +44,7 @@ public:
 	 *
 	 * @param database_path location of database. Currently this is a config with paths to all db files
 	 */
-	Database(std::string database_path = "/home/limyreth/dbg_db");
+	Database(std::string database_path = "/home/limyreth/dbg_db"); // TODO don't hardcode, pass by arg
 
 	void execute(const std::string& query);
 

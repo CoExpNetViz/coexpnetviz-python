@@ -254,8 +254,8 @@ int main(int argc, char** argv) {
 				auto col_index = correlations.get_column_index(row_index);
 				auto& bait = expression_matrix->get_gene(row_index);
 				for (GeneExpressionMatrixRow row = 0; row < correlations_.size1(); row++) {
-					if (row == row_index) {
-						continue; // Don't make edge from bait gene to itself
+					if (contains(indices, row)) {
+						continue; // Don't make edges between baits
 					}
 
 					auto corr = correlations_(row, col_index);
