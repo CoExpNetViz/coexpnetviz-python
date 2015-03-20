@@ -25,13 +25,20 @@ vector<Gene*>::const_iterator OrthologGroupInfo::end() const {
 }
 
 string OrthologGroupInfo::get_name() const {
+	vector<string> names;
+	for (auto& gene : correlating_genes) {
+		names.emplace_back(gene->get_name());
+	}
+	sort(names.begin(), names.end());
+	names.erase(unique(names.begin(), names.end()), names.end());
+
 	string name;
 	bool first=true;
-	for (auto& gene : correlating_genes) {
+	for (auto& name_ : names) {
 		if (!first) {
 			name += ";";
 		}
-		name += gene->get_name();
+		name += name_;
 		first = false;
 	}
 	return name;
