@@ -155,6 +155,15 @@ inline void hash_combine(std::size_t& seed, T const& v)
 	seed ^= std::hash<T>()(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
 }
 
+/**
+ * Make unique and sorted
+ */
+template <class T>
+void erase_duplicates(T& container) {
+	sort(container.begin(), container.end());
+	container.erase(unique(container.begin(), container.end()), container.end());
+}
+
 } // end namespace
 
 

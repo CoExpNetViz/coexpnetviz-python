@@ -21,7 +21,7 @@
 #include <deep_blue_genome/coexpr/BaitCorrelations.h>
 #include <deep_blue_genome/coexpr/OrthologGroupInfo.h>
 #include <deep_blue_genome/coexpr/OrthologGroupInfos.h>
-#include <deep_blue_genome/coexpr/BaitGroups.h>
+#include <deep_blue_genome/coexpr/CytoscapeWriter.h>
 
 using namespace std;
 using namespace DEEP_BLUE_GENOME;
@@ -82,108 +82,6 @@ std::vector<Gene*> load_baits(Database& database, std::string baits_path) {
 	unique(baits.begin(), baits.end());
 
 	return baits;
-}
-
-/**
- * Write out a cytoscape network
- */
-void write_cytoscape_network(string install_dir, const vector<Gene*>& baits, const std::vector<OrthologGroupInfo*>& neighbours) {
-	// TODO remove baits with no edges (these can be from gene collections we didn't even check)
-
-	string network_name = "network";
-
-	ofstream out_sif(network_name + ".sif");
-	out_sif.exceptions(ofstream::failbit | ofstream::badbit);
-
-	ofstream out_edge_attr(network_name + ".edge.attr");
-	out_edge_attr.exceptions(ofstream::failbit | ofstream::badbit);
-	out_edge_attr << "link\tR_value\n";
-
-	ofstream out_node_attr(network_name + ".node.attr");
-	out_node_attr.exceptions(ofstream::failbit | ofstream::badbit);
-	out_node_attr << "Gene\tCorrelation_to_baits\tType\tNode_Information\tColor\tSpecies\tHomologs\n";
-
-	// TODO copy vizmap, without using boost copy_file (or try with a new header)
-
-	// output bait node attributes
-	for (auto bait : baits) {
-		out_node_attr << bait->get_name() << "\t"; // TODO this should be 'Id', meaning node id
-		out_node_attr << "\t"; // Skip: correlations to bait
-		out_node_attr << "Bait\t";
-		out_node_attr << "\t"; // Skip: function annotation (TODO this column will be removed later)
-		out_node_attr << "#FFFFFF\t";
-		out_node_attr << bait->get_gene_collection().get_species() << "\t";
-		// Skip: homologs
-		out_node_attr << "\n";
-	}
-
-	// bait homologs TODO this would only make sense if actually adding homologs of baits
-	/*for (auto bait : baits) {
-		OrthologGroup* group = bait.get_ortholog_group();
-		if (group) {
-			out_edge_attr << bait->get_name() << "\t";
-			out_node_attr << "\t";
-			out_node_attr << "Bait\t";
-			out_node_attr << "\n";
-		}
-	}*/
-
-	// have each neigh figure out what its bait group is
-	BaitGroups bait_groups;
-	for (auto neigh : neighbours) {
-		neigh->init_bait_group(bait_groups);
-	}
-
-	// assign colours to bait groups
-	std::default_random_engine generator;
-	std::uniform_int_distribution<int> distribution(0, 0x00FFFFFF);
-	for (auto& p : bait_groups) {
-		auto& group = p.second;
-
-		ostringstream str;
-		int colour = distribution(generator);
-		str << "#";
-		str.width(6);
-		str.fill('0');
-		str << hex << colour;
-
-		group.set_colour(str.str());
-	}
-
-	// output neighbours
-	for (auto neigh : neighbours) {
-		// edge attr and sif
-		if (!neigh->get_bait_correlations().empty()) {
-			out_sif << neigh->get_name() << "\tcor";
-			for (auto& bait_correlation : neigh->get_bait_correlations()) {
-				auto bait_name = bait_correlation.get_bait().get_name();
-				out_sif << "\t" << bait_name;
-				out_edge_attr << neigh->get_name() << " (cor) " << bait_name << "\t" << bait_correlation.get_max_correlation() << "\n";
-			}
-			out_sif << "\n";
-		}
-
-		// node attr
-		out_node_attr << neigh->get_name() << "\t";
-
-		{
-			bool first = true;
-			for (auto& bait_correlations : neigh->get_bait_correlations()) {
-				if (!first) {
-					out_node_attr << " ";
-				}
-				out_node_attr << bait_correlations.get_bait().get_name();
-				first = false;
-			}
-			out_node_attr << "\t";
-		}
-
-		out_node_attr << "Target\t";
-		out_node_attr << "\t"; // Skipping func annotation for now (col will be removed later)
-		out_node_attr << neigh->get_bait_group().get_colour() << "\t";
-		out_node_attr << "\t"; // Skip species, these are of multiple
-		out_node_attr << "\n";
-	}
 }
 
 int main(int argc, char** argv) {
@@ -276,6 +174,7 @@ int main(int argc, char** argv) {
 		neighbours.erase(unique(neighbours.begin(), neighbours.end()), neighbours.end());
 
 		// Output cytoscape files
-		write_cytoscape_network(install_dir, baits, neighbours);
+		CytoscapeWriter writer;
+		writer.write(install_dir, baits, neighbours, groups.get());
 	});
 }
