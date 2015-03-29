@@ -39,8 +39,7 @@ template<class T, class... ItemsLeft>
 Printer intercalate_(const std::string& delimiter, T item, const ItemsLeft&... items_left) {
 	return make_printer([&delimiter, &item, &items_left...](std::ostream& out) {
 		out << item;
-		out << delimiter;
-		execute_variadic{((out << items_left) , 1)...};
+		execute_variadic{(out << delimiter << items_left , 1)...};
 	});
 }
 
