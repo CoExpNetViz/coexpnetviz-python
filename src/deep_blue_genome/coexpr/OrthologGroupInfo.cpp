@@ -1,12 +1,16 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
 #include "OrthologGroupInfo.h"
-#include <deep_blue_genome/common/OrthologGroup.h>
+#include <boost/range/adaptors.hpp>
+#include <boost/range/algorithm_ext.hpp>
 #include <deep_blue_genome/common/Gene.h>
+#include <deep_blue_genome/common/util.h>
+#include <deep_blue_genome/util/template_magic.h>
 #include <deep_blue_genome/coexpr/BaitGroups.h>
 
 using namespace std;
 using namespace DEEP_BLUE_GENOME;
+using namespace boost::adaptors;
 
 namespace DEEP_BLUE_GENOME {
 namespace COEXPR {
@@ -14,14 +18,14 @@ namespace COEXPR {
 OrthologGroupInfo::OrthologGroupInfo(OrthologGroup& group, const vector<GeneCollection*>& gene_collections)
 :	group(group)
 {
+	auto is_allowed_species = [&gene_collections](const Gene* g) {
+		return contains(gene_collections, &g->get_gene_collection());
+	};
+	boost::insert(genes, group.get_genes() | filtered(make_function(is_allowed_species)));
 }
 
-vector<Gene*>::const_iterator OrthologGroupInfo::begin() const {
-	return group.begin();
-}
-
-vector<Gene*>::const_iterator OrthologGroupInfo::end() const {
-	return group.end();
+const OrthologGroupInfo::Genes& OrthologGroupInfo::get_genes() const {
+	return genes;
 }
 
 string OrthologGroupInfo::get_name() const {
@@ -56,7 +60,7 @@ void OrthologGroupInfo::add_bait_correlation(const Gene& target, const Gene& bai
 	}
 
 	it->add_correlation(target, correlation);
-	correlating_genes.emplace_back(&target);
+	correlating_genes.emplace(&target);
 }
 
 const vector<BaitCorrelations>& OrthologGroupInfo::get_bait_correlations() const {
@@ -72,8 +76,20 @@ void OrthologGroupInfo::init_bait_group(BaitGroups& groups) {
 	bait_group = &groups.get(bait_group_name);
 }
 
-BaitGroup& OrthologGroupInfo::get_bait_group() {
+BaitGroup& OrthologGroupInfo::get_bait_group() const {
 	return *bait_group;
+}
+
+const OrthologGroupInfo::Genes& OrthologGroupInfo::get_correlating_genes() const {
+	return correlating_genes;
+}
+
+OrthologGroup::ExternalIds OrthologGroupInfo::get_external_ids() const {
+	return group.get_external_ids();
+}
+
+const OrthologGroup::ExternalIdsGrouped& OrthologGroupInfo::get_external_ids_grouped() const {
+	return group.get_external_ids_grouped();
 }
 
 

@@ -31,10 +31,10 @@ int main(int argc, char** argv) {
 		po::notify(vm);
 
 		// Execute given command
-		Database database(vm["database-path"].as<string>());
+		string db_path = vm["database-path"].as<string>();
 
 		if (vm.count("create")) {
-			create(database, vm["create"].as<string>());
+			create(db_path, vm["create"].as<string>());
 			return;
 		}
 		else {

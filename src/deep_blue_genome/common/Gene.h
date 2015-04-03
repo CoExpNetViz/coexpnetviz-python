@@ -15,23 +15,23 @@ class Gene : public GeneVariant
 {
 public:
 	/**
-	 * @param ortholog_group Ortholog group the gene is part of (Optional)
+	 * Construct gene
+	 *
+	 * @param group Ortholog group the gene is part of
 	 */
-	Gene(const std::string& name, GeneCollection&, OrthologGroup*);
+	Gene(const std::string& name, GeneCollection&, OrthologGroup&);
 
 	std::string get_name() const;
 
 	/**
 	 * Get ortholog group
-	 *
-	 * @returns group if any, nullptr otherwise
 	 */
-	OrthologGroup* get_ortholog_group() const;
+	OrthologGroup& get_ortholog_group() const;
 
 	/**
 	 * Set ortholog group
 	 *
-	 * @throws if already part of an ortholog group
+	 * @param group Ortholog group the gene is part of
 	 */
 	void set_ortholog_group(OrthologGroup& group);
 
@@ -61,8 +61,8 @@ private:
 	// Note: we use pointers instead of references as Gene needs to be default constructible to be conveniently usable with boost serialization
 	std::string name; // unique name of gene
 	GeneCollection* gene_collection; // genes collection which this gene is part of. Not null
-	OrthologGroup* ortholog_group; // ortholog group this gene is part of. Nullable
-	std::vector<std::unique_ptr<SpliceVariant>> splice_variants;
+	OrthologGroup* ortholog_group; // ortholog group this gene is part of. Not null after ctor has finished
+	std::vector<std::unique_ptr<SpliceVariant>> splice_variants; // TODO stable_vector
 };
 
 

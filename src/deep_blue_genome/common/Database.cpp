@@ -8,11 +8,11 @@ using namespace std;
 
 namespace DEEP_BLUE_GENOME {
 
-Database::Database(std::string path)
+Database::Database(std::string path, bool start_fresh)
 :	database_path(std::move(path))
 {
 	auto main_file = get_main_file();
-	if (boost::filesystem::exists(main_file)) {
+	if (!start_fresh && boost::filesystem::exists(main_file)) {
 		Serialization::load_from_binary(main_file, *this);
 	}
 }
@@ -40,9 +40,14 @@ GeneVariant* Database::try_get_gene_variant(const std::string& name) {
 	return nullptr;
 }
 
-OrthologGroup& Database::add_ortholog_group(std::string external_id) {
+OrthologGroup& Database::add_ortholog_group(const GeneFamilyId& external_id) {
 	// TODO no 2 ortholog groups should have the same external id
-	ortholog_groups.emplace_back(make_unique<OrthologGroup>(std::move(external_id)));
+	ortholog_groups.emplace_back(make_unique<OrthologGroup>(external_id));
+	return *ortholog_groups.back();
+}
+
+OrthologGroup& Database::add_ortholog_group() {
+	ortholog_groups.emplace_back(make_unique<OrthologGroup>());
 	return *ortholog_groups.back();
 }
 
@@ -56,7 +61,7 @@ GeneCollection& Database::get_gene_collection(std::string name) {
 }
 
 void Database::erase(OrthologGroup& group) {
-	auto it = find_if(ortholog_groups.begin(), ortholog_groups.end(), [&group](unique_ptr<OrthologGroup>& g) {
+	auto it = find_if(ortholog_groups.begin(), ortholog_groups.end(), [&group](const unique_ptr<OrthologGroup>& g) {
 		return g.get() == &group;
 	});
 	ensure(it != ortholog_groups.end(),

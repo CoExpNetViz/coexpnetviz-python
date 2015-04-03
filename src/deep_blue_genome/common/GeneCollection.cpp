@@ -5,6 +5,8 @@
 #include <deep_blue_genome/common/SpliceVariant.h>
 #include <deep_blue_genome/common/GeneExpressionMatrix.h>
 #include <deep_blue_genome/common/Clustering.h>
+#include <deep_blue_genome/common/Database.h>
+#include <deep_blue_genome/common/GeneFamilyId.h>
 
 using namespace std;
 using namespace boost;
@@ -12,12 +14,17 @@ using namespace boost;
 namespace DEEP_BLUE_GENOME {
 
 GeneCollection::GeneCollection()
+:	database(nullptr)
 {
 }
 
-GeneCollection::GeneCollection(const std::string& name, const std::string& species, YAML::Node parser_rules,
+void GeneCollection::init_serialised(Database& database) {
+	this->database = &database;
+}
+
+GeneCollection::GeneCollection(Database& database, const std::string& name, const std::string& species, YAML::Node parser_rules,
 		const NullableGeneWebPage& gene_web_page)
-:	name(name), species(species), gene_web_page(gene_web_page)
+:	database(&database), name(name), species(species), gene_web_page(gene_web_page)
 {
 	for (auto node : parser_rules) {
 		NullableRegexGroup splice_variant_group;
@@ -63,9 +70,14 @@ GeneVariant* GeneCollection::try_get_gene_variant(const std::string& name_) {
 	auto gene_it = name_to_gene.find(name);
 	if (gene_it == name_to_gene.end()) {
 		// Add gene if does not exist yet
+
+		// start with a dummy ortholog group
+		auto& ortho_group = database->add_ortholog_group();
+
+		// now add gene
 		gene_it = name_to_gene.emplace(
 				name,
-				make_unique<Gene>(name, *this, nullptr)
+				make_unique<Gene>(name, *this, ortho_group)
 		).first;
 	}
 

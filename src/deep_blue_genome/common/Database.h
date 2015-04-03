@@ -7,11 +7,12 @@
 #include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/types.h>
+#include <deep_blue_genome/common/GeneCollection.h>
 
 namespace DEEP_BLUE_GENOME {
 
-class GeneCollection;
 class OrthologGroup;
+class GeneFamilyId;
 class GeneVariant;
 
 // TODO Pimpl pattern may help performance, i.e. operator new grabs from a pool
@@ -43,8 +44,9 @@ public:
 	 * The previous state of database at database_path will be loaded, if any.
 	 *
 	 * @param database_path location of database. Currently this is a config with paths to all db files
+	 * @param start_fresh If false, load previous state, else start with empty database
 	 */
-	Database(std::string database_path);
+	Database(std::string database_path, bool start_fresh=false);
 
 	void execute(const std::string& query);
 
@@ -68,9 +70,16 @@ public:
 	/**
 	 * Create ortholog group
 	 *
-	 * @returns created ortholog group
+	 * @returns created group
 	 */
-	OrthologGroup& add_ortholog_group(std::string external_id);
+	OrthologGroup& add_ortholog_group(const GeneFamilyId& external_id);
+
+	/**
+	 * Create singleton ortholog group
+	 *
+	 * @returns created group
+	 */
+	OrthologGroup& add_ortholog_group();
 
 	/**
 	 * Delete ortholog group
@@ -95,8 +104,8 @@ private:
 	std::string get_main_file() const;
 
 private:
-	std::vector<std::unique_ptr<GeneCollection>> gene_collections;
-	std::vector<std::unique_ptr<OrthologGroup>> ortholog_groups;
+	std::vector<std::unique_ptr<GeneCollection>> gene_collections; // TODO stable_vector, or ptr_vector from boost pointer container (e.g. if you find the compile time dependencies too harsh with non-pointer types; i.e. more includes)
+	std::vector<std::unique_ptr<OrthologGroup>> ortholog_groups; // TODO stable_vector
 
 	std::string database_path;
 };
@@ -112,6 +121,10 @@ namespace DEEP_BLUE_GENOME {
 template<class Archive>
 void Database::serialize(Archive& ar, const unsigned int version) {
 	ar & gene_collections;
+	for (auto& gene_collection : gene_collections) {
+		gene_collection->init_serialised(*this);
+	}
+
 	ar & ortholog_groups;
 }
 

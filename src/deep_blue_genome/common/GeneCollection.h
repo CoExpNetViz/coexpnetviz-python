@@ -13,6 +13,7 @@
 
 namespace DEEP_BLUE_GENOME {
 
+class Database;
 class GeneExpressionMatrix;
 class Clustering;
 
@@ -28,7 +29,12 @@ class Clustering;
 class GeneCollection : public boost::noncopyable, private boost::equality_comparable<GeneCollection>
 {
 public:
-	GeneCollection(const std::string& name, const std::string& species, YAML::Node parser_rules, const NullableGeneWebPage& gene_web_page);
+	GeneCollection(Database& database, const std::string& name, const std::string& species, YAML::Node parser_rules, const NullableGeneWebPage& gene_web_page);
+
+	/**
+	 * You must call this after having deserialised a GeneCollection
+	 */
+	void init_serialised(Database& database);
 
 	std::string get_name() const;
 	boost::optional<std::string> get_gene_web_page() const;
@@ -74,10 +80,11 @@ public: // treat as private (failed to friend boost::serialization)
 	GeneCollection();
 
 private:
+	Database* database;
 	std::string name;
 	std::string species;
 	NullableGeneWebPage gene_web_page;
-	std::unordered_map<std::string, std::unique_ptr<Gene>> name_to_gene; // gene name to gene, for all genes
+	std::unordered_map<std::string, std::unique_ptr<Gene>> name_to_gene; // gene name to gene, for all genes // TODO no unique_ptr needed (unless perhaps to move something around constructed elsewhere...; But could fix that by constructing it here first)
 	std::vector<GeneParserRule> gene_parser_rules;
 	std::unordered_map<std::string, std::unique_ptr<GeneExpressionMatrix>> gene_expression_matrices; // name -> matrix
 	std::unordered_map<std::string, std::unique_ptr<Clustering>> clusterings; // name -> clustering. General clusterings and those specific to a gene expression matrix

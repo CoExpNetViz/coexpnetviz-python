@@ -25,7 +25,7 @@ public:
 	/**
 	 * Get Group of gene
 	 */
-	OrthologGroupInfo* get(const Gene& gene);
+	OrthologGroupInfo& get(const Gene& gene);
 
 private:
 	GeneCollections gene_collections;

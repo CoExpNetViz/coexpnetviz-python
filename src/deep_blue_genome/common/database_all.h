@@ -11,5 +11,4 @@
 #include <deep_blue_genome/common/GeneCorrelationMatrix.h>
 #include <deep_blue_genome/common/Clustering.h>
 #include <deep_blue_genome/common/SpliceVariant.h>
-#include <deep_blue_genome/common/GeneCollection.h>
 #include <deep_blue_genome/common/OrthologGroup.h>

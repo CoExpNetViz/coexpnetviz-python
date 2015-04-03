@@ -24,8 +24,8 @@ public:
 	}
 };*/
 
-void create(Database& database, std::string yaml_path) {
-	database.clear();
+void create(string database_path, string yaml_path) {
+	Database database(database_path, true);
 
 	YAML::Node config = YAML::LoadFile(yaml_path);
 	string data_root = config["species_data_path"].as<string>(".");
@@ -39,6 +39,7 @@ void create(Database& database, std::string yaml_path) {
 		}
 
 		database.add(make_unique<GeneCollection>(
+				database,
 				gene_collection_node["name"].as<string>(), gene_collection_node["species"].as<string>(),
 				gene_collection_node["gene_parser"], gene_web_page
 		));
@@ -58,8 +59,8 @@ void create(Database& database, std::string yaml_path) {
 
 	// Orthologs
 	for (auto node : config["orthologs"]) {
-		auto path = prepend_path(data_root, node.as<string>());
-		importer.add_orthologs(path);
+		auto path = prepend_path(data_root, node["path"].as<string>());
+		importer.add_orthologs(node["name"].as<string>(), path);
 	}
 
 	// Expression matrices

@@ -69,42 +69,36 @@ void DataFileImport::add_functional_annotations(const string& path) {
 	});
 }
 
-void DataFileImport::add_orthologs(const std::string& path) {
+void DataFileImport::add_orthologs(std::string source_name, std::string path) {
 	cout << "Loading orthologs '" << path << "'\n";
 
-	read_file(path, [this](const char* begin, const char* end) {
+	read_file(path, [this, source_name](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
 
 		// Assign ortholog groups
 		uint32_t unknown_genes = 0;
 
-		auto on_line = [this, &unknown_genes](const std::vector<std::string>& line) {
+		auto on_line = [this, source_name, &unknown_genes](const std::vector<std::string>& line) {
 			if (line.size() < 3) {
 				cerr << "Warning: Encountered line in ortholog file with " << line.size() << " < 3 columns\n";
 				return;
 			}
 
-			auto& group = database.add_ortholog_group(line.at(0));
+			auto& group = database.add_ortholog_group(GeneFamilyId(source_name, line.at(0)));
 
 			for (int i=1; i < line.size(); i++) {
 				auto& name = line.at(i);
 				try {
 					try {
 						auto& gene = database.get_gene_variant(name).as_gene();
-						auto group2 = gene.get_ortholog_group();
+						auto&& group2 = gene.get_ortholog_group();
 
-						if (group2 == &group) {
+						if (&group2 == &group) {
 							// Gene appeared more than once in group, ignore it. Not warning as this could be caused by merging 2 groups
 							continue;
 						}
 
-						if (group2) {
-							cerr << "Warning: groups overlap: merging " << *group2 << " into " << group << "\n";
-							group.merge(*group2, database);
-						}
-						else {
-							group.add(gene);
-						}
+						group.merge(group2, database);
 					}
 					catch(const TypedException& e) {
 						if (e.get_type() != ErrorType::SPLICE_VARIANT_INSTEAD_OF_GENE) {

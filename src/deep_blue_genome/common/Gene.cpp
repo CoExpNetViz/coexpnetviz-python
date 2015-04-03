@@ -2,6 +2,7 @@
 
 #include "Gene.h"
 #include <deep_blue_genome/common/SpliceVariant.h>
+#include <deep_blue_genome/common/OrthologGroup.h>
 
 using namespace std;
 
@@ -12,9 +13,10 @@ Gene::Gene()
 {
 }
 
-Gene::Gene(const std::string& name, GeneCollection& gene_collection, OrthologGroup* ortholog_group)
-:	name(name), gene_collection(&gene_collection), ortholog_group(ortholog_group)
+Gene::Gene(const std::string& name, GeneCollection& gene_collection, OrthologGroup& ortholog_group)
+:	name(name), gene_collection(&gene_collection), ortholog_group(&ortholog_group)
 {
+	ortholog_group.add(*this);
 }
 
 GeneCollection& Gene::get_gene_collection() const {
@@ -25,8 +27,8 @@ std::string Gene::get_name() const {
 	return name;
 }
 
-OrthologGroup* Gene::get_ortholog_group() const {
-	return ortholog_group;
+OrthologGroup& Gene::get_ortholog_group() const {
+	return *ortholog_group;
 }
 
 SpliceVariant& Gene::get_splice_variant(SpliceVariantId id) {

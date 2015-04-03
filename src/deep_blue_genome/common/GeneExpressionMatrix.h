@@ -61,7 +61,7 @@ private:
 	GeneCollection* gene_collection; // not null
 	std::string name; // name of dataset
 	matrix expression_matrix; // row_major
-	std::unordered_map<GeneExpressionMatrixRow, Gene*> row_to_gene;
+	std::unordered_map<GeneExpressionMatrixRow, Gene*> row_to_gene; // TODO Bimap
 	std::unordered_map<Gene*, GeneExpressionMatrixRow> gene_to_row; // inverse of gene_row_to_id
 };
 

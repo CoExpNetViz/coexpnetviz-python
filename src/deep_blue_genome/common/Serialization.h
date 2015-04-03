@@ -13,6 +13,8 @@
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/util/serialization/unordered_map.h>
 #include <deep_blue_genome/util/serialization/vector.h>
+#include <deep_blue_genome/util/serialization/flat_set.h>
+#include <deep_blue_genome/util/serialization/flat_map.h>
 
 namespace DEEP_BLUE_GENOME {
 

@@ -51,7 +51,7 @@ public:
 	 *
 	 * If 2 groups overlap, they are merged with a warning.
 	 */
-	void add_orthologs(const std::string& path);
+	void add_orthologs(std::string source_name, std::string path);
 
 	/**
 	 * Add expression matrix from a TODO particular plain text format

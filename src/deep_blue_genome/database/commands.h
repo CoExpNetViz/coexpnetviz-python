@@ -18,7 +18,7 @@ namespace DATABASE {
 	 *
 	 * TODO specify expected yaml format
 	 */
-	void create(Database&, std::string yaml_path);
+	void create(std::string database_path, std::string yaml_path);
 }
 
 } // end namespace

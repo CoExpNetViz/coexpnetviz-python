@@ -26,6 +26,8 @@ TODO
 
 # Compilation
 
+Note: Is known to compile on GCC 4.8 or older.
+
 ## For use at psb servers
 
 Run:

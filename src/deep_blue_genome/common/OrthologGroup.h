@@ -3,7 +3,11 @@
 #pragma once
 
 #include <vector>
+#include <boost/container/flat_map.hpp>
+#include <boost/container/flat_set.hpp>
+#include <boost/noncopyable.hpp>
 #include <deep_blue_genome/common/Serialization.h>
+#include <deep_blue_genome/common/GeneFamilyId.h>
 
 namespace DEEP_BLUE_GENOME {
 
@@ -15,15 +19,24 @@ class Database;
  *
  * Invariant: shall contain no duplicates (not to be confused with gene duplication)
  */
-class OrthologGroup
+class OrthologGroup : private boost::noncopyable
 {
 public:
-	typedef std::vector<Gene*> Genes;
+	typedef boost::container::flat_set<Gene*> Genes;
+	typedef boost::container::flat_map<std::string, boost::container::flat_set<GeneFamilyId>> ExternalIdsGrouped;
+	typedef std::vector<GeneFamilyId> ExternalIds;
 
 	friend std::ostream& operator<<(std::ostream&, const OrthologGroup&);
 
 public:
-	OrthologGroup(std::string);
+	/**
+	 * Construct singleton group
+	 *
+	 * Singleton groups are used as a default for genes not part of any other group
+	 */
+	OrthologGroup();
+
+	OrthologGroup(GeneFamilyId);
 
 	/**
 	 * Add orthologous gene
@@ -41,20 +54,40 @@ public:
 	 */
 	void merge(OrthologGroup&, Database&);
 
-	Genes::const_iterator begin() const;
-	Genes::const_iterator end() const;
+	/**
+	 * Get range of external ids assigned to this ortholog group
+	 *
+	 * @returns range of ids
+	 */
+	ExternalIds get_external_ids() const;
+
+	/**
+	 * Get range of external ids grouped by source
+	 *
+	 * @returns range of pairs of (source, range of ids)
+	 */
+	const ExternalIdsGrouped& get_external_ids_grouped() const;
+
+	/**
+	 * Get range of all genes in group
+	 */
+	const Genes& get_genes() const;
 
 public: // treat as private (failed to friend boost::serialization)
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version);
 
-	OrthologGroup();
+private:
+	bool is_singleton() const;
 
 private:
-	std::vector<std::string> external_ids; // Currently only plaza ids
+	ExternalIdsGrouped external_ids; // Note: why no multimap? Multimap allows duplicate (key,value) pairs. Note: can be empty, e.g. in the singleton case
 	Genes genes;
 };
 
+/**
+ * Write debug representation
+ */
 std::ostream& operator<<(std::ostream&, const OrthologGroup&);
 
 } // end namespace

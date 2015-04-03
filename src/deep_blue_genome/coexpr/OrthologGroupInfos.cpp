@@ -14,24 +14,20 @@ OrthologGroupInfos::OrthologGroupInfos(GeneCollections gene_collections)
 {
 }
 
-OrthologGroupInfo* OrthologGroupInfos::get(const Gene& gene) {
-	auto group = gene.get_ortholog_group();
+OrthologGroupInfo& OrthologGroupInfos::get(const Gene& gene) {
+	auto&& group = gene.get_ortholog_group(); // TODO put every new gene in its own Ortho Group: (default, geneName) where the set of genes of that group is {geneName}. This then eliminates optional-ness of returned orth group
 
-	if (!group) {
-		return nullptr;
-	}
-
-	auto it = groups.find(group);
+	auto it = groups.find(&group);
 	if (it == groups.end()) {
 		// make group
 		auto p = groups.emplace(piecewise_construct,
-				forward_as_tuple(group),
-				forward_as_tuple(*group, gene_collections)
+				forward_as_tuple(&group),
+				forward_as_tuple(group, gene_collections)
 		);
-		return &p.first->second;
+		return p.first->second;
 	}
 	else {
-		return &it->second;
+		return it->second;
 	}
 }
 

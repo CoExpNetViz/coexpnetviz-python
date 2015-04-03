@@ -1,9 +1,14 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
 #include "CytoscapeWriter.h"
-#include <boost/spirit/include/karma.hpp>
 #include <iostream>
 #include <fstream>
+#include <functional>
+#include <boost/range.hpp>
+#include <boost/range/adaptors.hpp>
+#include <boost/range/join.hpp>
+#include <boost/range/algorithm_ext.hpp>
+#include <boost/container/set.hpp>
 #include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/coexpr/Baits.h>
@@ -11,56 +16,42 @@
 #include <deep_blue_genome/coexpr/OrthologGroupInfo.h>
 #include <deep_blue_genome/coexpr/OrthologGroupInfos.h>
 #include <deep_blue_genome/coexpr/BaitGroups.h>
+#include <deep_blue_genome/util/printer.h>
+#include <deep_blue_genome/util/template_magic.h>
 
-using namespace std;
 using namespace DEEP_BLUE_GENOME;
-namespace karma = boost::spirit::karma;
+using namespace boost::adaptors;
+using namespace std;
+using boost::container::flat_set;
 
 namespace DEEP_BLUE_GENOME {
 namespace COEXPR {
 
-/*CytoscapeWriter::CytoscapeWriter(string install_dir, const vector<Gene*>& baits, const std::vector<OrthologGroupInfo*>& neighbours, unique_ptr<OrthologGroupInfos> groups)
+uint64_t Node::next_id = 1;
+
+CytoscapeWriter::CytoscapeWriter(std::string install_dir, const std::vector<Gene*>& baits, const std::vector<OrthologGroupInfo*>& neighbours, OrthologGroupInfos& groups)
+:	install_dir(install_dir), baits(baits), neighbours(neighbours), groups(groups), network_name("network"), bait_orthologies_cached(false)
 {
-}*/
+}
 
 /**
- * Write out a cytoscape network
+ * Get orthology relations between baits
  */
-void CytoscapeWriter::write(string install_dir, const vector<Gene*>& baits, const std::vector<OrthologGroupInfo*>& neighbours, OrthologGroupInfos* groups) {
-	using karma::format;
-	auto sif_line = karma::string << "\t" << karma::string << "\t" << (karma::string % "\t") << "\n";
-	auto edge_line = karma::string << " (" << karma::string << ") " << karma::string << "\t" << karma::double_ << "\n";
-
-	// TODO big function, could use splitting into subfunctions
-	std::string network_name = "network";
-
-	ofstream out_sif(network_name + ".sif");
-	out_sif.exceptions(ofstream::failbit | ofstream::badbit);
-
-	ofstream out_edge_attr(network_name + ".edge.attr");
-	out_edge_attr.exceptions(ofstream::failbit | ofstream::badbit);
-	out_edge_attr << "link\tr_value\n";
-
-	ofstream out_node_attr(network_name + ".node.attr");
-	out_node_attr.exceptions(ofstream::failbit | ofstream::badbit);
-	out_node_attr << "Gene\tCorrelation_to_baits\tType\tNode_Information\tColor\tSpecies\tHomologs\n";
-
-	// TODO copy vizmap, without using boost copy_file (or try with a new header)
-
-	// output bait orthology
-	/*{
-		// get a set of bait groups
+std::vector<BaitBaitOrthRelation>& CytoscapeWriter::get_bait_orthology_relations() {
+	if (!bait_orthologies_cached) {
+		// get a set of ortholog groups of the baits
 		vector<OrthologGroupInfo*> bait_groups;
 		for (auto bait : baits) {
-			bait_groups.emplace_back(groups.get(*bait));
+			bait_groups.emplace_back(&groups.get(*bait));
 		}
 		erase_duplicates(bait_groups);
 
-		// output hom relation
+		// enumerate all possible pairs of baits of the same group
 		for (auto group : bait_groups) {
 			// filter out genes not present in our set of baits
-			vector<Gene*> genes;
-			for (auto gene : group) {
+			vector<const Gene*> genes;
+			assert(group);
+			for (auto gene : group->get_genes()) {
 				if (contains(baits, gene)) {
 					genes.emplace_back(gene);
 				}
@@ -68,38 +59,91 @@ void CytoscapeWriter::write(string install_dir, const vector<Gene*>& baits, cons
 
 			// output all pairs
 			for (auto it = genes.begin(); it != genes.end(); it++) {
-				out_sif
-				for (auto it2 = it+1; it != genes.end(); it2++) {
-					out_sif
+				for (auto it2 = it+1; it2 != genes.end(); it2++) {
+					bait_orthologies.emplace_back(make_pair(*it, *it2));
+					bait_orthologies.emplace_back(make_pair(*it2, *it));
 				}
 			}
 		}
 
-	}*/
-
-	// output bait node attributes
-	for (auto bait : baits) {
-		out_node_attr << bait->get_name() << "\t"; // TODO this should be 'Id', meaning node id
-		out_node_attr << "\t"; // Skip: correlations to bait
-		out_node_attr << "Bait\t";
-		out_node_attr << "\t"; // Skip: function annotation (TODO this column will be removed later)
-		out_node_attr << "#FFFFFF\t";
-		out_node_attr << bait->get_gene_collection().get_species() << "\t";
-		// Skip: homologs
-		out_node_attr << "\n";
+		bait_orthologies_cached = true;
 	}
 
-	// bait homologs TODO this would only make sense if actually adding homologs of baits
-	/*for (auto bait : baits) {
-		OrthologGroup* group = bait.get_ortholog_group();
-		if (group) {
-			out_edge_attr << bait->get_name() << "\t";
-			out_node_attr << "\t";
-			out_node_attr << "Bait\t";
-			out_node_attr << "\n";
-		}
-	}*/
+	return bait_orthologies;
+}
 
+	/* TODO verify output matches:
+	 * genes:
+	  - id: 'AT5G430010'
+		go_terms: ['GO:0044848', 'GO:0055849']
+		is_bait: True
+		families:
+		- source: 'Plaza Monocots'
+		  id: 'ORTH01M00012'
+		- source: 'Plaza Dicots'
+		  id: 'ORTH01D00212'
+	  - orthologs: ['Gene1', 'Gene2']
+	  - id: 'AT5G550020'
+		go_terms: ['GO:0044848', 'GO:0055849']
+		is_bait: False
+		baits:
+		- node_id: 'AT5G430010'
+		  r_value: 1
+
+	node attributes:
+	- node_id: n1
+	- families: From Plaza Monocots: ORTH01M00012, ORTH01M00013. From Plaza Dicots: ORTH01D00212
+	- genes: Gene1 Gene2 Gene3
+	- species: Arabidopsis  (empty string, in het geval dat niet geweten is wat de species van het bait is, of als het een target node is)
+	- color: #123456
+
+	sif file:
+	- cor: tussen target, bait nodes
+	- hom: tussen baits*/
+
+/**
+ * Write out a cytoscape network
+ */
+void CytoscapeWriter::write() {
+	// write data to each file
+	write_sif();
+	write_node_attr();
+	write_edge_attr();
+	write_genes();
+
+	// copy additional assets into the network's directory
+	// copy_vizmap() TODO, without using boost copy_file (or try with a new header)
+}
+
+/**
+ * Write node attributes
+ *
+ * Particularly, attributes of:
+ * - bait nodes
+ * - target nodes
+ */
+void CytoscapeWriter::write_node_attr() {
+	ofstream out(network_name + ".node.attr");
+	out.exceptions(ofstream::failbit | ofstream::badbit);
+	auto fields = {"node_id", "families", "genes", "species", "color"};
+	out << intercalate("\t", fields) << "\n";
+
+	write_node_attr_baits(out);
+	write_node_attr_targets(out);
+}
+
+void CytoscapeWriter::write_node_attr_baits(ostream& out) {
+	std::string colour = "#FFFFFF";
+	for (auto bait : baits) {
+		// fetch data
+		std::string gene_names[] = {bait->get_name()};
+
+		// write
+		write_node_attr(out, bait_nodes[bait], gene_names, groups.get(*bait).get_external_ids_grouped(), bait->get_gene_collection().get_species(), colour);
+	}
+}
+
+void CytoscapeWriter::write_node_attr_targets(ostream& out) {
 	// have each neigh figure out what its bait group is
 	BaitGroups bait_groups;
 	for (auto neigh : neighbours) {
@@ -124,48 +168,167 @@ void CytoscapeWriter::write(string install_dir, const vector<Gene*>& baits, cons
 
 	// output targets (= family nodes)
 	for (auto neigh : neighbours) {
-		// cor relation between targets and baits
+		// fetch data
+		auto get_name = make_function([](const Gene* g) { // TODO could use std bind or something?
+			return g->get_name();
+		});
+		auto gene_names = neigh->get_correlating_genes() | transformed(get_name);
+
+		// write
+		write_node_attr(out, target_nodes[neigh], gene_names, neigh->get_external_ids_grouped(), "", neigh->get_bait_group().get_colour());
+	}
+}
+
+/**
+ * Write out attributes of single node
+ *
+ * @param gene_names Names of genes in node
+ * @param family_names_by_source All external ids by source of associated ortholog group
+ * @param species Species name of bait if a bait node, empty string otherwise
+ * @param colour Colour of node
+ */
+template <class GeneRange, class IdsRange>
+void CytoscapeWriter::write_node_attr(ostream& out, const Node& node, GeneRange&& gene_names, IdsRange&& external_ids_grouped, const std::string& species, const std::string& colour) {
+	// gene_names
+	auto genes = intercalate(" ", std::forward<GeneRange>(gene_names));
+
+	// family_names_by_source -> families
+	auto get_id = make_function([](const GeneFamilyId& id) {
+		return id.get_id();
+	});
+	typedef std::pair<std::string, boost::container::flat_set<GeneFamilyId>> IdSubset;
+	auto get_family_string = make_function([&get_id](const IdSubset& p) {
+		return make_printer([p, &get_id](ostream& out) {
+			out << "From " << p.first << ": " << intercalate(", ", p.second | transformed(get_id));
+		});
+	});
+	auto families = intercalate(". ", std::forward<IdsRange>(external_ids_grouped) | transformed(get_family_string));
+
+	// output attr line
+	out << intercalate_("\t", node, families, genes, species, colour) << "\n";
+}
+
+/**
+ * Write yaml file with info of each gene
+ */
+void CytoscapeWriter::write_genes() {
+	ofstream out(network_name + "_genes.yaml");
+	out.exceptions(ofstream::failbit | ofstream::badbit);
+
+	YAML::Node root;
+
+	// baits to yaml nodes
+	for (auto gene : baits) {
+		root["genes"].push_back(get_gene_node(*gene, true));
+	}
+
+	// collect targets
+	flat_set<const Gene*> targets;
+	for (auto neigh : neighbours) {
+		boost::insert(targets, neigh->get_correlating_genes());
+	}
+
+	// targets to yaml nodes
+	for (auto gene : targets) {
+		root["genes"].push_back(get_gene_node(*gene, false));
+	}
+
+	out << YAML::Dump(root);
+}
+
+YAML::Node CytoscapeWriter::get_gene_node(const Gene& gene, bool is_bait) {
+	cout << ".";
+	auto&& ortho_group = groups.get(gene);
+
+	YAML::Node gene_;
+	gene_["id"] = gene.get_name(); // matches gene ids used in the node attr file (genes column)
+	// gene_["go_terms"] = TODO;
+	gene_["is_bait"] = is_bait;
+	if (is_bait) {
+		// families
+		for (auto& family_id : ortho_group.get_external_ids()) { // TODO have it simply return a vec of fam ids. We'll group them by source at the point where we need that grouping
+			YAML::Node family;
+			family["source"] = family_id.get_source();
+			family["id"] = family_id.get_id();
+			gene_["families"].push_back(family);
+		}
+
+		// orthologs
+		auto is_not_gene = make_function([&gene](const Gene* g) { // TODO make_function
+			return g != &gene;
+		});
+		auto get_name = make_function([](const Gene* g) {
+					return g->get_name();
+		});
+		vector<std::string> orthologs;
+		boost::push_back(orthologs, ortho_group.get_correlating_genes() | filtered(is_not_gene) | transformed(get_name));
+		gene_["orthologs"] = orthologs;
+	}
+	else {
+		// baits
+		for (auto bait_correlation : ortho_group.get_bait_correlations()) {
+			YAML::Node bait;
+			bait["node_id"] = (make_string() << bait_nodes[&bait_correlation.get_bait()]).str();
+			bait["r_value"] = bait_correlation.get_max_correlation();
+			gene_["baits"].push_back(bait);
+		}
+	}
+
+	return gene_;
+}
+
+
+/**
+ * Write node relations
+ *
+ * Particularly:
+ * - target->bait correlation relations
+ * - bait <-> bait orthology relations
+ */
+void CytoscapeWriter::write_sif() {
+	ofstream out(network_name + ".sif");
+	out.exceptions(ofstream::failbit | ofstream::badbit);
+
+	// target -> bait correlation
+	for (auto& neigh : neighbours) {
+		auto&& delimiter = "\t";
+		auto&& prefix = intercalate_(delimiter, target_nodes[neigh], "cor");
 		if (!neigh->get_bait_correlations().empty()) {
-			// out to sif
-			{
-				vector<std::string> bait_names;
-				for (auto& bait_correlation : neigh->get_bait_correlations()) {
-					auto bait_name = bait_correlation.get_bait().get_name();
-					bait_names.emplace_back(bait_name);
-				}
-				out_sif << format(sif_line, neigh->get_name(), "cor", bait_names);
-			}
+			auto get_name = make_function([this](const BaitCorrelations& bait_correlation) {
+				return (make_string() << bait_nodes[&bait_correlation.get_bait()]).str();
+			});
+			auto&& bait_nodes_ = intercalate(delimiter, neigh->get_bait_correlations() | transformed(get_name));
+			out << intercalate_(delimiter, prefix, bait_nodes_) << "\n";
+		}
+	}
 
-			// out to edge attr
+	// bait <-> bait orthology
+	for (auto& p : get_bait_orthology_relations()) {
+		out << bait_nodes[p.first] << "\thom\t" << bait_nodes[p.second] << "\n";
+		// TODO we are printing pairs per line, not: src rel dst1 dst2 .. dstN. Does that read stuff fine?
+	}
+}
+
+/**
+ * Write same node relations as sif, but in more detail
+ */
+void CytoscapeWriter::write_edge_attr() {
+	ofstream out(network_name + ".edge.attr");
+	out.exceptions(ofstream::failbit | ofstream::badbit);
+	out << "edge\tr_value\n";
+
+	// target -> bait correlation
+	for (auto&& neigh : neighbours) {
+		if (!neigh->get_bait_correlations().empty()) {
 			for (auto& bait_correlation : neigh->get_bait_correlations()) {
-				auto bait_name = bait_correlation.get_bait().get_name();
-				out_edge_attr << format(edge_line,
-						neigh->get_name(), "cor", bait_name, bait_correlation.get_max_correlation());
+				out << target_nodes[neigh] << " (cor) " << bait_nodes[&bait_correlation.get_bait()] << "\t" << bait_correlation.get_max_correlation() << "\n";
 			}
 		}
+	}
 
-		// node attr
-		out_node_attr << neigh->get_name() << "\t";
-
-		{
-			bool first = true;
-			for (auto& bait_correlations : neigh->get_bait_correlations()) {
-				if (!first) {
-					out_node_attr << " ";
-				}
-				out_node_attr << bait_correlations.get_bait().get_name();
-				first = false;
-			}
-			out_node_attr << "\t";
-		}
-
-		auto node_line = karma::string << " (" << karma::string << ") " << karma::string << "\t" << "\n";
-
-		out_node_attr << "Target\t";
-		out_node_attr << "\t"; // Skipping func annotation for now (col will be removed later)
-		out_node_attr << neigh->get_bait_group().get_colour() << "\t";
-		out_node_attr << "\t"; // Skip species, these are of multiple
-		out_node_attr << "\n";
+	// bait <-> bait orthology
+	for (auto& p : get_bait_orthology_relations()) {
+		out << bait_nodes[p.first] << " (hom) " << bait_nodes[p.second] << "\tNA\n";
 	}
 }
 

@@ -3,6 +3,7 @@
 // Vocab note:
 // - bait gene: One of the genes provided by the user to which target genes are compared in terms of co-expression
 // - target gene: any gene that's not a bait gene
+// - target node = family node: a node containing targets of the same orthology family
 
 // Note: we work with orthologs, i.e. we work at the level of 'Gene's, not 'GeneVariant's
 
@@ -87,7 +88,7 @@ std::vector<Gene*> load_baits(Database& database, std::string baits_path) {
 int main(int argc, char** argv) {
 	// TODO could merging of ortho groups be done badly? Look at DataFileImport
 	// TODO allow custom orthologs files
-	graceful_main([argc, argv](){
+	graceful_main([argc, argv]() {
 		namespace fs = boost::filesystem;
 		string install_dir = fs::canonical(fs::path(argv[0])).remove_filename().parent_path().native();
 
@@ -160,11 +161,14 @@ int main(int argc, char** argv) {
 					auto corr = correlations_(row, col_index);
 					if (corr < negative_treshold || corr > positive_treshold) {
 						auto& gene = expression_matrix->get_gene(row);
-						auto group = groups->get(gene);
-						if (group) { // Note: if gene has no orthologs, don't return it in the output. We assume it won't be interesting and would just add clutter
-							group->add_bait_correlation(gene, bait, corr);
-							neighbours.emplace_back(group);
+						auto&& group = groups->get(gene);
+
+						if (group.get_genes().size() < 2) {
+							continue; // If gene has no orthologs, don't return it in the output. We assume it won't be interesting and would just add clutter XXX could improve performance by excluding these from GeneCorr matrix in the first place (i.e. don't construct those rows)
 						}
+
+						group.add_bait_correlation(gene, bait, corr);
+						neighbours.emplace_back(&group);
 					}
 				}
 			}
@@ -174,7 +178,7 @@ int main(int argc, char** argv) {
 		neighbours.erase(unique(neighbours.begin(), neighbours.end()), neighbours.end());
 
 		// Output cytoscape files
-		CytoscapeWriter writer;
-		writer.write(install_dir, baits, neighbours, groups.get());
+		CytoscapeWriter writer(install_dir, baits, neighbours, *groups);
+		writer.write();
 	});
 }
