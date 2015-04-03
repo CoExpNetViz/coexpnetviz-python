@@ -3,57 +3,25 @@
 #pragma once
 
 #include <exception>
-#include <sstream>
 #include <map>
+#include <utility>
 #include <functional>
 #include <boost/spirit/include/qi.hpp>
 #include <deep_blue_genome/common/ErrorType.h>
+#include <deep_blue_genome/util/make_string.h>
+#include <boost/range/algorithm.hpp>
+#include <boost/range/algorithm_ext.hpp>
 
+// TODO got some priv funcs, put then in a impl namespace with priv in front
 namespace DEEP_BLUE_GENOME {
 
+// TODO use these containers instead of manually working with sorted vectors: http://www.boost.org/doc/libs/1_55_0/doc/html/container/non_standard_containers.html#container.non_standard_containers.flat_xxx
 class NotFoundException : public std::runtime_error {
 public:
 	NotFoundException(const std::string& kind)
 	:	runtime_error(kind)
 	{
 	}
-};
-
-// This class taken from: http://stackoverflow.com/a/25351759/1031434
-// Contributed by Jason R
-class make_string
-{
-public:
-	make_string()
-	{
-		oss.exceptions(std::ios::failbit);
-	}
-
-    template <typename T>
-    explicit make_string(T && rhs)
-    {
-        oss << rhs;
-    }
-
-    template <typename T>
-    make_string &operator<<(T && rhs)
-    {
-        oss << rhs;
-        return *this;
-    }
-
-    operator std::string() const
-    {
-        return oss.str();
-    }
-
-    std::string str() const
-    {
-        return oss.str();
-    }
-
-private:
-    std::ostringstream oss;
 };
 
 /**
@@ -103,35 +71,6 @@ void to_lower(std::string& data);
  */
 void graceful_main(std::function<void()> fragile_main);
 
-
-template<class T>
-class Iterable
-{
-public:
-    Iterable(T begin, T end)
-    :	_begin(begin), _end(end)
-    {
-    }
-
-    T begin() {
-        return _begin;
-    }
-
-    T end() {
-        return _end;
-    }
-
-private:
-    T _begin;
-    T _end;
-};
-
-template<class T>
-Iterable<T> make_iterable(T t, T u)
-{
-    return Iterable<T>(t, u);
-}
-
 /**
  * Encode string in such a way that it's a valid file name.
  *
@@ -160,19 +99,20 @@ inline void hash_combine(std::size_t& seed, T const& v)
  */
 template <class T>
 void erase_duplicates(T& container) {
-	sort(container.begin(), container.end());
-	container.erase(unique(container.begin(), container.end()), container.end());
+	boost::erase(container, boost::unique<boost::return_found_end>(boost::sort(container)));
 }
 
 } // end namespace
 
 
 
+#if GCC_VERSION > 40800
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args)
 {
     return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
+#endif
 
 
 

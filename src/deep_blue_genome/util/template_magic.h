@@ -2,6 +2,9 @@
 
 #pragma once
 
+#include <functional>
+#include <deep_blue_genome/util/function_traits.h>
+
 namespace DEEP_BLUE_GENOME {
 
 /**
@@ -12,5 +15,13 @@ namespace DEEP_BLUE_GENOME {
 struct execute_variadic {
     template<typename ...T> execute_variadic(T...) {}
 };
+
+/**
+ * Lambda to std::function
+ */
+template <class Lambda> // TODO move to util/functional.h
+typename function_traits<Lambda>::function_type make_function(const Lambda& f) {
+	return typename function_traits<Lambda>::function_type(f);
+}
 
 } // end namespace
