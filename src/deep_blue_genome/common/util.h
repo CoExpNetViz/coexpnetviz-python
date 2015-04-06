@@ -12,6 +12,10 @@
 #include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm_ext.hpp>
 
+#define GCC_VERSION (__GNUC__ * 10000 \
+					   + __GNUC_MINOR__ * 100 \
+					   + __GNUC_PATCHLEVEL__)
+
 // TODO got some priv funcs, put then in a impl namespace with priv in front
 namespace DEEP_BLUE_GENOME {
 
@@ -104,9 +108,7 @@ void erase_duplicates(T& container) {
 
 } // end namespace
 
-
-
-#if GCC_VERSION > 40800
+#if GCC_VERSION <= 40800
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args)
 {
