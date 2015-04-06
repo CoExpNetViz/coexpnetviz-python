@@ -3,11 +3,27 @@
 #pragma once
 
 #include <sstream>
-#include <type_traits>
 #include <deep_blue_genome/util/template_magic.h>
 
 namespace DEEP_BLUE_GENOME {
 // TODO do we ever need URef&& here? Can we ever move something? Otherwise const T& would work fine (and would pass fine through lambdas)
+
+/**
+ * Private things
+ */
+namespace impl {
+	template <class Delimiter>
+	void intercalate_(std::ostream& out, Delimiter&& delimiter) {
+	}
+
+	template <class Delimiter, class Item, class... Items>
+	void intercalate_(std::ostream& out, Delimiter&& delimiter, Item&& item, Items&&... items)
+	{
+		out << delimiter << std::forward<Item>(item);
+		intercalate_(out, delimiter, std::forward<Items>(items)...);
+	}
+}
+
 /**
  * Intercalate a range of items with a delimiter.
  *
@@ -43,7 +59,7 @@ template <class Delimiter, class Item, class... Items>
 std::string intercalate_(Delimiter&& delimiter, Item&& first_item, Items&&... items) {
 	std::ostringstream out;
 	out << std::forward<Item>(first_item);
-	execute_variadic{(out << delimiter << std::forward<Items>(items), 1)...};
+	impl::intercalate_(out, delimiter, std::forward<Items>(items)...);
 	return out.str();
 }
 
