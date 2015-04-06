@@ -237,7 +237,6 @@ void CytoscapeWriter::write_genes() {
 }
 
 YAML::Node CytoscapeWriter::get_gene_node(const Gene& gene, bool is_bait) {
-	cout << ".";
 	auto&& ortho_group = groups.get(gene);
 
 	YAML::Node gene_;
