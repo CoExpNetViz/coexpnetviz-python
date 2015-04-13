@@ -85,6 +85,7 @@ functional_annotations:
 gene_mappings:
     - rice/msu_to_rap.mapping  
 
+# TODO these names should be globally unique now
 # All genes in an expression matrix have to be of the same gene collection
 #expression_matrices:
 #    # arabidopsis
