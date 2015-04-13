@@ -72,10 +72,6 @@ GeneVariant* GeneCollection::try_get_gene_variant(const std::string& name_) {
 		return nullptr;
 	}
 
-	if (is_unknown) {
-		cerr << "Warning: Couldn't match gene '" << name << "' to a gene collection, adding to unknown gene collection\n";
-	}
-
 	// Get gene
 	auto gene_it = name_to_gene.find(name);
 	if (gene_it == name_to_gene.end()) {
@@ -89,6 +85,11 @@ GeneVariant* GeneCollection::try_get_gene_variant(const std::string& name_) {
 				name,
 				make_unique<Gene>(name, *this, ortho_group)
 		).first;
+
+		// Warn if we don't truly know its gene collection
+		if (is_unknown) {
+			cerr << "Warning: Couldn't match gene '" << name << "' to a gene collection, adding to unknown gene collection\n";
+		}
 	}
 
 	auto& gene = gene_it->second;
