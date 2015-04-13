@@ -7,7 +7,6 @@ using namespace std;
 namespace DEEP_BLUE_GENOME {
 
 GeneExpressionMatrix::GeneExpressionMatrix()
-:	gene_collection(nullptr)
 {
 }
 
@@ -35,10 +34,6 @@ void GeneExpressionMatrix::dispose_expression_data() {
 
 const matrix& GeneExpressionMatrix::get() const {
 	return expression_matrix;
-}
-
-GeneCollection& GeneExpressionMatrix::get_gene_collection() const {
-	return *gene_collection;
 }
 
 } // end namespace

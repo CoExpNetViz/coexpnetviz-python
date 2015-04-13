@@ -15,13 +15,13 @@ using namespace boost::adaptors;
 namespace DEEP_BLUE_GENOME {
 namespace COEXPR {
 
-OrthologGroupInfo::OrthologGroupInfo(OrthologGroup& group, const vector<GeneCollection*>& gene_collections)
+OrthologGroupInfo::OrthologGroupInfo(OrthologGroup& group, const std::unordered_set<Gene*>& all_genes)
 :	group(group)
 {
-	auto is_allowed_species = [&gene_collections](const Gene* g) {
-		return contains(gene_collections, &g->get_gene_collection());
+	auto is_known = [&all_genes](const Gene* g) {
+		return contains(all_genes, g);
 	};
-	boost::insert(genes, group.get_genes() | filtered(make_function(is_allowed_species)));
+	boost::insert(genes, group.get_genes() | filtered(make_function(is_known)));
 }
 
 const OrthologGroupInfo::Genes& OrthologGroupInfo::get_genes() const {

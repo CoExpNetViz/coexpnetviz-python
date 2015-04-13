@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <vector>
+#include <unordered_set>
 #include <unordered_map>
 #include <boost/noncopyable.hpp>
 #include <deep_blue_genome/coexpr/OrthologGroupInfo.h>
@@ -18,9 +18,12 @@ namespace COEXPR {
 class OrthologGroupInfos : public boost::noncopyable
 {
 public:
-	typedef std::vector<GeneCollection*> GeneCollections;
+	typedef std::unordered_set<Gene*> Genes;
 
-	OrthologGroupInfos(GeneCollections gene_collections);
+	/**
+	 * All genes present in a expression matrix
+	 */
+	OrthologGroupInfos(Genes&& gene_collections);
 
 	/**
 	 * Get Group of gene
@@ -28,7 +31,7 @@ public:
 	OrthologGroupInfo& get(const Gene& gene);
 
 private:
-	GeneCollections gene_collections;
+	Genes genes;
 	std::unordered_map<OrthologGroup*, OrthologGroupInfo> groups;
 };
 

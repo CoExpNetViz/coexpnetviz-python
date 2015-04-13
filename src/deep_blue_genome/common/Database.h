@@ -82,6 +82,18 @@ public:
 	OrthologGroup& add_ortholog_group();
 
 	/**
+	 * @throws NotFoundException if doesn't exist
+	 */
+	GeneExpressionMatrix& get_gene_expression_matrix(std::string name);
+
+	/**
+	 * Add gene expression matrix
+	 *
+	 * @return the new matrix (now stored in database)
+	 */
+	GeneExpressionMatrix& add(std::unique_ptr<GeneExpressionMatrix>&& );
+
+	/**
 	 * Delete ortholog group
 	 */
 	void erase(OrthologGroup&);
@@ -104,8 +116,10 @@ private:
 	std::string get_main_file() const;
 
 private:
+	GeneCollection unknown_gene_collection; // a catch-all gene collection that collects genes that didn't match any of the known collections
 	std::vector<std::unique_ptr<GeneCollection>> gene_collections; // TODO stable_vector, or ptr_vector from boost pointer container (e.g. if you find the compile time dependencies too harsh with non-pointer types; i.e. more includes)
 	std::vector<std::unique_ptr<OrthologGroup>> ortholog_groups; // TODO stable_vector
+	std::unordered_map<std::string, std::unique_ptr<GeneExpressionMatrix>> gene_expression_matrices; // name -> matrix
 
 	std::string database_path;
 };
@@ -120,6 +134,8 @@ namespace DEEP_BLUE_GENOME {
 
 template<class Archive>
 void Database::serialize(Archive& ar, const unsigned int version) {
+	ar & unknown_gene_collection;
+	ar & gene_expression_matrices;
 	ar & gene_collections;
 	for (auto& gene_collection : gene_collections) {
 		gene_collection->init_serialised(*this);

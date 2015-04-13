@@ -4,6 +4,8 @@
 
 #include <exception>
 #include <map>
+#include <set>
+#include <unordered_set>
 #include <utility>
 #include <functional>
 #include <boost/spirit/include/qi.hpp>
@@ -16,7 +18,7 @@
 					   + __GNUC_MINOR__ * 100 \
 					   + __GNUC_PATCHLEVEL__)
 
-// TODO got some priv funcs, put then in a impl namespace with priv in front
+
 namespace DEEP_BLUE_GENOME {
 
 // TODO use these containers instead of manually working with sorted vectors: http://www.boost.org/doc/libs/1_55_0/doc/html/container/non_standard_containers.html#container.non_standard_containers.flat_xxx
@@ -51,6 +53,16 @@ bool contains(const Container& container, const T& value) {
 	return std::find(container.begin(), container.end(), value) != container.end();
 }
 
+template<class T>
+bool contains(const std::set<T>& container, const T& value) {
+	return container.find(value) != container.end();
+}
+
+template<class T>
+bool contains(const std::unordered_set<T>& container, const T& value) {
+	return container.find(value) != container.end();
+}
+
 /**
  * Prepend prefix to path if path is relative path
  */
@@ -59,7 +71,7 @@ std::string prepend_path(std::string prefix, std::string path);
 /**
  * Like assert, but is included in release versions as well
  */
-void ensure(bool condition, std::string error_message, ErrorType);
+void ensure(bool condition, std::string error_message, ErrorType = ErrorType::GENERIC);
 
 /**
  * Format exception to string

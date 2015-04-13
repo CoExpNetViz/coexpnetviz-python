@@ -9,8 +9,8 @@ using namespace DEEP_BLUE_GENOME;
 namespace DEEP_BLUE_GENOME {
 namespace COEXPR {
 
-OrthologGroupInfos::OrthologGroupInfos(GeneCollections gene_collections)
-:	gene_collections(std::move(gene_collections))
+OrthologGroupInfos::OrthologGroupInfos(Genes&& genes)
+:	genes(std::move(genes))
 {
 }
 
@@ -22,7 +22,7 @@ OrthologGroupInfo& OrthologGroupInfos::get(const Gene& gene) {
 		// make group
 		auto p = groups.emplace(piecewise_construct,
 				forward_as_tuple(&group),
-				forward_as_tuple(group, gene_collections)
+				forward_as_tuple(group, genes)
 		);
 		return p.first->second;
 	}

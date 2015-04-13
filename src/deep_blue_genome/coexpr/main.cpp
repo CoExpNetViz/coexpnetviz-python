@@ -14,7 +14,10 @@
 #include <unordered_map>
 #include <random>
 #include <boost/filesystem.hpp> // TODO remove unused includes here
+#include <boost/range/algorithm.hpp>
+#include <boost/range/algorithm_ext.hpp>
 #include <yaml-cpp/yaml.h>
+#include <deep_blue_genome/util/printer.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/common/DataFileImport.h>
@@ -44,24 +47,27 @@ void read_yaml(std::string path, Database& database, string& baits_path, double&
 
 	DataFileImport importer(database);
 
-	vector<GeneCollection*> gene_collections;
 	int i=0;
 	for (auto matrix_node : job_node["expression_matrices"]) {
 		string matrix_path = matrix_node.as<string>();
 		string matrix_name = "tmp:matrix" + (i++);
 		auto& matrix = importer.add_gene_expression_matrix(matrix_name, matrix_path);
 
-		auto& gene_collection = matrix.get_gene_collection();
-		ensure(!contains(gene_collections, &gene_collection),
-				"Specified multiple matrices of the same gene collection",
-				ErrorType::GENERIC
-		);
-		gene_collections.emplace_back(&gene_collection);
-
 		expression_matrices.emplace_back(&matrix);
 	}
 
-	groups = make_unique<OrthologGroupInfos>(gene_collections);
+	// Get set of all genes
+	std::unordered_set<Gene*> genes;
+	for (auto& matrix : expression_matrices) {
+		for (auto& gene : matrix->get_genes()) {
+			ensure(genes.emplace(gene).second,
+					(make_string() << "Gene " << *gene << " present in multiple matrices").str()
+			);;
+		}
+	}
+
+	//
+	groups = make_unique<OrthologGroupInfos>(std::move(genes));
 }
 
 /**
@@ -119,12 +125,12 @@ int main(int argc, char** argv) {
 
 		cout.flush();
 
-		// Helper function: get matrix by gene collection
-		auto get_matrix = [&expression_matrices](GeneCollection& collection) -> GeneExpressionMatrix* {
-			auto match_collection = [&collection] (GeneExpressionMatrix* matrix) {
-				return &matrix->get_gene_collection() == &collection;
+		// Helper function: get matrix by bait
+		auto get_matrix = [&expression_matrices](const Gene& bait) -> GeneExpressionMatrix* {
+			auto match = [&bait] (const GeneExpressionMatrix* matrix) {
+				return matrix->has_gene(bait);
 			};
-			auto it = find_if(expression_matrices.begin(), expression_matrices.end(), match_collection);
+			auto it = find_if(expression_matrices.begin(), expression_matrices.end(), match);
 			if (it == expression_matrices.end()) {
 				return nullptr;
 			}
@@ -136,7 +142,7 @@ int main(int argc, char** argv) {
 		// Group bait genes by expression matrix
 		unordered_map<GeneExpressionMatrix*, vector<GeneExpressionMatrixRow>> bait_indices;
 		for (auto bait : baits) {
-			auto matrix = get_matrix(bait->get_gene_collection());
+			auto matrix = get_matrix(*bait);
 			if (matrix && matrix->has_gene(*bait)) {
 				bait_indices[matrix].emplace_back(matrix->get_gene_row(*bait));
 			}

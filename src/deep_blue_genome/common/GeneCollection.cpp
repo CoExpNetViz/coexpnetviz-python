@@ -24,7 +24,7 @@ void GeneCollection::init_serialised(Database& database) {
 
 GeneCollection::GeneCollection(Database& database, const std::string& name, const std::string& species, YAML::Node parser_rules,
 		const NullableGeneWebPage& gene_web_page)
-:	database(&database), name(name), species(species), gene_web_page(gene_web_page)
+:	database(&database), is_unknown(false), name(name), species(species), gene_web_page(gene_web_page)
 {
 	for (auto node : parser_rules) {
 		NullableRegexGroup splice_variant_group;
@@ -38,6 +38,12 @@ GeneCollection::GeneCollection(Database& database, const std::string& name, cons
 			"Need to specify at least one gene parser for gene collection '" + name + "'",
 			ErrorType::GENERIC
 	);
+}
+
+GeneCollection::GeneCollection(Database& database)
+:	database(&database), is_unknown(true), name("Unknown"), species("Unknown")
+{
+	gene_parser_rules.emplace_back("(.*)([.]([0-9]+))?", "$1", 3);
 }
 
 GeneVariant& GeneCollection::get_gene_variant(const std::string& name) {
@@ -64,6 +70,10 @@ GeneVariant* GeneCollection::try_get_gene_variant(const std::string& name_) {
 
 	if (!parsed) {
 		return nullptr;
+	}
+
+	if (is_unknown) {
+		cerr << "Warning: Couldn't match gene '" << name << "' to a gene collection, adding to unknown gene collection\n";
 	}
 
 	// Get gene
@@ -103,17 +113,6 @@ bool GeneCollection::operator==(const GeneCollection& other) const {
 	return this == &other;
 }
 
-GeneExpressionMatrix& GeneCollection::add_gene_expression_matrix(unique_ptr<GeneExpressionMatrix>&& matrix) {
-	ensure(gene_expression_matrices.find(matrix->get_name()) == gene_expression_matrices.end(),
-			(make_string() << "Cannot add 2 gene expression matrices with the same name '" << matrix->get_name() << "' to gene collection '" << name << "'").str(),
-			ErrorType::GENERIC
-	);
-
-	std::string name_lower = matrix->get_name();
-	to_lower(name_lower);
-	return *gene_expression_matrices.emplace(name_lower, std::move(matrix)).first->second;
-}
-
 void GeneCollection::add_clustering(unique_ptr<Clustering>&& clustering) {
 	ensure(clusterings.find(clustering->get_name()) == clusterings.end(),
 			(make_string() << "Cannot add 2 clusterings with the same name '" << clustering->get_name() << "' to gene collection '" << name << "'").str(),
@@ -123,11 +122,6 @@ void GeneCollection::add_clustering(unique_ptr<Clustering>&& clustering) {
 	std::string name_lower = clustering->get_name();
 	to_lower(name_lower);
 	clusterings[name_lower] = std::move(clustering);
-}
-
-GeneExpressionMatrix& GeneCollection::get_gene_expression_matrix(std::string name) {
-	to_lower(name);
-	return *gene_expression_matrices.at(name);
 }
 
 std::string GeneCollection::get_species() const {

@@ -9,7 +9,7 @@ using namespace std;
 namespace DEEP_BLUE_GENOME {
 
 Database::Database(std::string path, bool start_fresh)
-:	database_path(std::move(path))
+:	unknown_gene_collection(*this), database_path(std::move(path))
 {
 	auto main_file = get_main_file();
 	if (!start_fresh && boost::filesystem::exists(main_file)) {
@@ -27,7 +27,7 @@ GeneVariant& Database::get_gene_variant(const std::string& name) {
 	if (variant)
 		return *variant;
 	else
-		throw NotFoundException("Gene not part of a known gene collection: " + name);
+		throw NotFoundException("Gene not part of a known gene collection: " + name); // TODO we now have a default gene collection for unknown genes, so this can no longer happen
 }
 
 GeneVariant* Database::try_get_gene_variant(const std::string& name) {
@@ -37,7 +37,7 @@ GeneVariant* Database::try_get_gene_variant(const std::string& name) {
 			return variant;
 		}
 	}
-	return nullptr;
+	return &unknown_gene_collection.get_gene_variant(name); // Note: this should never fail (it's a bug otherwise)
 }
 
 OrthologGroup& Database::add_ortholog_group(const GeneFamilyId& external_id) {
@@ -84,6 +84,22 @@ void Database::add(std::unique_ptr<GeneCollection>&& gene_collection) {
 			ErrorType::GENERIC
 	);
 	gene_collections.emplace_back(std::move(gene_collection));
+}
+
+GeneExpressionMatrix& Database::get_gene_expression_matrix(std::string name) {
+	to_lower(name);
+	return *gene_expression_matrices.at(name);
+}
+
+GeneExpressionMatrix& Database::add(unique_ptr<GeneExpressionMatrix>&& matrix) {
+	ensure(gene_expression_matrices.find(matrix->get_name()) == gene_expression_matrices.end(),
+			(make_string() << "Cannot add 2 gene expression matrices with the same name: matrix '" << matrix->get_name() << "'").str(),
+			ErrorType::GENERIC
+	);
+
+	std::string name_lower = matrix->get_name();
+	to_lower(name_lower);
+	return *gene_expression_matrices.emplace(name_lower, std::move(matrix)).first->second;
 }
 
 void Database::save() {

@@ -148,35 +148,17 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 		// parse gene lines
 		int i = -1; // row/line
 		int j = -1;
-		bool skip_line = false;
 
-		auto on_new_gene = [this, &gem, &i, &j, &skip_line](std::string name) { // start new line
+		auto on_new_gene = [this, &gem, &i, &j](std::string name) { // start new line
 			ensure(i<0 || j==gem->expression_matrix.size2()-1, (
 					make_string() << "Line " << i+2 << " (1-based, header included): expected "
 					<< gem->expression_matrix.size2() << " columns, got " << j+1).str(),
 					ErrorType::GENERIC
 			);
 
-			GeneVariant* gene_variant = database.try_get_gene_variant(name);
-			if (!gene_variant) {
-				cerr << "Warning: Gene of unknown collection '" << name << "'\n";
-				skip_line = true;
-				return;
-			}
-
-			Gene& gene = gene_variant->get_gene();
+			Gene& gene = database.get_gene_variant(name).get_gene();
 
 			i++;
-
-			if (!gem->gene_collection) {// TODO take into account possibility of SpliceVariant? We should... really..... (and use GeneVariant as row label instead of just Gene*; or actually, just SpliceVariant* would be most correct perhaps?
-				gem->gene_collection = &gene.get_gene_collection();
-			}
-			//auto gene_id = gene_collection->get_gene_variant(name).get_gene().get_id(); TODO
-
-			ensure(gem->gene_collection == &gene.get_gene_collection(),
-					"All rows in a gene expression matrix must be of splice variants of the same gene collection. Conflicting gene: " + name,
-					ErrorType::GENERIC
-			);
 
 			bool created = gem->gene_to_row.emplace(&gene, i).second;
 			ensure(created,
@@ -186,13 +168,9 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 
 			gem->row_to_gene[i] = &gene;
 			j = -1;
-			skip_line = false;
 		};
 
-		auto on_gene_value = [this, &i, &j, &skip_line, &gem](double value) { // gene expression value
-			if (skip_line)
-				return;
-
+		auto on_gene_value = [this, &i, &j, &gem](double value) { // gene expression value
 			j++;
 			gem->expression_matrix(i, j) = value;
 		};
@@ -207,7 +185,7 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 		return current;
 	});
 
-	return gem->get_gene_collection().add_gene_expression_matrix(move(gem));
+	return database.add(move(gem));
 }
 
 // TODO did we drop variants along the way as we read in clusterings? If so, should we?
@@ -300,7 +278,7 @@ void DataFileImport::add_clustering(const std::string& name, const std::string& 
 	}
 
 	if (!expression_matrix_name.empty()) {
-		clustering->expression_matrix = &clustering->gene_collection->get_gene_expression_matrix(expression_matrix_name);
+		clustering->expression_matrix = &database.get_gene_expression_matrix(expression_matrix_name);
 	}
 
 	clustering->get_gene_collection().add_clustering(move(clustering));

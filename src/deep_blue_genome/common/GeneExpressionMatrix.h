@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <boost/noncopyable.hpp>
+#include <boost/range/adaptors.hpp>
 #include <memory>
 #include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/types.h>
@@ -19,6 +20,8 @@ class DataFileImport;
 // TODO each row label was originally a probe id, does that map to a gene in general, or rather a specific gene variant? What does it measure specifically? Currently we assume each row is a .1 gene
 /**
  * Gene expression matrix
+ *
+ * A matrix can contain genes of multiple gene collections
  *
  * matrix(i,j) = expression of gene i under condition j
  *
@@ -41,6 +44,15 @@ public:
 	Gene& get_gene(GeneExpressionMatrixRow) const;
 	bool has_gene(const Gene&) const;
 
+	/**
+	 * Get range of genes in matrix
+	 *
+	 * @return concept Range<Gene*>
+	 */
+	auto get_genes() const {
+		return gene_to_row | boost::adaptors::map_keys;
+	}
+
 	std::string get_name() const;
 	std::string get_species_name() const;
 
@@ -51,14 +63,11 @@ public:
 	 */
 	const matrix& get() const;
 
-	GeneCollection& get_gene_collection() const;
-
 public: // treat as private (failed to friend boost::serialization)
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version);
 
 private:
-	GeneCollection* gene_collection; // not null
 	std::string name; // name of dataset
 	matrix expression_matrix; // row_major
 	std::unordered_map<GeneExpressionMatrixRow, Gene*> row_to_gene; // TODO Bimap
@@ -75,7 +84,6 @@ namespace DEEP_BLUE_GENOME {
 
 template<class Archive>
 void GeneExpressionMatrix::serialize(Archive& ar, const unsigned int version) {
-	ar & gene_collection;
 	ar & name;
 	ar & expression_matrix; // TODO might want to lazy load this, or the class instance itself
 	ar & row_to_gene;
