@@ -67,7 +67,6 @@ void read_yaml(std::string path, Database& database, string& baits_path, double&
 	}
 
 	//
-	cout << "Let's nope" << endl;
 	groups = make_unique<OrthologGroupInfos>(std::move(genes));
 }
 
