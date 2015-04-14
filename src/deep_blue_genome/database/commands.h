@@ -13,12 +13,21 @@ namespace DEEP_BLUE_GENOME {
 class Database;
 
 namespace DATABASE {
-	/**
-	 * Create database with new data, overwrite if it exists
-	 *
-	 * TODO specify expected yaml format
-	 */
-	void create(std::string database_path, std::string yaml_path);
+
+	namespace impl {
+		/**
+		 * Update database
+		 *
+		 * TODO specify expected yaml format
+		 *
+		 * @param create If true, database will be created if it doesn't exist and overwritten if it does exist.
+		 */
+		void database_update(bool create, const std::string& database_path, const std::string& yaml_path);
+	}
+
+	void database_create(const std::string& database_path, const std::string& yaml_path);
+
+	void database_add(const std::string& database_path, const std::string& yaml_path);
 }
 
 } // end namespace

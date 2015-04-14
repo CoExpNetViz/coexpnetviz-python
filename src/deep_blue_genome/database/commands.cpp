@@ -2,7 +2,6 @@
 
 #include "commands.h"
 #include <yaml-cpp/yaml.h>
-#include <ncurses.h> // best documentation is: http://www.tldp.org/LDP/lpg/node85.html
 #include <deep_blue_genome/common/DataFileImport.h>
 #include <deep_blue_genome/common/database_all.h>
 
@@ -12,20 +11,17 @@ using namespace DEEP_BLUE_GENOME;
 namespace DEEP_BLUE_GENOME {
 namespace DATABASE {
 
-/*class NCurses {
-public:
-	NCurses() {
-		initscr();;
-	}
+void database_create(const string& database_path, const string& yaml_path) {
+	impl::database_update(true, database_path, yaml_path);
+}
 
-	~NCurses() {
-		endwin();
-		//refresh();
-	}
-};*/
+void database_add(const string& database_path, const string& yaml_path) {
+	impl::database_update(false, database_path, yaml_path);
+}
 
-void create(string database_path, string yaml_path) {
-	Database database(database_path, true);
+namespace impl {
+void database_update(bool create, const string& database_path, const string& yaml_path) {
+	Database database(database_path, create);
 
 	YAML::Node config = YAML::LoadFile(yaml_path);
 	string data_root = config["species_data_path"].as<string>(".");
@@ -81,5 +77,6 @@ void create(string database_path, string yaml_path) {
 
 	database.save();
 }
+} // end impl namespace
 
 }} // end namespace

@@ -19,6 +19,7 @@ int main(int argc, char** argv) {
 		desc.add_options()
 		    ("help", "produce help message")
 		    ("create", po::value<string>(), "Create database using a yaml update description file")
+			("add", po::value<string>(), "Add to database using a yaml update description file. Does not overwrite data upon name collision.")
 		    ("database-path", po::value<string>(), "Path to directory where database is or should be stored")
 		;
 
@@ -34,8 +35,11 @@ int main(int argc, char** argv) {
 		string db_path = vm["database-path"].as<string>();
 
 		if (vm.count("create")) {
-			create(db_path, vm["create"].as<string>());
+			database_create(db_path, vm["create"].as<string>());
 			return;
+		}
+		else if (vm.count("add")) {
+			database_add(db_path, vm["add"].as<string>());
 		}
 		else {
 			cout << desc << "\n";
