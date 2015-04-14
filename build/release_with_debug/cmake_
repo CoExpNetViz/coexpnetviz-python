@@ -1,2 +1,2 @@
 #!/bin/sh
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../../src
+cmake -GNinja -DCMAKE_BUILD_TYPE=RelWithDebInfo ../../src

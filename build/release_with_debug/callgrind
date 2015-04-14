@@ -1,9 +1,8 @@
 #!/bin/sh
 set -e
 
-. ../command.sh
-make
-rm callgrind.out*
+. ../$1_command.sh
+rm -f callgrind.out*
 valgrind --tool=callgrind --instr-atstart=yes --callgrind-out-file=callgrind.out ${command[@]}
 callgrind_pid=$!
 #sleep 300

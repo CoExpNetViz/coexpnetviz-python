@@ -57,7 +57,7 @@ void read_yaml(std::string path, Database& database, string& baits_path, double&
 	}
 
 	// Get set of all genes
-	std::unordered_set<Gene*> genes;
+	OrthologGroupInfos::Genes genes;
 	for (auto& matrix : expression_matrices) {
 		for (auto& gene : matrix->get_genes()) {
 			ensure(genes.emplace(gene).second,
@@ -67,6 +67,7 @@ void read_yaml(std::string path, Database& database, string& baits_path, double&
 	}
 
 	//
+	cout << "Let's nope" << endl;
 	groups = make_unique<OrthologGroupInfos>(std::move(genes));
 }
 

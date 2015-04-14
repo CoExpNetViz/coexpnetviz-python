@@ -31,7 +31,7 @@ public:
 	typedef boost::container::flat_set<const Gene*> Genes;
 
 public:
-	OrthologGroupInfo(OrthologGroup& group, const std::unordered_set<Gene*>& all_genes);
+	OrthologGroupInfo(OrthologGroup& group, const std::unordered_set<const Gene*>& all_genes);
 
 	bool operator==(const OrthologGroup& other) const = delete;
 

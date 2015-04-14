@@ -11,8 +11,10 @@
 #include <boost/spirit/include/qi.hpp>
 #include <deep_blue_genome/common/ErrorType.h>
 #include <deep_blue_genome/util/make_string.h>
+#include <deep_blue_genome/util/contains.h>
 #include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm_ext.hpp>
+
 
 #define GCC_VERSION (__GNUC__ * 10000 \
 					   + __GNUC_MINOR__ * 100 \
@@ -47,21 +49,6 @@ typename std::map<K,V>::const_iterator infimum(const std::map<K, V>& map_, const
  * reader returns the last position it read at. If that's not equal to end, then a trailing-chars exception is thrown
  */
 void read_file(std::string path, std::function<const char* (const char* begin, const char* end)> reader);
-
-template<class Container, class T>
-bool contains(const Container& container, const T& value) {
-	return std::find(container.begin(), container.end(), value) != container.end();
-}
-
-template<class T>
-bool contains(const std::set<T>& container, const T& value) {
-	return container.find(value) != container.end();
-}
-
-template<class T>
-bool contains(const std::unordered_set<T>& container, const T& value) {
-	return container.find(value) != container.end();
-}
 
 /**
  * Prepend prefix to path if path is relative path

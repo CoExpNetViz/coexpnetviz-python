@@ -15,7 +15,7 @@ using namespace boost::adaptors;
 namespace DEEP_BLUE_GENOME {
 namespace COEXPR {
 
-OrthologGroupInfo::OrthologGroupInfo(OrthologGroup& group, const std::unordered_set<Gene*>& all_genes)
+OrthologGroupInfo::OrthologGroupInfo(OrthologGroup& group, const std::unordered_set<const Gene*>& all_genes)
 :	group(group)
 {
 	auto is_known = [&all_genes](const Gene* g) {
