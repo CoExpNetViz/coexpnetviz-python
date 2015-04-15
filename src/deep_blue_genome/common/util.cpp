@@ -63,7 +63,10 @@ void read_file(std::string path, std::function<const char* (const char*, const c
 	}
 }
 
-string prepend_path(string prefix, string path) {
+string prepend_path(const string& prefix, const string& path) {
+	if (prefix.empty())
+		return path;
+
 	if (path.at(0) == '/')
 		return path;
 	else

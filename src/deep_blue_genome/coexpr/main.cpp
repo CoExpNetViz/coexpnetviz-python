@@ -17,6 +17,7 @@
 #include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm_ext.hpp>
 #include <yaml-cpp/yaml.h>
+#include <deep_blue_genome/common/reader/Database.h>
 #include <deep_blue_genome/util/printer.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/database_all.h>
@@ -29,6 +30,7 @@
 
 using namespace std;
 using namespace DEEP_BLUE_GENOME;
+using namespace DEEP_BLUE_GENOME::COMMON::READER;
 using namespace DEEP_BLUE_GENOME::COEXPR;
 
 
@@ -55,6 +57,8 @@ void read_yaml(std::string path, Database& database, string& baits_path, double&
 
 		expression_matrices.emplace_back(&matrix);
 	}
+
+	read_orthologs_yaml(database, job_node["orthologs"]);
 
 	// Get set of all genes
 	OrthologGroupInfos::Genes genes;

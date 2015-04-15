@@ -56,5 +56,24 @@ All supplied files must use unix line endings.
 
 ## License
 
-TODO
+LGPL3
+
+# Developer info
+
+Info for those working on this project.
+
+## Directory structure
+
+Below is a partial overview of the file structure:
+
+- src: source code
+
+  - deep_blue_genome
+  
+    - common: library common amongst the project's algorithms 
+    
+      - writer: Output functions/classes
+      - reader: Input functions/classes, especially for importing to database
+    
+    - util: utilities that could be reused in other projects
 

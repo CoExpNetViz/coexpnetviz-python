@@ -11,15 +11,17 @@
 #include <boost/container/set.hpp>
 #include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/common/util.h>
+#include <deep_blue_genome/common/writer/OrthologGroup.h>
 #include <deep_blue_genome/coexpr/Baits.h>
 #include <deep_blue_genome/coexpr/BaitCorrelations.h>
 #include <deep_blue_genome/coexpr/OrthologGroupInfo.h>
 #include <deep_blue_genome/coexpr/OrthologGroupInfos.h>
 #include <deep_blue_genome/coexpr/BaitGroups.h>
 #include <deep_blue_genome/util/printer.h>
-#include <deep_blue_genome/util/template_magic.h>
+#include <deep_blue_genome/util/functional.h>
 
 using namespace DEEP_BLUE_GENOME;
+using namespace DEEP_BLUE_GENOME::COMMON::WRITER;
 using namespace boost::adaptors;
 using namespace std;
 using boost::container::flat_set;
@@ -71,35 +73,6 @@ std::vector<BaitBaitOrthRelation>& CytoscapeWriter::get_bait_orthology_relations
 
 	return bait_orthologies;
 }
-
-	/* TODO verify output matches:
-	 * genes:
-	  - id: 'AT5G430010'
-		go_terms: ['GO:0044848', 'GO:0055849']
-		is_bait: True
-		families:
-		- source: 'Plaza Monocots'
-		  id: 'ORTH01M00012'
-		- source: 'Plaza Dicots'
-		  id: 'ORTH01D00212'
-	  - orthologs: ['Gene1', 'Gene2']
-	  - id: 'AT5G550020'
-		go_terms: ['GO:0044848', 'GO:0055849']
-		is_bait: False
-		baits:
-		- node_id: 'AT5G430010'
-		  r_value: 1
-
-	node attributes:
-	- node_id: n1
-	- families: From Plaza Monocots: ORTH01M00012, ORTH01M00013. From Plaza Dicots: ORTH01D00212
-	- genes: Gene1 Gene2 Gene3
-	- species: Arabidopsis  (empty string, in het geval dat niet geweten is wat de species van het bait is, of als het een target node is)
-	- color: #123456
-
-	sif file:
-	- cor: tussen target, bait nodes
-	- hom: tussen baits*/
 
 /**
  * Write out a cytoscape network
@@ -212,9 +185,6 @@ void CytoscapeWriter::write_node_attr(ostream& out, const Node& node, GeneRange&
  * Write yaml file with info of each gene
  */
 void CytoscapeWriter::write_genes() {
-	ofstream out(network_name + "_genes.yaml");
-	out.exceptions(ofstream::failbit | ofstream::badbit);
-
 	YAML::Node root;
 
 	// baits to yaml nodes
@@ -233,6 +203,9 @@ void CytoscapeWriter::write_genes() {
 		root["genes"].push_back(get_gene_node(*gene, false));
 	}
 
+	// Write to file
+	ofstream out(network_name + "_genes.yaml");
+	out.exceptions(ofstream::failbit | ofstream::badbit);
 	out << YAML::Dump(root);
 }
 
@@ -245,15 +218,10 @@ YAML::Node CytoscapeWriter::get_gene_node(const Gene& gene, bool is_bait) {
 	gene_["is_bait"] = is_bait;
 	if (is_bait) {
 		// families
-		for (auto& family_id : ortho_group.get_external_ids()) { // TODO have it simply return a vec of fam ids. We'll group them by source at the point where we need that grouping
-			YAML::Node family;
-			family["source"] = family_id.get_source();
-			family["id"] = family_id.get_id();
-			gene_["families"].push_back(family);
-		}
+		gene_["families"] = write_yaml(ortho_group.get());
 
 		// orthologs
-		auto is_not_gene = make_function([&gene](const Gene* g) { // TODO make_function
+		auto is_not_gene = make_function([&gene](const Gene* g) {
 			return g != &gene;
 		});
 		auto get_name = make_function([](const Gene* g) {

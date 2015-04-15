@@ -9,7 +9,7 @@ namespace DEEP_BLUE_GENOME {
 /**
  * Lambda to std::function
  */
-template <class Lambda> // TODO move to util/functional.h
+template <class Lambda>
 typename function_traits<Lambda>::function_type make_function(const Lambda& f) {
 	return typename function_traits<Lambda>::function_type(f);
 }

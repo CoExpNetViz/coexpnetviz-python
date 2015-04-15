@@ -11,7 +11,7 @@ using namespace std;
 
 namespace DEEP_BLUE_GENOME {
 
-OrthologGroup::OrthologGroup()
+OrthologGroup::OrthologGroup() // TODO biology would call these a family, not a group. Might want to stick to CS terms in the code though...
 {
 }
 
@@ -31,6 +31,7 @@ void OrthologGroup::add(Gene& gene) {
 }
 
 const OrthologGroup::Genes& OrthologGroup::get_genes() const {
+	assert(!genes.empty()); // Did not fully initialise group
 	return genes;
 }
 
@@ -50,17 +51,11 @@ void OrthologGroup::merge(OrthologGroup& other, Database& database) {
 }
 
 bool OrthologGroup::is_singleton() const {
-	return external_ids.empty();
+	return genes.size() == 1;
 }
 
 std::ostream& operator<<(std::ostream& out, const OrthologGroup& group) {
-	if (group.is_singleton()) {
-		assert(group.genes.size() == 1);
-		out << "{singleton}:" << **group.genes.begin();
-	}
-	else {
-		out << intercalate(";", group.get_external_ids());
-	}
+	out << "ortholog family {" << intercalate(";", group.get_external_ids()) << "}";
 	return out;
 }
 

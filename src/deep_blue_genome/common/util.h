@@ -53,7 +53,7 @@ void read_file(std::string path, std::function<const char* (const char* begin, c
 /**
  * Prepend prefix to path if path is relative path
  */
-std::string prepend_path(std::string prefix, std::string path);
+std::string prepend_path(const std::string& prefix, const std::string& path);
 
 /**
  * Like assert, but is included in release versions as well

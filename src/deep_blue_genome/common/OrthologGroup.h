@@ -73,12 +73,16 @@ public:
 	 */
 	const Genes& get_genes() const;
 
+	/**
+	 * Get whether it's a singleton group.
+	 *
+	 * Note: group is singleton iff it has 1 gene
+	 */
+	bool is_singleton() const;
+
 public: // treat as private (failed to friend boost::serialization)
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version);
-
-private:
-	bool is_singleton() const;
 
 private:
 	ExternalIdsGrouped external_ids; // Note: why no multimap? Multimap allows duplicate (key,value) pairs. Note: can be empty, e.g. in the singleton case

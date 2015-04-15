@@ -5,7 +5,7 @@
 #include <boost/range/algorithm_ext.hpp>
 #include <deep_blue_genome/common/Gene.h>
 #include <deep_blue_genome/common/util.h>
-#include <deep_blue_genome/util/template_magic.h>
+#include <deep_blue_genome/util/functional.h>
 #include <deep_blue_genome/coexpr/BaitGroups.h>
 
 using namespace std;
@@ -90,6 +90,10 @@ OrthologGroup::ExternalIds OrthologGroupInfo::get_external_ids() const {
 
 const OrthologGroup::ExternalIdsGrouped& OrthologGroupInfo::get_external_ids_grouped() const {
 	return group.get_external_ids_grouped();
+}
+
+const OrthologGroup& OrthologGroupInfo::get() const {
+	return group;
 }
 
 

@@ -8,10 +8,15 @@
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/types.h>
 #include <deep_blue_genome/common/GeneCollection.h>
+#include <deep_blue_genome/common/OrthologGroup.h>
+
+// hpp includes
+#include <boost/range.hpp>
+#include <boost/range/adaptors.hpp>
+#include <deep_blue_genome/util/functional.h>
 
 namespace DEEP_BLUE_GENOME {
 
-class OrthologGroup;
 class GeneFamilyId;
 class GeneVariant;
 
@@ -104,6 +109,20 @@ public:
 	 * Save to disk
 	 */
 	void save();
+
+public: // return type deduced funcs (can't be moved outside the class def)
+	/**
+	 * Get range of all non-singleton ortholog groups
+	 */
+	auto get_ortholog_groups() const {
+		auto get_ptr = [](const std::unique_ptr<OrthologGroup>& group) {
+			return group.get();
+		};
+		auto not_singleton = [](const std::unique_ptr<OrthologGroup>& group) {
+			return !group->is_singleton();
+		};
+		return ortholog_groups | boost::adaptors::filtered(make_function(not_singleton)) | boost::adaptors::transformed(make_function(get_ptr));
+	}
 
 public: // treat as private (failed to friend boost::serialization)
 	template<class Archive>

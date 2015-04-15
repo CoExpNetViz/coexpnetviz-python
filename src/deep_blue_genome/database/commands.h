@@ -28,6 +28,8 @@ namespace DATABASE {
 	void database_create(const std::string& database_path, const std::string& yaml_path);
 
 	void database_add(const std::string& database_path, const std::string& yaml_path);
+
+	void database_dump(const std::string& database_path, const std::string& dump_path);
 }
 
 } // end namespace

@@ -67,6 +67,8 @@ public:
 	 */
 	const Genes& get_correlating_genes() const;
 
+	const OrthologGroup& get() const;
+
 private:
 	OrthologGroup& group;
 	std::vector<BaitCorrelations> bait_correlations;

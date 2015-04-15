@@ -3,7 +3,7 @@
 #pragma once
 
 #include <sstream>
-#include <deep_blue_genome/util/template_magic.h>
+#include <deep_blue_genome/util/functional.h>
 
 namespace DEEP_BLUE_GENOME {
 // TODO do we ever need URef&& here? Can we ever move something? Otherwise const T& would work fine (and would pass fine through lambdas)
