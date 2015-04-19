@@ -27,7 +27,7 @@ YAML::Node write_yaml(const OrthologGroup& group) {
 YAML::Node write_yaml_with_genes(const OrthologGroup& group) {
 	YAML::Node node;
 	node["external_ids"] = write_yaml(group);
-	YAML::Node genes;
+	YAML::Node genes; // TODO can this be initialised to an empty list so we don't get ~ on output?
 	for (auto gene : group.get_genes()) {
 		genes.push_back(gene->get_name());
 	}
