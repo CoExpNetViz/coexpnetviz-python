@@ -7,10 +7,13 @@
 #include <boost/iostreams/stream_buffer.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/unique_ptr.hpp> // std::unique_ptr, not supported in collections though
 #include <boost/serialization/variant.hpp>
 #include <boost/serialization/optional.hpp>
 #include <deep_blue_genome/common/util.h>
+#include <deep_blue_genome/util/serialization/unique_ptr.h> // std::unique_ptr, not supported in all collections, but it's fairly easy to add an implementation by copy pasting in util/serialization
+#include <deep_blue_genome/util/serialization/unordered_set.h>
+#include <deep_blue_genome/util/serialization/forward_list.h>
+#include <deep_blue_genome/util/serialization/list.h>
 #include <deep_blue_genome/util/serialization/unordered_map.h>
 #include <deep_blue_genome/util/serialization/vector.h>
 #include <deep_blue_genome/util/serialization/flat_set.h>
