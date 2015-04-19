@@ -42,10 +42,10 @@ inline void load(
     }
 }
 
-template<class Archive, class T, class Allocator>
+template<class Archive, class K, class V, class Allocator>
 inline void serialize(
     Archive & ar,
-    std::unordered_map<T, Allocator> & t,
+	std::unordered_map<K, V, Allocator> &t,
     const unsigned int file_version
 ){
     boost::serialization::split_free(ar, t, file_version);
