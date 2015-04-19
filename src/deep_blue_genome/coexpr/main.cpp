@@ -58,7 +58,7 @@ void read_yaml(std::string path, Database& database, string& baits_path, double&
 		expression_matrices.emplace_back(&matrix);
 	}
 
-	read_orthologs_yaml(database, job_node["orthologs"]);
+	read_orthologs_yaml(database, job_node["orthologs"]); // TODO in general you want every command to take something of the form that acts like database --add before running the alg; to allow the user to add his/her own data.
 
 	// Get set of all genes
 	OrthologGroupInfos::Genes genes;
