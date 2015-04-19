@@ -77,12 +77,15 @@ void DataFileImport::add_orthologs(std::string source_name, std::string path) {
 
 		// Assign ortholog groups
 		uint32_t unknown_genes = 0;
+		long line_number = 0;
 
-		auto on_line = [this, source_name, &unknown_genes](const std::vector<std::string>& line) {
+		auto on_line = [this, source_name, &unknown_genes, &line_number](const std::vector<std::string>& line) {
 			if (line.size() < 3) {
 				cerr << "Warning: Encountered line in ortholog file with " << line.size() << " < 3 columns\n";
 				return;
 			}
+
+			cout << "Line " << ++line_number << "\n";
 
 			auto& group = database.add_ortholog_group(GeneFamilyId(source_name, line.at(0)));
 
@@ -104,17 +107,17 @@ void DataFileImport::add_orthologs(std::string source_name, std::string path) {
 						if (e.get_type() != ErrorType::SPLICE_VARIANT_INSTEAD_OF_GENE) {
 							throw;
 						}
-						cerr << "Warning: ignoring splice variant in orthologs file: " << name << "\n";
+						cout << "Warning: ignoring splice variant in orthologs file: " << name << "\n";
 					}
 				}
 				catch (const NotFoundException&) {
-					unknown_genes++;
+					unknown_genes++; // TODO this currently no longer happens due to them being put in unknown gene collection
 				}
 			}
 		};
 
 		if (unknown_genes > 0) {
-			cerr << "Warning: ignored " << unknown_genes << " genes of unrecognised gene collections" << "\n";
+			cout << "Warning: ignored " << unknown_genes << " genes of unrecognised gene collections" << "\n";
 		}
 
 

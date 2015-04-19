@@ -25,7 +25,7 @@ class Database;
 class OrthologGroup : private boost::noncopyable // TODO There's nothing specific to orthologs in here, could rename it to... GeneFamily?
 {
 public:
-	typedef boost::container::flat_set<Gene*> Genes;
+	typedef boost::container::flat_set<Gene*> Genes; // Turns out flat_set is more efficient than unordered_set with its insertions, up to about 500000 elements
 	typedef boost::container::flat_map<std::string, boost::container::flat_set<GeneFamilyId>> ExternalIdsGrouped;
 	typedef std::vector<GeneFamilyId> ExternalIds;
 	typedef typename std::list<std::unique_ptr<OrthologGroup>>::iterator DatabaseIterator;

@@ -8,10 +8,9 @@ finish() {
 
 . ../$1_command.sh
 
-rm -f igprof.pp.gz
 trap finish 2
-perf record --call-graph dwarf -F99 ${command[@]} &
+perf record --call-graph dwarf -F99 ${command[@]} &> perf.log &
 pid=$!
-sleep 10
+sleep 60
 kill $pid
 finish

@@ -8,4 +8,4 @@ callgrind_pid=$!
 #sleep 300
 #kill $callgrind_pid
 #sleep 2
-kcachegrind callgrind.out &
+qcachegrind callgrind.out &

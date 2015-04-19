@@ -98,7 +98,7 @@ GeneExpressionMatrix& Database::add(unique_ptr<GeneExpressionMatrix>&& matrix) {
 }
 
 void Database::save() {
-	verify();
+	//verify();
 	Serialization::save_to_binary(get_main_file(), *this);
 }
 
