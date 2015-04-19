@@ -98,7 +98,85 @@ GeneExpressionMatrix& Database::add(unique_ptr<GeneExpressionMatrix>&& matrix) {
 }
 
 void Database::save() {
+	verify();
 	Serialization::save_to_binary(get_main_file(), *this);
+}
+
+unordered_set<const Gene*> Database::get_genes() const {
+	unordered_set<const Gene*> all_genes;
+	for (auto& collection : gene_collections) {
+		boost::insert(all_genes, collection->get_genes() | referenced);
+	}
+	boost::insert(all_genes, unknown_gene_collection.get_genes() | referenced);
+	return all_genes;
+}
+
+//TODO cerr flushes output at end of every (<< << <<) expression. So may not want to use it for frequent warnings. Should start using a proper logging library anyway...
+void Database::verify() {
+	using namespace boost::adaptors;
+	using namespace std::placeholders;
+
+	auto all_genes = get_genes();
+
+	// No 2 genes have the same name
+	{
+		vector<string> names;
+		auto get_name = std::bind(&Gene::get_name, _1);
+		auto lowered = [](string str) -> string {
+			return to_lower(str);
+		};
+		boost::push_back(names, all_genes | transformed(get_name) | transformed(lowered));
+
+		cout << names.size() << endl;
+
+		auto&& duplicates = boost::unique<boost::return_found_end>(boost::sort(names));
+		if (!boost::empty(duplicates)) {
+			cerr << "Multiple gene pointers with same name: " << intercalate(", ", duplicates) << "\n";
+			assert(false);
+		}
+	}
+
+	// No gene present in multiple ortholog families
+	{
+		auto get_groups_of = [this](const Gene& gene) {
+			vector<const OrthologGroup*> groups;
+
+			auto contains_gene = make_function([&gene](const OrthologGroup& group) {
+				return contains(group.get_genes(), &gene);
+			});
+
+			boost::push_back(groups, ortholog_groups | indirected | filtered(contains_gene) | referenced);
+			return groups;
+		};
+
+		set<Gene*> genes;
+		size_t largest_group = 0;
+		for (auto& group : ortholog_groups) {
+			ensure(boost::size(group->get_genes()) > 0, "Empty group");
+
+			largest_group = max(largest_group, boost::size(group->get_genes()));
+			for (auto gene : group->get_genes()) {
+				// gene must be part of gene collection
+				/*if (!contains(all_genes, gene)) {
+					cerr << gene << endl;
+					assert(false);
+				}
+
+				//cout << gene->get_name() << "\n";
+				if (!genes.emplace(gene).second) {
+					// found duplicate gene
+					auto groups = get_groups_of(*gene);
+					cerr << *gene << " present in multiple ortho groups: " << intercalate(", ", groups) << "\n";
+					assert(false);
+				}*/
+			}
+		}
+		cout << genes.size() << endl;
+		cout << "Max group size: " << largest_group << endl;
+		cout << "Number of groups: " << boost::size(ortholog_groups) << endl;
+	}
+
+	cout << "Verification complete, all is well" << endl;
 }
 
 } // end namespace

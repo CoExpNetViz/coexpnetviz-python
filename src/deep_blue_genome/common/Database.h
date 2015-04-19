@@ -107,6 +107,14 @@ public:
 	 */
 	void save();
 
+	/**
+	 * Assert database integrity.
+	 *
+	 * This is a used to test for bugs in database code.
+	 * You shouldn't need to use this in your algorithms.
+	 */
+	void verify();
+
 public: // return type deduced funcs (can't be moved outside the class def)
 	/**
 	 * Get range of all non-singleton ortholog groups
@@ -123,6 +131,11 @@ public: // treat as private (failed to friend boost::serialization)
 	void serialize(Archive& ar, const unsigned int version);
 
 private:
+	/**
+	 * Get set of all genes
+	 */
+	std::unordered_set<const Gene*> get_genes() const;
+
 	/**
 	 * Get path to file that contains the main data
 	 */

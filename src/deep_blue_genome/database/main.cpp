@@ -24,6 +24,7 @@ int main(int argc, char** argv) {
 			("add", po::value<string>()->value_name("yaml_update_file"), "Add to database using a yaml update description file. Does not overwrite data upon name collision.")
 			("dump", po::value<string>()->value_name("dump_file")->implicit_value("database_dump.yaml"), "Dump database to file")
 			("database-path", po::value<string>(&db_path)->required(), "Path to directory where database is or should be stored")
+			("verify", "Check database integrity")
 		;
 
 		auto print_help = [&desc]() {
@@ -56,6 +57,9 @@ int main(int argc, char** argv) {
 			}
 			else if (vm.count("dump")) {
 				database_dump(db_path, vm["dump"].as<string>());
+			}
+			else if (vm.count("verify")) {
+				database_verify(db_path);
 			}
 			else {
 				print_help();
