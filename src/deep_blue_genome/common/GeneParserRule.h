@@ -2,8 +2,11 @@
 
 #pragma once
 
-#include <string>
+// TODO separate header
+#define BOOST_REGEX_USE_CPP_LOCALE
 #include <boost/regex.hpp>
+
+#include <string>
 #include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/types.h>
 
@@ -17,7 +20,7 @@ class Database;
  */
 class GeneParserRule {
 public:
-	GeneParserRule(const std::string& match, const std::string& replace, NullableRegexGroup);
+	GeneParserRule(const std::string& match, const std::string& replace);
 
 	/**
 	 * Tries to parse gene name
@@ -26,9 +29,9 @@ public:
 	 * and splicing_variant will contain the respective splicing number. Else
 	 * none of the args are changed.
 	 *
-	 * @param splice_variant Not used as input, will contain the splicing number.
+	 * @param splice_variant Not used as input, will contain the splice number.
 	 */
-	bool try_parse(std::string& name, NullableSpliceVariantId& splicing_variant);
+	bool try_parse(std::string& name, NullableSpliceVariantId& splice_variant);
 
 public: // treat as private (failed to friend boost::serialization)
 	template<class Archive>
@@ -40,9 +43,8 @@ private:
 	void set_matcher(const std::string& matcher);
 
 private:
-	std::string matcher; // See create_db.sql for meaning of these fields
+	std::string matcher;
 	std::string replace_format;
-	NullableRegexGroup splice_variant_group;
 
 	boost::regex matcher_re;
 };
@@ -60,7 +62,6 @@ template<class Archive>
 void GeneParserRule::serialize(Archive& ar, const unsigned int version) {
 	ar & matcher;
 	ar & replace_format;
-	ar & splice_variant_group;
 	if (Archive::is_loading::value) {
 		set_matcher(matcher);
 	}

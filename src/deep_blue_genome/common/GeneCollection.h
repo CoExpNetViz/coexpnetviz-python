@@ -11,6 +11,10 @@
 #include <deep_blue_genome/common/Gene.h>
 #include <deep_blue_genome/common/GeneParserRule.h>
 
+// hpp includes
+#include <boost/range.hpp>
+#include <boost/range/adaptors.hpp>
+
 namespace DEEP_BLUE_GENOME {
 
 class Database;
@@ -89,6 +93,16 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<Gene>> name_to_gene; // gene name to gene, for all genes // TODO no unique_ptr needed (unless perhaps to move something around constructed elsewhere...; But could fix that by constructing it here first)
 	std::vector<GeneParserRule> gene_parser_rules;
 	std::unordered_map<std::string, std::unique_ptr<Clustering>> clusterings; // name -> clustering. General clusterings and those specific to a gene expression matrix
+
+public:
+	/**
+	 * Get range of all genes in collection
+	 *
+	 * @return concept Range<Gene&>
+	 */
+	auto get_genes() const {
+		return name_to_gene | boost::adaptors::map_values | boost::adaptors::indirected;
+	}
 };
 
 } // end namespace

@@ -27,12 +27,7 @@ GeneCollection::GeneCollection(Database& database, const std::string& name, cons
 :	database(&database), is_unknown(false), name(name), species(species), gene_web_page(gene_web_page)
 {
 	for (auto node : parser_rules) {
-		NullableRegexGroup splice_variant_group;
-		if (node["splice_variant_group"]) {
-			splice_variant_group = node["splice_variant_group"].as<RegexGroup>();
-		}
-
-		gene_parser_rules.emplace_back(node["match"].as<std::string>(), node["replace"].as<std::string>(), splice_variant_group);
+		gene_parser_rules.emplace_back(node["match"].as<std::string>(), node["replace"].as<std::string>());
 	}
 	ensure(!gene_parser_rules.empty(),
 			"Need to specify at least one gene parser for gene collection '" + name + "'",
@@ -43,7 +38,7 @@ GeneCollection::GeneCollection(Database& database, const std::string& name, cons
 GeneCollection::GeneCollection(Database& database)
 :	database(&database), is_unknown(true), name("Unknown"), species("Unknown")
 {
-	gene_parser_rules.emplace_back("(.*)([.]([0-9]+))?", "$1", 3);
+	gene_parser_rules.emplace_back("([^.]+)", "$1");
 }
 
 GeneVariant& GeneCollection::get_gene_variant(const std::string& name) {
@@ -88,7 +83,7 @@ GeneVariant* GeneCollection::try_get_gene_variant(const std::string& name_) {
 
 		// Warn if we don't truly know its gene collection
 		if (is_unknown) {
-			cerr << "Warning: Couldn't match gene '" << name << "' to a gene collection, adding to unknown gene collection\n";
+			cout << "Warning: Couldn't match gene '" << name << "' to a gene collection, adding to unknown gene collection\n";
 		}
 	}
 

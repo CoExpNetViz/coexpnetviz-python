@@ -13,8 +13,8 @@ GeneParserRule::GeneParserRule()
 {
 }
 
-GeneParserRule::GeneParserRule(const std::string& match, const std::string& replace, NullableRegexGroup group)
-:	replace_format(replace), splice_variant_group(group)
+GeneParserRule::GeneParserRule(const std::string& match, const std::string& replace)
+:	replace_format(replace)
 {
 	set_matcher(match);
 }
@@ -24,18 +24,15 @@ bool GeneParserRule::try_parse(std::string& name, NullableSpliceVariantId& splic
 	if (regex_match(name, results, matcher_re)) {
 		// get splice variant
 		splice_variant_id = boost::none;
-		if (splice_variant_group) {
-			auto variant_str = results.format((make_string() << "$" << *splice_variant_group).str());
-			if (!variant_str.empty()) {
-				istringstream str(variant_str);
-				SpliceVariantId id;
-				str >> id;
-				ensure(!str.fail(),
-						(make_string() << "Error parsing gene variant '" << name << "': '" << variant_str << "' is not a splice variant id").str(),
-						ErrorType::GENERIC
-				);
-				splice_variant_id = id;
-			}
+		string variant_str = results[results.size()-1]; // gets the last occurrence of the last subgroup
+		if (!variant_str.empty()) {
+			istringstream str(variant_str);
+			SpliceVariantId id;
+			str >> id;
+			ensure(!str.fail(),
+					(make_string() << "Error parsing gene variant '" << name << "': '" << variant_str << "' is not a splice variant id").str()
+			);
+			splice_variant_id = id;
 		}
 
 		// get gene name
@@ -46,8 +43,8 @@ bool GeneParserRule::try_parse(std::string& name, NullableSpliceVariantId& splic
 	return false;
 }
 
-void GeneParserRule::set_matcher(const std::string& match) {
-	matcher = match;
+void GeneParserRule::set_matcher(const std::string& match) { // TODO if a user provides a greedy .* match, then our numbers won't be matched in it. Must document or fix this
+	matcher = match + "([.]([0-9]+))*";
  	matcher_re = boost::regex(matcher, boost::regex::perl | boost::regex::icase);
 }
 
