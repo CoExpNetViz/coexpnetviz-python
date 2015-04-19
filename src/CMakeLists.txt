@@ -3,6 +3,8 @@ project (deep_blue_genome)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../cmake_modules")
 
+add_definitions(-DBOOST_RESULT_OF_USE_DECLTYPE) # Needed to build boost 1.57 on gcc 4.8
+
 ############################################
 # find dependencies
 
@@ -20,7 +22,8 @@ include_directories(${YAMLCPP_INCLUDE_DIR})
 
 include_directories(BEFORE ${CMAKE_SOURCE_DIR})
 
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG") #TODO for truly verifying it, go -O3
+# TODO verify that for release -O3 is used
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -DNDEBUG")
 set(CMAKE_CXX_FLAGS "-Wall -Wno-sign-compare -Wno-unknown-pragmas -std=c++1y -ftemplate-depth-1024 ${SDL_CFLAGS}") # TODO consider turning on sign-compare again
 
 #############
