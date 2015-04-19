@@ -11,7 +11,7 @@ using namespace std;
 
 namespace DEEP_BLUE_GENOME {
 
-OrthologGroup::OrthologGroup() // TODO biology would call these a family, not a group. Might want to stick to CS terms in the code though...
+OrthologGroup::OrthologGroup() // TODO biology would call these a family, not a group. Stick to bioinformatics terms
 {
 }
 
@@ -20,11 +20,12 @@ OrthologGroup::OrthologGroup(GeneFamilyId id)
 	external_ids[id.get_source()].emplace(std::move(id));
 }
 
-void OrthologGroup::add(Gene& gene) {
-	if (contains(genes, &gene))
-		return;
+void OrthologGroup::set_iterator(OrthologGroup::DatabaseIterator it) {
+	database_it = it;
+}
 
-	assert(!is_singleton() || genes.size() == 0); // can't add more than 1 gene to a singleton group
+void OrthologGroup::add(Gene& gene) {
+	assert(contains(genes, &gene) || genes.size() == 0 || !is_singleton()); // can't add more than 1 gene to a singleton group
 
 	gene.set_ortholog_group(*this);
 	genes.emplace(&gene);
@@ -36,18 +37,21 @@ const OrthologGroup::Genes& OrthologGroup::get_genes() const {
 }
 
 void OrthologGroup::merge(OrthologGroup& other, Database& database) {
+	// merge external ids
 	for (auto& p : other.external_ids) {
 		auto& group = external_ids[p.first];
 		boost::insert(group, p.second);
 	}
 
+	// merge genes
 	boost::insert(genes, other.genes);
 
 	for (auto gene : genes) {
 		gene->set_ortholog_group(*this);
 	}
 
-	database.erase(other);
+	// erase other
+	database.erase(other.database_it);
 }
 
 bool OrthologGroup::is_singleton() const {

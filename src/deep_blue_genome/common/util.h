@@ -12,6 +12,8 @@
 #include <deep_blue_genome/common/ErrorType.h>
 #include <deep_blue_genome/util/make_string.h>
 #include <deep_blue_genome/util/contains.h>
+#include <deep_blue_genome/util/functional.h>
+#include <boost/range/adaptors.hpp>
 #include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm_ext.hpp>
 
@@ -67,7 +69,7 @@ void ensure(bool condition, std::string error_message, ErrorType = ErrorType::GE
  */
 std::string exception_what(const std::exception& e);
 
-void to_lower(std::string& data);
+std::string& to_lower(std::string& data);
 
 /**
  * Call graceful_main, exit gracefully after it returns/throws with pretty error output
@@ -103,6 +105,23 @@ inline void hash_combine(std::size_t& seed, T const& v)
 template <class T>
 void erase_duplicates(T& container) {
 	boost::erase(container, boost::unique<boost::return_found_end>(boost::sort(container)));
+}
+
+namespace impl {
+	struct referenced {};
+}
+
+/**
+ * Apply operator& to each element in range
+ */
+const extern impl::referenced referenced;
+
+template <class ForwardRange>
+auto operator|(ForwardRange&& range, impl::referenced) {
+	typedef typename ForwardRange::value_type T;
+    return range | boost::adaptors::transformed(make_function([](T& t) -> T* {
+		return &t;
+	}));
 }
 
 } // end namespace

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <vector>
+#include <list>
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/noncopyable.hpp>
@@ -18,13 +19,16 @@ class Database;
  * A group/set/cluster of orthologous genes
  *
  * Invariant: shall contain no duplicates (not to be confused with gene duplication)
+ *
+ * To construct a valid object you need to first construct it, and then supply iterator to group via set_iterator.
  */
-class OrthologGroup : private boost::noncopyable
+class OrthologGroup : private boost::noncopyable // TODO There's nothing specific to orthologs in here, could rename it to... GeneFamily?
 {
 public:
 	typedef boost::container::flat_set<Gene*> Genes;
 	typedef boost::container::flat_map<std::string, boost::container::flat_set<GeneFamilyId>> ExternalIdsGrouped;
 	typedef std::vector<GeneFamilyId> ExternalIds;
+	typedef typename std::list<std::unique_ptr<OrthologGroup>>::iterator DatabaseIterator;
 
 	friend std::ostream& operator<<(std::ostream&, const OrthologGroup&);
 
@@ -37,6 +41,8 @@ public:
 	OrthologGroup();
 
 	OrthologGroup(GeneFamilyId);
+
+	void set_iterator(OrthologGroup::DatabaseIterator);
 
 	/**
 	 * Add orthologous gene
@@ -87,6 +93,7 @@ public: // treat as private (failed to friend boost::serialization)
 private:
 	ExternalIdsGrouped external_ids; // Note: why no multimap? Multimap allows duplicate (key,value) pairs. Note: can be empty, e.g. in the singleton case
 	Genes genes;
+	DatabaseIterator database_it; // iterator to self in database that owns the group
 };
 
 /**

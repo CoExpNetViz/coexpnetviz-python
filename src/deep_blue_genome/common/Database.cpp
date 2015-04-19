@@ -1,8 +1,10 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
-#include <deep_blue_genome/common/database_all.h>
 #include <boost/filesystem.hpp>
+#include <boost/range/algorithm_ext.hpp>
+#include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/common/Serialization.h>
+#include <deep_blue_genome/util/printer.h>
 
 using namespace std;
 
@@ -35,15 +37,20 @@ GeneVariant* Database::try_get_gene_variant(const std::string& name) {
 	return &unknown_gene_collection.get_gene_variant(name); // Note: this should never fail (it's a bug otherwise)
 }
 
+// TODO this is copy paste of the next add_orth_group
 OrthologGroup& Database::add_ortholog_group(const GeneFamilyId& external_id) {
 	// TODO no 2 ortholog groups should have the same external id
-	ortholog_groups.emplace_back(make_unique<OrthologGroup>(external_id));
-	return *ortholog_groups.back();
+	ortholog_groups.emplace_front(make_unique<OrthologGroup>(external_id));
+	auto& group = *ortholog_groups.front();
+	group.set_iterator(ortholog_groups.begin());
+	return group;
 }
 
 OrthologGroup& Database::add_ortholog_group() {
 	ortholog_groups.emplace_back(make_unique<OrthologGroup>());
-	return *ortholog_groups.back();
+	auto& group = *ortholog_groups.front();
+	group.set_iterator(ortholog_groups.begin());
+	return group;
 }
 
 GeneCollection& Database::get_gene_collection(std::string name) {
@@ -55,14 +62,7 @@ GeneCollection& Database::get_gene_collection(std::string name) {
 	});
 }
 
-void Database::erase(OrthologGroup& group) {
-	auto it = find_if(ortholog_groups.begin(), ortholog_groups.end(), [&group](const unique_ptr<OrthologGroup>& g) {
-		return g.get() == &group;
-	});
-	ensure(it != ortholog_groups.end(),
-			(make_string() << "Cannot erase ortholog group '" << group << "' as it does not exist").str(),
-			ErrorType::GENERIC
-	);
+void Database::erase(OrthologGroups::iterator it) {
 	ortholog_groups.erase(it);
 }
 

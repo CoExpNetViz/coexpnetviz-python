@@ -144,8 +144,9 @@ std::string exception_what(const exception& e) {
 	return e.what();
 }
 
-void to_lower(std::string& data) {
+std::string& to_lower(std::string& data) {
 	std::transform(data.begin(), data.end(), data.begin(), ::tolower);
+	return data;
 }
 
 void graceful_main(std::function<void()> fragile_main) {

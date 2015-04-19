@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <list>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <deep_blue_genome/common/Serialization.h>
@@ -42,6 +43,7 @@ class GeneVariant;
 class Database : public boost::noncopyable {
 public:
 	typedef std::vector<std::string>::const_iterator name_iterator;
+	typedef std::list<std::unique_ptr<OrthologGroup>> OrthologGroups; // Note: pointer because of boost serialization: serialising something as pointer and elsewhere as reference = trouble // TODO it would be nice if boost serialization didn't have that restriction. There also are a bunch of std::move things that should be done to boost::serialization, like the ones we already have put in util/serialization
 
 	/**
 	 * Construct database
@@ -96,7 +98,7 @@ public:
 	/**
 	 * Delete ortholog group
 	 */
-	void erase(OrthologGroup&);
+	void erase(OrthologGroups::iterator);
 
 	void add(std::unique_ptr<GeneCollection>&&);
 
@@ -110,13 +112,10 @@ public: // return type deduced funcs (can't be moved outside the class def)
 	 * Get range of all non-singleton ortholog groups
 	 */
 	auto get_ortholog_groups() const {
-		auto get_ptr = [](const std::unique_ptr<OrthologGroup>& group) {
-			return group.get();
+		auto not_singleton = [](const OrthologGroup& group) {
+			return !group.is_singleton();
 		};
-		auto not_singleton = [](const std::unique_ptr<OrthologGroup>& group) {
-			return !group->is_singleton();
-		};
-		return ortholog_groups | boost::adaptors::filtered(make_function(not_singleton)) | boost::adaptors::transformed(make_function(get_ptr));
+		return ortholog_groups | boost::adaptors::indirected | boost::adaptors::filtered(make_function(not_singleton));
 	}
 
 public: // treat as private (failed to friend boost::serialization)
@@ -132,7 +131,7 @@ private:
 private:
 	GeneCollection unknown_gene_collection; // a catch-all gene collection that collects genes that didn't match any of the known collections
 	std::vector<std::unique_ptr<GeneCollection>> gene_collections; // TODO stable_vector, or ptr_vector from boost pointer container (e.g. if you find the compile time dependencies too harsh with non-pointer types; i.e. more includes)
-	std::vector<std::unique_ptr<OrthologGroup>> ortholog_groups; // TODO stable_vector
+	OrthologGroups ortholog_groups;
 	std::unordered_map<std::string, std::unique_ptr<GeneExpressionMatrix>> gene_expression_matrices; // name -> matrix
 
 	std::string database_path;
@@ -156,6 +155,9 @@ void Database::serialize(Archive& ar, const unsigned int version) {
 	}
 
 	ar & ortholog_groups;
+	for (auto it = ortholog_groups.begin(); it != ortholog_groups.end(); it++) {
+		(*it)->set_iterator(it);
+	}
 }
 
 }
