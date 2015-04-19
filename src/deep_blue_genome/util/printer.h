@@ -20,3 +20,4 @@
 
 #include <deep_blue_genome/util/printer/intercalate.h>
 #include <deep_blue_genome/util/printer/printer.h>
+//TODO rename to writer?
