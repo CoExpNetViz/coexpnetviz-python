@@ -15,7 +15,7 @@ gene_collections:
       gene_web_page: 'http://www.arabidopsis.org/servlets/TairObject?name=$name&type=locus'  # url to page of gene, use $name as placeholder for the gene name
       gene_parser:  # description of how to parse genes of this collection into (gene-id, splice variant)
           # You can specify multiple match, replace (see rice below)
-          - match: 'AT(.)G([0-9]{5})'  # Genes are part of the gene collection iff they match this regex pattern (perl syntax, case-insensitive). http://www.boost.org/doc/libs/1_57_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html
+          - match: 'AT(.)G([0-9]{5})'  # Genes are part of the gene collection iff they match this regex pattern (perl syntax, case-insensitive). A suffix of numbers separated by dots is appended for you to this regex, where the last number is the splice variant; i.e. $your_matcher([.]$number)*[.]$splice_variant http://www.boost.org/doc/libs/1_57_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html
             replace: 'AT$1G$2'  # As a gene is read into the database, it will be formatted by s/gene_format_match/gene_format_replace/ using boost-extended format string syntax. This results in just the gene name, no splice variant suffix. (http://www.boost.org/doc/libs/1_33_1/libs/regex/doc/format_boost_syntax.html)
 
     - name: 'Potato - ITAG'
@@ -23,10 +23,9 @@ gene_collections:
       example_goi: ['Sotub02g020720.1.1', 'Sotub02g020710.1.1', 'Sotub02g020130.1.1', 'Sotub07g023520.1.1', 'Sotub02g010840.1.1', 'Sotub11g008880.1.1', 'Sotub10g009720.1.1', 'Sotub05g026310.1.1', 'Sotub04g021880.1.1', 'Sotub07g025180.1.1', 'Sotub09g027860.1.1']
       gene_web_page: 'http://bioinformatics.psb.ugent.be/orcae/annotation/Soltu/current/$name'
       gene_parser:
-          - match: 'Sotub([0-9]{2})g([0-9]{6})[.][0-9][.]([0-9])' #TODO deal properly with .num suffixes
+          #TODO cut off the (. ... blabla) and splice_variant group, last number is the splice variant, anything after the dot gets stripped. And in the future we need to use a gene database like NCBI or something
+          - match: 'Sotub([0-9]{2})g([0-9]{6})'
             replace: 'Sotub$1g$2'
-            splice_variant_group: 3  # Number of subgroup (1-based) in match which contains the splice variant number
-            # TODO check we pick the correct .num group
 
     - name: 'Potato - PGSC'
       species: Potato
@@ -41,20 +40,17 @@ gene_collections:
       example_goi: ['Solyc10g084400', 'Solyc09g074850', 'Solyc09g011630', 'Solyc09g011540', 'Solyc09g011520', 'Solyc09g011510', 'Solyc09g007150', 'Solyc08g080910', 'Solyc08g080900', 'Solyc07g056500', 'Solyc07g056490', 'Solyc07g056480', 'Solyc07g056440', 'Solyc07g056420', 'Solyc06g009040', 'Solyc06g009020', 'Solyc05g006750', 'Solyc05g006740', 'Solyc02g081430', 'Solyc02g081340', 'Solyc02g068900', 'Solyc01g091330', 'Solyc01g086680', 'Solyc01g081310']
       gene_web_page: 'http://solgenomics.net/search/locus_search.pl?w8e4_any_name_matchtype=exactly&w8e4_any_name=$name&w8e4_common_name=&w8e4_phenotype=&w8e4_locus_linkage_group=&w8e4_ontology_term=&w8e4_editor=&w8e4_genbank_accession='
       gene_parser:
-          - match: 'Solyc([0-9]{2})g([0-9]{6})([.][0-9]+[.]([0-9]+))?'
+          - match: 'Solyc([0-9]{2})g([0-9]{6})'
             replace: 'Solyc$1g$2'
-            splice_variant_group: 4
 
     - name: 'Rice - MSU'
       species: Rice
       #gene_web_page: TODO
       gene_parser:
-          - match: 'LOC_Os([0-9]{2})g([0-9]{5})([.]([0-9]+))?'
+          - match: 'LOC_Os([0-9]{2})g([0-9]{5})'
             replace: 'LOC_Os$1g$2'
-            splice_variant_group: 4
-          - match: '(.*)[.]fgenesh[.]mrna[.]([0-9]+)'
+          - match: '(.*)[.]fgenesh[.]mrna'
             replace: '$1.fgenesh.mrna'
-            splice_variant_group: 2
 
     - name: 'Rice - RAP'
       species: Rice
