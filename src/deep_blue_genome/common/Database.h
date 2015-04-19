@@ -56,11 +56,6 @@ public:
 	void execute(const std::string& query);
 
 	/**
-	 * Erase everything in the database
-	 */
-	void clear();
-
-	/**
 	 * Get gene variant by name, inserts it if it doesn't exist yet
 	 *
 	 * @throws NotFoundException if name matches none of the gene collections

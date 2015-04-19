@@ -17,11 +17,6 @@ Database::Database(std::string path, bool start_fresh)
 	}
 }
 
-void Database::clear() {
-	ortholog_groups.clear();
-	gene_collections.clear();
-}
-
 GeneVariant& Database::get_gene_variant(const std::string& name) {
 	auto variant = try_get_gene_variant(name);
 	if (variant)
