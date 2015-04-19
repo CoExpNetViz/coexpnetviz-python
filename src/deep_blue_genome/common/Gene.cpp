@@ -14,7 +14,7 @@ Gene::Gene()
 }
 
 Gene::Gene(const std::string& name, GeneCollection& gene_collection, OrthologGroup& ortholog_group)
-:	name(name), gene_collection(&gene_collection), ortholog_group(&ortholog_group)
+:	name(name), gene_collection(&gene_collection), ortholog_group(nullptr)
 {
 	ortholog_group.add(*this);
 }
