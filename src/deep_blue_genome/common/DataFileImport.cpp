@@ -101,7 +101,7 @@ void DataFileImport::add_orthologs(std::string source_name, std::string path) {
 							continue;
 						}
 
-						group.merge(group2, database);
+						group.merge(std::move(group2), database);
 					}
 					catch(const TypedException& e) {
 						if (e.get_type() != ErrorType::SPLICE_VARIANT_INSTEAD_OF_GENE) {

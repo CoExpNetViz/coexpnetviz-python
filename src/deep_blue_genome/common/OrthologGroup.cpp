@@ -15,9 +15,9 @@ OrthologGroup::OrthologGroup() // TODO biology would call these a family, not a 
 {
 }
 
-OrthologGroup::OrthologGroup(GeneFamilyId id)
+OrthologGroup::OrthologGroup(GeneFamilyId id) // TODO change all arg passing to what matches guidelines
 {
-	external_ids[id.get_source()].emplace(std::move(id));
+	external_ids.emplace(std::move(id));
 }
 
 void OrthologGroup::set_iterator(OrthologGroup::DatabaseIterator it) {
@@ -36,14 +36,23 @@ const OrthologGroup::Genes& OrthologGroup::get_genes() const {
 	return genes;
 }
 
-void OrthologGroup::merge(OrthologGroup& other, Database& database) {
+void OrthologGroup::merge(OrthologGroup&& other, Database& database) {
+	static long count = 0;
+	cout << "m " << ++count << "\n";
+
 	// merge external ids
-	for (auto& p : other.external_ids) {
-		auto& group = external_ids[p.first];
-		boost::insert(group, p.second);
+	// TODO could generalise this kind of destructive merge in an algorithm: i.e. swap the small for the big, then insert, perhaps reserve
+	if (other.external_ids.size() > external_ids.size()) { // merge small into big, not the other way around
+		external_ids.swap(other.external_ids);
 	}
+	external_ids.reserve(other.external_ids.size() + external_ids.size()); // it will be exactly this size
+	boost::insert(external_ids, other.external_ids); // TODO ids could be moved instead of copied (boost range + make_move_iterator or something?)
 
 	// merge genes
+	if (other.genes.size() > genes.size()) { // merge small into big, not the other way around
+		genes.swap(other.genes);
+	}
+	genes.reserve(other.genes.size() + genes.size()); // this is just a worst case size  TODO not sure whether this helps, gotta do long profile run for that
 	boost::insert(genes, other.genes);
 
 	for (auto gene : genes) {
@@ -52,6 +61,10 @@ void OrthologGroup::merge(OrthologGroup& other, Database& database) {
 
 	// erase other
 	database.erase(other.database_it);
+}
+
+std::size_t OrthologGroup::size() const {
+	return genes.size();
 }
 
 bool OrthologGroup::is_singleton() const {
@@ -63,16 +76,16 @@ std::ostream& operator<<(std::ostream& out, const OrthologGroup& group) {
 	return out;
 }
 
-std::vector<GeneFamilyId> OrthologGroup::get_external_ids() const {
-	vector<GeneFamilyId> ids;
-	for (auto p : external_ids) {
-		boost::push_back(ids, p.second);
-	}
-	return ids;
+const OrthologGroup::ExternalIds& OrthologGroup::get_external_ids() const {
+	return external_ids;
 }
 
-const OrthologGroup::ExternalIdsGrouped& OrthologGroup::get_external_ids_grouped() const {
-	return external_ids;
+OrthologGroup::ExternalIdsGrouped OrthologGroup::get_external_ids_grouped() const {
+	ExternalIdsGrouped ids;
+	for (auto id : external_ids) {
+		ids[id.get_source()].emplace(id);
+	}
+	return ids;
 }
 
 } // end namespace

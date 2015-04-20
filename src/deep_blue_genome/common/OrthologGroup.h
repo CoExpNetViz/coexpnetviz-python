@@ -27,7 +27,7 @@ class OrthologGroup : private boost::noncopyable // TODO There's nothing specifi
 public:
 	typedef boost::container::flat_set<Gene*> Genes; // Turns out flat_set is more efficient than unordered_set with its insertions, up to about 500000 elements
 	typedef boost::container::flat_map<std::string, boost::container::flat_set<GeneFamilyId>> ExternalIdsGrouped;
-	typedef std::vector<GeneFamilyId> ExternalIds;
+	typedef boost::container::flat_set<GeneFamilyId> ExternalIds;
 	typedef typename std::list<std::unique_ptr<OrthologGroup>>::iterator DatabaseIterator;
 
 	friend std::ostream& operator<<(std::ostream&, const OrthologGroup&);
@@ -58,26 +58,28 @@ public:
 	 *
 	 * Note: this removes the other group from database
 	 */
-	void merge(OrthologGroup&, Database&);
+	void merge(OrthologGroup&&, Database&);
 
 	/**
 	 * Get range of external ids assigned to this ortholog group
 	 *
 	 * @returns range of ids
 	 */
-	ExternalIds get_external_ids() const;
+	const ExternalIds& get_external_ids() const;
 
 	/**
 	 * Get range of external ids grouped by source
 	 *
 	 * @returns range of pairs of (source, range of ids)
 	 */
-	const ExternalIdsGrouped& get_external_ids_grouped() const;
+	ExternalIdsGrouped get_external_ids_grouped() const;
 
 	/**
 	 * Get range of all genes in group
 	 */
 	const Genes& get_genes() const;
+
+	std::size_t size() const;
 
 	/**
 	 * Get whether it's a singleton group.
@@ -91,7 +93,7 @@ public: // treat as private (failed to friend boost::serialization)
 	void serialize(Archive& ar, const unsigned int version);
 
 private:
-	ExternalIdsGrouped external_ids; // Note: why no multimap? Multimap allows duplicate (key,value) pairs. Note: can be empty, e.g. in the singleton case
+	ExternalIds external_ids;
 	Genes genes;
 	DatabaseIterator database_it; // iterator to self in database that owns the group
 };
