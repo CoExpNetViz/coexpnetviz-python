@@ -33,7 +33,9 @@ public:
 	 *
 	 * @param group Ortholog group the gene is part of
 	 */
-	void set_ortholog_group(OrthologGroup& group);
+	inline void set_ortholog_group(OrthologGroup& group) {
+		ortholog_group = &group;
+	}
 
 	/**
 	 * Get splice variant

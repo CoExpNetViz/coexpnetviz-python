@@ -38,6 +38,7 @@ const OrthologGroup::Genes& OrthologGroup::get_genes() const {
 
 void OrthologGroup::merge(OrthologGroup&& other, Database& database) {
 	static long count = 0;
+	// TODO try lto, something about a plugin needed though...
 	cout << "m " << ++count << "\n";
 
 	// merge external ids

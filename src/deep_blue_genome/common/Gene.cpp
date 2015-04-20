@@ -53,10 +53,6 @@ Gene& Gene::as_gene() {
 	return *this;
 }
 
-void Gene::set_ortholog_group(OrthologGroup& group) {
-	ortholog_group = &group;
-}
-
 void Gene::print(std::ostream& str) const {
 	str << "gene '" << name << "'";
 }
