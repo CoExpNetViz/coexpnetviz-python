@@ -24,7 +24,7 @@ include_directories(BEFORE ${CMAKE_SOURCE_DIR})
 
 # TODO verify that for release -O3 is used
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -fno-omit-frame-pointer -DNDEBUG")
-set(CMAKE_CXX_FLAGS "-Wall -Wno-sign-compare -Wno-unknown-pragmas -std=c++1y -ftemplate-depth-1024 ${SDL_CFLAGS}") # TODO consider turning on sign-compare again
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wno-sign-compare -Wno-unknown-pragmas -std=c++1y -ftemplate-depth-1024 ${SDL_CFLAGS}") # TODO consider turning on sign-compare again
 
 #############
 # common.so 
