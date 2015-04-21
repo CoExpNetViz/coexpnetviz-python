@@ -51,7 +51,7 @@ private:
 	void write_node_attr_targets(std::ostream& out);
 
 	template <class GeneRange, class IdsRange>
-	void write_node_attr(std::ostream& out, const Node& node, GeneRange&& gene_names, IdsRange&& family_names_by_source, const std::string& species, const std::string& colour);
+	void write_node_attr(std::ostream& out, const Node& node, const GeneRange& gene_names, const IdsRange& family_names_by_source, const std::string& species, const std::string& colour);
 
 private:
 	std::string install_dir;

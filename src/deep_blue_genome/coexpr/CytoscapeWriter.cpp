@@ -161,21 +161,21 @@ void CytoscapeWriter::write_node_attr_targets(ostream& out) {
  * @param colour Colour of node
  */
 template <class GeneRange, class IdsRange>
-void CytoscapeWriter::write_node_attr(ostream& out, const Node& node, GeneRange&& gene_names, IdsRange&& external_ids_grouped, const std::string& species, const std::string& colour) {
+void CytoscapeWriter::write_node_attr(ostream& out, const Node& node, const GeneRange& gene_names, const IdsRange& external_ids_grouped, const std::string& species, const std::string& colour) {
 	// gene_names
-	auto genes = intercalate(" ", std::forward<GeneRange>(gene_names));
+	auto genes = intercalate(" ", gene_names);
 
 	// family_names_by_source -> families
 	auto get_id = make_function([](const GeneFamilyId& id) {
 		return id.get_id();
 	});
-	typedef std::pair<std::string, boost::container::flat_set<GeneFamilyId>> IdSubset;
+	typedef std::pair<std::string, boost::container::flat_set<GeneFamilyId>> IdSubset; // TODO note in util printer that once at the point of passing an intercalate/printer to an ostream, its inputs must still exist in memory. Provide a counter-example
 	auto get_family_string = make_function([&get_id](const IdSubset& p) {
-		return make_printer([p, &get_id](ostream& out) {
+		return make_printer([&p, &get_id](ostream& out) {
 			out << "From " << p.first << ": " << intercalate(", ", p.second | transformed(get_id));
 		});
 	});
-	auto families = intercalate(". ", std::forward<IdsRange>(external_ids_grouped) | transformed(get_family_string));
+	auto families = intercalate(". ", external_ids_grouped | transformed(get_family_string));
 
 	// output attr line
 	out << intercalate_("\t", node, families, genes, species, colour) << "\n";

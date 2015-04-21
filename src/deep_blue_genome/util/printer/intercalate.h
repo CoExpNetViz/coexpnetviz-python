@@ -6,21 +6,21 @@
 #include <deep_blue_genome/util/functional.h>
 
 namespace DEEP_BLUE_GENOME {
-// TODO do we ever need URef&& here? Can we ever move something? Otherwise const T& would work fine (and would pass fine through lambdas)
+// TODO can update to what we have in cpp_future (minus the && madness as we don't need that)
 
 /**
  * Private things
  */
 namespace impl {
 	template <class Delimiter>
-	void intercalate_(std::ostream& out, Delimiter&& delimiter) {
+	void intercalate_(std::ostream& out, const Delimiter& delimiter) {
 	}
 
 	template <class Delimiter, class Item, class... Items>
-	void intercalate_(std::ostream& out, Delimiter&& delimiter, Item&& item, Items&&... items)
+	void intercalate_(std::ostream& out, const Delimiter& delimiter, const Item& item, const Items&... items)
 	{
-		out << delimiter << std::forward<Item>(item);
-		intercalate_(out, delimiter, std::forward<Items>(items)...);
+		out << delimiter << item;
+		intercalate_(out, delimiter, items...);
 	}
 }
 
@@ -32,7 +32,7 @@ namespace impl {
  * Args: delimiter, range of items
  */
 template <class Delimiter, class Range>
-std::string intercalate(Delimiter&& delimiter, Range&& items)
+std::string intercalate(const Delimiter& delimiter, const Range& items)
 {
 	std::ostringstream out;
 
@@ -41,7 +41,7 @@ std::string intercalate(Delimiter&& delimiter, Range&& items)
 		if (!first) {
 			out << delimiter;
 		}
-		out << std::forward<decltype(item)>(item);
+		out << item;
 		first = false;
 	}
 
@@ -56,10 +56,10 @@ std::string intercalate(Delimiter&& delimiter, Range&& items)
  * Args: delimiter, item1, item2, ..., itemN.
  */
 template <class Delimiter, class Item, class... Items>
-std::string intercalate_(Delimiter&& delimiter, Item&& first_item, Items&&... items) {
+std::string intercalate_(const Delimiter& delimiter, const Item& first_item, const Items&... items) {
 	std::ostringstream out;
-	out << std::forward<Item>(first_item);
-	impl::intercalate_(out, delimiter, std::forward<Items>(items)...);
+	out << first_item;
+	impl::intercalate_(out, delimiter, items...);
 	return out.str();
 }
 
