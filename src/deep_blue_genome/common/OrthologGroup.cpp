@@ -37,9 +37,12 @@ const OrthologGroup::Genes& OrthologGroup::get_genes() const {
 }
 
 void OrthologGroup::merge(OrthologGroup&& other, Database& database) {
-	static long count = 0;
-	// TODO try lto, something about a plugin needed though...
-	cout << "m " << ++count << "\n";
+	assert(&other != this);
+
+	// Set other genes to this group
+	for (auto gene : other.genes) {
+		gene->set_ortholog_group(*this);
+	}
 
 	// merge external ids
 	// TODO could generalise this kind of destructive merge in an algorithm: i.e. swap the small for the big, then insert, perhaps reserve
@@ -47,18 +50,14 @@ void OrthologGroup::merge(OrthologGroup&& other, Database& database) {
 		external_ids.swap(other.external_ids);
 	}
 	external_ids.reserve(other.external_ids.size() + external_ids.size()); // it will be exactly this size
-	boost::insert(external_ids, other.external_ids); // TODO ids could be moved instead of copied (boost range + make_move_iterator or something?)
+	boost::insert(external_ids, other.external_ids);
 
 	// merge genes
 	if (other.genes.size() > genes.size()) { // merge small into big, not the other way around
 		genes.swap(other.genes);
 	}
-	genes.reserve(other.genes.size() + genes.size()); // this is just a worst case size  TODO not sure whether this helps, gotta do long profile run for that
+	genes.reserve(other.genes.size() + genes.size()); // this is just a worst case size
 	boost::insert(genes, other.genes);
-
-	for (auto gene : genes) {
-		gene->set_ortholog_group(*this);
-	}
 
 	// erase other
 	database.erase(other.database_it);
