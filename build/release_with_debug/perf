@@ -9,8 +9,12 @@ finish() {
 . ../$1_command.sh
 
 trap finish 2
-perf record --call-graph dwarf -F99 ${command[@]} &> perf.log &
-pid=$!
-sleep 60
-kill $pid
+if true; then
+    perf record --call-graph dwarf -F99 ${command[@]} &> perf.log &
+    pid=$!
+    sleep 60
+    kill $pid
+else
+    perf record --call-graph dwarf -F9 ${command[@]}
+fi
 finish
