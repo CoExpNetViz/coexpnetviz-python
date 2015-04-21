@@ -98,7 +98,7 @@ GeneExpressionMatrix& Database::add(unique_ptr<GeneExpressionMatrix>&& matrix) {
 }
 
 void Database::save() {
-	//verify();
+	cout << "Saving database...\n";
 	Serialization::save_to_binary(get_main_file(), *this);
 }
 
@@ -116,9 +116,15 @@ void Database::verify() {
 	using namespace boost::adaptors;
 	using namespace std::placeholders;
 
-	auto all_genes = get_genes();
+	unordered_set<const Gene*> all_genes;
+	boost::insert(all_genes, get_genes());
+
+	auto soft_abort = []() {
+		throw runtime_error("soft abort");
+	};
 
 	// No 2 genes have the same name
+	cout << "No 2 gene pointers have the same name?" << endl;
 	{
 		vector<string> names;
 		auto get_name = std::bind(&Gene::get_name, _1);
@@ -137,6 +143,7 @@ void Database::verify() {
 	}
 
 	// No gene present in multiple ortholog families
+	cout << "No gene present in multiple ortholog families?" << endl;
 	{
 		auto get_groups_of = [this](const Gene& gene) {
 			vector<const OrthologGroup*> groups;
@@ -149,32 +156,39 @@ void Database::verify() {
 			return groups;
 		};
 
-		set<Gene*> genes;
+		unordered_set<Gene*> genes;
 		size_t largest_group = 0;
 		for (auto& group : ortholog_groups) {
-			ensure(boost::size(group->get_genes()) > 0, "Empty group");
+			if (group->size() == 0) {
+				cout << "Empty group!" << endl;
+				soft_abort();
+			}
 
 			largest_group = max(largest_group, boost::size(group->get_genes()));
 			for (auto gene : group->get_genes()) {
-				// gene must be part of gene collection
-				/*if (!contains(all_genes, gene)) {
-					cerr << gene << endl;
-					assert(false);
-				}
-
-				//cout << gene->get_name() << "\n";
 				if (!genes.emplace(gene).second) {
 					// found duplicate gene
 					auto groups = get_groups_of(*gene);
-					cerr << *gene << " present in multiple ortho groups: " << intercalate(", ", groups) << "\n";
-					assert(false);
-				}*/
+					cout << *gene << " present in multiple ortho groups: " << intercalate(", ", groups) << endl;
+					soft_abort();
+				}
 			}
 		}
-		cout << genes.size() << endl;
+
+		if (all_genes.size() > genes.size()) {
+			cout << all_genes.size() - genes.size() << " genes aren't part of an ortholog group, not even a singleton group";
+			soft_abort();
+		}
+		else if (all_genes.size() < genes.size()) {
+			cout << genes.size() - all_genes.size() << " genes are present in an ortholog group, but not in a gene collection => they have no gene collection (not even the unknown gene collection)";
+			soft_abort();
+		}
+
 		cout << "Max group size: " << largest_group << endl;
 		cout << "Number of groups: " << boost::size(ortholog_groups) << endl;
 	}
+
+	// TODO no 2 ortholog groups should have the same external id
 
 	cout << "Verification complete, all is well" << endl;
 }
