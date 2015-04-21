@@ -1,11 +1,28 @@
 #!/bin/sh
 set -e
 
+#TODO has some copy paste from ./perf
+
 . ../$1_command.sh
-rm -f callgrind.out*
-valgrind --tool=callgrind --instr-atstart=yes --callgrind-out-file=callgrind.out ${command[@]}
-callgrind_pid=$!
-#sleep 300
-#kill $callgrind_pid
-#sleep 2
-qcachegrind callgrind.out &
+
+profile() {
+    valgrind --tool=callgrind --instr-atstart=yes --callgrind-out-file=callgrind.out ${command[@]}
+}
+
+finish() {
+    trap - 2
+    qcachegrind callgrind.out &
+}
+
+. ../$1_command.sh
+
+trap finish 2
+if true; then
+    profile &
+    pid=$!
+    sleep 60
+    kill $pid
+else
+    profile
+fi
+finish
