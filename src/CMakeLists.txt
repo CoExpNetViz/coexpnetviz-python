@@ -22,9 +22,9 @@ include_directories(${YAMLCPP_INCLUDE_DIR})
 
 include_directories(BEFORE ${CMAKE_SOURCE_DIR})
 
-# TODO verify that for release -O3 is used
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -fno-omit-frame-pointer -DNDEBUG")
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wno-sign-compare -Wno-unknown-pragmas -std=c++1y -ftemplate-depth-1024 ${SDL_CFLAGS}") # TODO consider turning on sign-compare again
+set(CMAKE_CXX_FLAGS_RELEASE "-O3  -DNDEBUG") # -flto try with plugin
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O3  -fno-omit-frame-pointer -DNDEBUG")
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wno-sign-compare -Wno-unknown-pragmas -Wno-unused-parameter -std=c++1y -ftemplate-depth-1024 ${SDL_CFLAGS}") # why the SDL flags?
 
 #############
 # common.so 
@@ -37,7 +37,7 @@ target_link_libraries(common
 	${Boost_LIBRARIES}
 	${YAMLCPP_LIBRARY}
 )
-		
+
 #############
 # database
 file(GLOB_RECURSE database_sources deep_blue_genome/database/*.cpp)
@@ -45,7 +45,6 @@ add_executable(database ${database_sources})
 
 target_link_libraries(database
 	common
-	ncurses #TODO we're not using this atm
 )
 
 #############
