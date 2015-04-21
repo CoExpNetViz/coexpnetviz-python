@@ -84,12 +84,12 @@ const OrthologGroupInfo::Genes& OrthologGroupInfo::get_correlating_genes() const
 	return correlating_genes;
 }
 
-OrthologGroup::ExternalIds OrthologGroupInfo::get_external_ids() const {
-	return group.get_external_ids();
+OrthologGroup::ExternalIdsGrouped OrthologGroupInfo::get_external_ids_grouped() const {
+	return group.get_external_ids_grouped();
 }
 
-const OrthologGroup::ExternalIdsGrouped& OrthologGroupInfo::get_external_ids_grouped() const {
-	return group.get_external_ids_grouped();
+const OrthologGroup::ExternalIds& OrthologGroupInfo::get_external_ids() const {
+	return group.get_external_ids();
 }
 
 const OrthologGroup& OrthologGroupInfo::get() const {

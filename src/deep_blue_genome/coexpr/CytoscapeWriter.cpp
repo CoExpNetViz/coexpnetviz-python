@@ -140,9 +140,9 @@ void CytoscapeWriter::write_node_attr_targets(ostream& out) {
 	}
 
 	// output targets (= family nodes)
-	for (auto neigh : neighbours) {
+	for (auto&& neigh : neighbours) {
 		// fetch data
-		auto get_name = make_function([](const Gene* g) { // TODO could use std bind or something?
+		auto get_name = make_function([](const Gene* g) { // TODO could use std bind
 			return g->get_name();
 		});
 		auto gene_names = neigh->get_correlating_genes() | transformed(get_name);

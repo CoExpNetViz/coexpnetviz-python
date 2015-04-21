@@ -53,9 +53,9 @@ public:
 	 *
 	 * @returns Range of pairs of (source, ids with matching source)
 	 */
-	const OrthologGroup::ExternalIdsGrouped& get_external_ids_grouped() const;
+	OrthologGroup::ExternalIdsGrouped get_external_ids_grouped() const;
 
-	OrthologGroup::ExternalIds get_external_ids() const;
+	const OrthologGroup::ExternalIds& get_external_ids() const;
 
 	/**
 	 * Get range of containing genes
