@@ -146,12 +146,26 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 		int i = -1; // row/line
 		int j = -1;
 
-		auto on_new_gene = [this, &gem, &i, &j](std::string name) { // start new line
+		int line_number = 1;  // start at 1 because of header
+		bool skip_line = false;
+
+		auto on_new_gene = [this, &gem, &i, &j, &line_number, &skip_line](std::string name) { // start new line
 			ensure(i<0 || j==gem->expression_matrix.size2()-1, (
 					make_string() << "Line " << i+2 << " (1-based, header included): expected "
 					<< gem->expression_matrix.size2() << " columns, got " << j+1).str(),
 					ErrorType::GENERIC
 			);
+
+			line_number++;
+
+			if (name.empty()) {
+				skip_line = true;
+				cout << "Warning: Line " << line_number << ": skipping line with empty gene name\n";
+				return;
+			}
+			else {
+				skip_line = false;
+			}
 
 			Gene& gene = database.get_gene_variant(name).get_gene();
 
@@ -167,7 +181,9 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 			j = -1;
 		};
 
-		auto on_gene_value = [this, &i, &j, &gem](double value) { // gene expression value
+		auto on_gene_value = [this, &i, &j, &gem, &skip_line](double value) { // gene expression value
+			if (skip_line)
+				return;
 			j++;
 			gem->expression_matrix(i, j) = value;
 		};
