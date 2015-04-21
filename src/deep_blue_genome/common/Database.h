@@ -141,6 +141,8 @@ private:
 	 */
 	std::string get_main_file() const;
 
+	OrthologGroup& add_ortholog_group(std::unique_ptr<OrthologGroup>&&);
+
 private:
 	GeneCollection unknown_gene_collection; // a catch-all gene collection that collects genes that didn't match any of the known collections
 	std::vector<std::unique_ptr<GeneCollection>> gene_collections; // TODO stable_vector, or ptr_vector from boost pointer container (e.g. if you find the compile time dependencies too harsh with non-pointer types; i.e. more includes)
