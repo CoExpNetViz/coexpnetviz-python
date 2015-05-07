@@ -5,7 +5,9 @@ module purge
 module load gsl
 module load cmake
 module load boost
-export BOOST_ROOT=/software/shared/apps/x86_64/boost/1.55  # work-around for incorrect BOOST_ROOT
+module load gmp
+module load mpfr
+module load mpc
 module load yaml-cpp
 module load gcc
 ./cmake_
