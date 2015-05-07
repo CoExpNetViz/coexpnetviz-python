@@ -172,11 +172,6 @@ int main(int argc, char** argv) {
 					if (corr < negative_treshold || corr > positive_treshold) {
 						auto& gene = expression_matrix->get_gene(row);
 						auto&& group = groups->get(gene);
-
-						if (group.get_genes().size() < 2) {
-							continue; // If gene has no orthologs, don't return it in the output. We assume it won't be interesting and would just add clutter XXX could improve performance by excluding these from GeneCorr matrix in the first place (i.e. don't construct those rows)
-						}
-
 						group.add_bait_correlation(gene, bait, corr);
 						neighbours.emplace_back(&group);
 					}
