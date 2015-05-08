@@ -198,14 +198,18 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 			j = -1;
 		};
 
-		auto on_gene_value = [this, &i, &j, &gem, &skip_line](double value) { // gene expression value
+		auto on_gene_value = [this, &i, &j, &gem, &skip_line, line_number](double value) { // gene expression value
 			if (skip_line)
 				return;
 			j++;
+
+			ensure(j < gem->expression_matrix.size2(),
+					(make_string() << "Error: Line " << line_number << ": More values than columns").str()
+			);
 			gem->expression_matrix(i, j) = value;
 		};
 
-		parse(current, end, (rules.field[on_new_gene] > rules.separator > (double_[on_gene_value] % rules.separator)) % eol);
+		parse(current, end, (rules.field[on_new_gene] > rules.separator > (double_[on_gene_value] % rules.separator)) % rules.line_separator);
 
 		ensure(j == gem->expression_matrix.size2()-1,
 				(make_string() << "Error while reading " << path << ": Incomplete line: " << j+1 << " values instead of " << gem->expression_matrix.size2()).str(),

@@ -37,6 +37,7 @@ public:
 		separator = lit("\t");
 		field %= as_string[lexeme[*(char_- (separator | eol))]];
 		line %= field % separator;
+		line_separator = +(lit("\n") | lit("\r"));
 
 		separator.name("field separator");
 		field.name("field");
@@ -46,6 +47,7 @@ public:
 	boost::spirit::qi::rule<Iterator> separator; // field separator
 	boost::spirit::qi::rule<Iterator, std::string()> field;
 	boost::spirit::qi::rule<Iterator, std::vector<std::string>()> line; // = fields
+	boost::spirit::qi::rule<Iterator> line_separator; // separates lines (also sucks up any blank lines)
 };
 
 typedef BasicTabGrammarRules<const char*> TabGrammarRules;
