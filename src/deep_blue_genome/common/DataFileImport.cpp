@@ -147,13 +147,17 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 		using namespace boost::spirit::qi;
 
 		auto current = begin;
+		TabGrammarRules rules;
 
-		// count lines in file
-		int line_count = count(begin, end, '\n') + 1; // #lines = #line_separators + 1
+		// count lines in file  TODO extract as function  // TODO check performance, might want to use a spirit lexer (http://www.boost.org/doc/libs/1_43_0/libs/spirit/doc/html/spirit/lex/tutorials/lexer_quickstart3.html) or boost regex
+		int line_count = 0;
+		auto inc_line_count = [&line_count]() {
+			line_count++;
+		};
+		parse(begin, end, (rules.line[inc_line_count]) % rules.line_separator);
 
 		// parse header
 		std::vector<std::string> header_items;
-		TabGrammarRules rules;
 		parse(current, end, rules.line > eol, header_items);
 
 		// resize matrix
