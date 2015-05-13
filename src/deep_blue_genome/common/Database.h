@@ -134,11 +134,11 @@ public:
 
 public: // return type deduced funcs (can't be moved outside the class def)
 	/**
-	 * Get range of all non-singleton ortholog groups
+	 * Get range of all non-dummy ortholog groups
 	 */
 	auto get_ortholog_groups() const {
 		auto not_singleton = [](const OrthologGroup& group) {
-			return !group.is_singleton();
+			return !group.is_dummy();
 		};
 		return ortholog_groups | boost::adaptors::indirected | boost::adaptors::filtered(make_function(not_singleton));
 	}

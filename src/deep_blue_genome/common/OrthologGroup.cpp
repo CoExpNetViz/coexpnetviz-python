@@ -29,10 +29,12 @@ using namespace std;
 namespace DEEP_BLUE_GENOME {
 
 OrthologGroup::OrthologGroup() // TODO biology would call these a family, not a group. Stick to bioinformatics terms
+:	dummy(true)
 {
 }
 
 OrthologGroup::OrthologGroup(GeneFamilyId id) // TODO change all arg passing to what matches guidelines
+:	dummy(false)
 {
 	external_ids.emplace(std::move(id));
 }
@@ -42,7 +44,7 @@ void OrthologGroup::set_iterator(OrthologGroup::DatabaseIterator it) {
 }
 
 void OrthologGroup::add(Gene& gene) {
-	assert(contains(genes, &gene) || genes.size() == 0 || !is_singleton()); // can't add more than 1 gene to a singleton group
+	assert(contains(genes, &gene) || genes.size() == 0 || !is_dummy()); // can't add more than 1 gene to a dummy group
 
 	gene.set_ortholog_group(*this);
 	genes.emplace(&gene);
@@ -84,8 +86,8 @@ std::size_t OrthologGroup::size() const {
 	return genes.size();
 }
 
-bool OrthologGroup::is_singleton() const {
-	return genes.size() == 1;
+bool OrthologGroup::is_dummy() const {
+	return dummy;
 }
 
 std::ostream& operator<<(std::ostream& out, const OrthologGroup& group) {

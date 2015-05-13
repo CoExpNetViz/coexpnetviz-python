@@ -64,3 +64,13 @@ add_executable(coexpr ${coexpr_sources})
 target_link_libraries(coexpr
 	common
 )
+
+
+#############
+# ortholog_stats
+file(GLOB_RECURSE ortholog_stats_sources deep_blue_genome/ortholog_stats/*.cpp)
+add_executable(ortholog_stats ${ortholog_stats_sources})
+
+target_link_libraries(ortholog_stats
+	common
+)

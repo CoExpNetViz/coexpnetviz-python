@@ -51,9 +51,9 @@ public:
 
 public:
 	/**
-	 * Construct singleton group
+	 * Construct dummy group, can contain 1 gene
 	 *
-	 * Singleton groups are used as a default for genes not part of any other group
+	 * These must be used as a default for genes not part of any other group
 	 */
 	OrthologGroup();
 
@@ -99,11 +99,11 @@ public:
 	std::size_t size() const;
 
 	/**
-	 * Get whether it's a singleton group.
+	 * Get whether it's a dummy group.
 	 *
-	 * Note: group is singleton iff it has 1 gene
+	 * See OrthologGroup() ctor doc
 	 */
-	bool is_singleton() const;
+	bool is_dummy() const;
 
 public: // treat as private (failed to friend boost::serialization)
 	template<class Archive>
@@ -113,6 +113,7 @@ private:
 	ExternalIds external_ids;
 	Genes genes;
 	DatabaseIterator database_it; // iterator to self in database that owns the group
+	bool dummy;
 };
 
 /**

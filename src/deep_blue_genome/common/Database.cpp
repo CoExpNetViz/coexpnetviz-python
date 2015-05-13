@@ -54,7 +54,6 @@ GeneVariant* Database::try_get_gene_variant(const std::string& name) {
 	return &unknown_gene_collection.get_gene_variant(name); // Note: this should never fail (it's a bug otherwise)
 }
 
-// TODO this is copy paste of the next add_orth_group
 OrthologGroup& Database::add_ortholog_group(const GeneFamilyId& external_id) {
 	return add_ortholog_group(make_unique<OrthologGroup>(external_id));
 }
