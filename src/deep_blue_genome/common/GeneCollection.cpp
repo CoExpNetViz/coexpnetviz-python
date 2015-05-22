@@ -59,6 +59,7 @@ GeneCollection::GeneCollection(Database& database)
 }
 
 GeneVariant& GeneCollection::get_gene_variant(const std::string& name) {
+	assert(!name.empty());
 	auto result = try_get_gene_variant(name);
 	if (result) {
 		return *result;

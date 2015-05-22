@@ -73,7 +73,7 @@ flat_set<OrthologGroup*> read_orthologs(Database& database, std::string path) { 
 			}
 		};
 
-		TabGrammarRules rules;
+		TabGrammarRules rules(true);
 		parse(begin, end, rules.line[on_line] % eol);
 		return begin;
 	});

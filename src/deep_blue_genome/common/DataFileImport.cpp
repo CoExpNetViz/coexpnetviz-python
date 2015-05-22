@@ -54,7 +54,7 @@ void DataFileImport::add_gene_mappings(const std::string& path) {
 			}
 		};
 
-		TabGrammarRules rules;
+		TabGrammarRules rules(true);
 		parse(begin, end, rules.line[on_line] % eol);
 		return begin;
 	});
@@ -67,6 +67,11 @@ void DataFileImport::add_functional_annotations(const string& path) {
 		using namespace boost::spirit::qi;
 
 		auto on_line = [this](const std::vector<std::string>& line) {
+			if (line.size() < 2) {
+				// Incomplete line, ignore
+				return;
+			}
+
 			ensure(line.size() == 2,
 					(make_string() << "Expected line with 2 columns, but got " << line.size() << " columns").str(),
 					ErrorType::GENERIC
@@ -80,7 +85,7 @@ void DataFileImport::add_functional_annotations(const string& path) {
 			}
 		};
 
-		TabGrammarRules rules;
+		TabGrammarRules rules(true);
 		parse(begin, end, rules.line[on_line] % eol);
 		return begin;
 	});
@@ -97,7 +102,7 @@ void DataFileImport::add_orthologs(std::string source_name, std::string path) {
 
 		auto on_line = [this, source_name, &unknown_genes](const std::vector<std::string>& line) {
 			if (line.size() < 3) {
-				cout << "Warning: Encountered line in ortholog file with " << line.size() << " < 3 columns\n";
+				// Ignore singletons
 				return;
 			}
 
@@ -132,7 +137,7 @@ void DataFileImport::add_orthologs(std::string source_name, std::string path) {
 		}
 
 
-		TabGrammarRules rules;
+		TabGrammarRules rules(true);
 		parse(begin, end, rules.line[on_line] % eol);
 		return begin;
 	});
@@ -147,7 +152,7 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 		using namespace boost::spirit::qi;
 
 		auto current = begin;
-		TabGrammarRules rules;
+		TabGrammarRules rules(true);
 
 		// count lines in file  TODO extract as function  // TODO check performance, might want to use a spirit lexer (http://www.boost.org/doc/libs/1_43_0/libs/spirit/doc/html/spirit/lex/tutorials/lexer_quickstart3.html) or boost regex
 		int line_count = 0;
@@ -273,7 +278,7 @@ void DataFileImport::add_clustering(const std::string& name, const std::string& 
 			cluster.add(gene);
 		};
 
-		TabGrammarRules rules;
+		TabGrammarRules rules(true);
 		parse(begin, end, rules.line[on_cluster_item] % eol);
 
 		// Move clusters' values to this->clusters

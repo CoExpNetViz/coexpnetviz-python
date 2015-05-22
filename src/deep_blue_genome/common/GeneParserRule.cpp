@@ -57,7 +57,6 @@ bool GeneParserRule::try_parse(std::string& name, NullableSpliceVariantId& splic
 
 		return true;
 	}
-	cout << matcher << endl;
 	return false;
 }
 

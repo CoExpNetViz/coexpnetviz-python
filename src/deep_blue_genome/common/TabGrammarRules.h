@@ -29,14 +29,19 @@ namespace DEEP_BLUE_GENOME {
 template <class Iterator>
 class BasicTabGrammarRules {
 public:
-	BasicTabGrammarRules()
+	BasicTabGrammarRules(bool ignoreEmptyFields)
 	{
 		using namespace boost::spirit::qi;
 		using namespace boost::fusion;
 
 		separator = lit("\t");
 		field %= as_string[lexeme[*(char_- (separator | eol))]];
-		line %= field % separator;
+		if (ignoreEmptyFields) {
+			line %= field % +separator;
+		}
+		else {
+			line %= field % separator;
+		}
 		line_separator = +(lit("\n") | lit("\r"));
 
 		separator.name("field separator");
