@@ -99,6 +99,7 @@ void print_stats(flat_set<OrthologGroup*> groups1, flat_set<OrthologGroup*> grou
 
 	// TODO highly parallelisable, could use TBB but then at least this thing should be made GPL since TBB is GPLv2
 	int i=0;
+	cout << groups1.size() << " x " << groups2.size() << endl;
 	for (auto group1 : groups1) {
 		for (auto group2 : groups2) {
 			double score = get_score(*group1, *group2);

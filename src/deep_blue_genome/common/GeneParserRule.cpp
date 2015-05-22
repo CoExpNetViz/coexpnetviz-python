@@ -57,11 +57,12 @@ bool GeneParserRule::try_parse(std::string& name, NullableSpliceVariantId& splic
 
 		return true;
 	}
+	cout << matcher << endl;
 	return false;
 }
 
 void GeneParserRule::set_matcher(const std::string& match) { // TODO if a user provides a greedy .* match, then our numbers won't be matched in it. Must document or fix this
-	matcher = match + "([.]([0-9]+))*";
+	matcher = match + "([.]([0-9]+))?";
  	matcher_re = boost::regex(matcher, boost::regex::perl | boost::regex::icase);
 }
 

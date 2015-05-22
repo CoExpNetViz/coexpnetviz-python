@@ -55,7 +55,7 @@ GeneCollection::GeneCollection(Database& database, const std::string& name, cons
 GeneCollection::GeneCollection(Database& database)
 :	database(&database), is_unknown(true), name("Unknown"), species("Unknown")
 {
-	gene_parser_rules.emplace_back("([^.]+)", "$1");
+	gene_parser_rules.emplace_back("(.+?)", "$1");
 }
 
 GeneVariant& GeneCollection::get_gene_variant(const std::string& name) {
@@ -64,7 +64,8 @@ GeneVariant& GeneCollection::get_gene_variant(const std::string& name) {
 		return *result;
 	}
 	else {
-		throw NotFoundException("Gene not part of a known gene collection: " + name);
+		assert(!is_unknown);
+		throw NotFoundException("Gene not part of gene collection: " + name);
 	}
 }
 
