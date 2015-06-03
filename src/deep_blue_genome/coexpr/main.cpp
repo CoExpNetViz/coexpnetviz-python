@@ -30,7 +30,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <random>
-#include <boost/filesystem.hpp> // TODO remove unused includes here
+#include <boost/filesystem.hpp>
 #include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm_ext.hpp>
 #include <yaml-cpp/yaml.h>
@@ -67,10 +67,9 @@ void read_yaml(std::string path, Database& database, string& baits_path, double&
 
 	DataFileImport importer(database);
 
-	int i=0;
 	for (auto matrix_node : job_node["expression_matrices"]) {
 		string matrix_path = matrix_node.as<string>();
-		string matrix_name = "tmp:matrix" + (i++);
+		string matrix_name = matrix_path;
 		auto& matrix = importer.add_gene_expression_matrix(matrix_name, matrix_path);
 
 		expression_matrices.emplace_back(&matrix);
@@ -196,7 +195,8 @@ int main(int argc, char** argv) {
 				}
 
 				// Output correlation matrix
-				std::ofstream out(expression_matrix->get_name() + ".correlation_matrix"); // TODO write_file util func that opens an ofstream in this proper way for us
+				boost::filesystem::path path(expression_matrix->get_name());  // XXX this part is coupled to the way we name the matrices while adding them
+				std::ofstream out(path.filename().native() + ".correlation_matrix"); // TODO write_file util func that opens an ofstream in this proper way for us
 				out.exceptions(ofstream::failbit | ofstream::badbit);
 				out << DEEP_BLUE_GENOME::COMMON::WRITER::write_plain(*expression_matrix, correlations);
 			}
