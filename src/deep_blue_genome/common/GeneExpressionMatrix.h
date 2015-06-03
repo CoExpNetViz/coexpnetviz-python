@@ -26,7 +26,7 @@
 #include <memory>
 #include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/types.h>
-#include <deep_blue_genome/common/ublas.h> // TODO would compile speed up much without this in many headers?
+#include <deep_blue_genome/common/ublas.h>
 
 namespace DEEP_BLUE_GENOME {
 
@@ -87,7 +87,7 @@ public: // treat as private (failed to friend boost::serialization)
 private:
 	std::string name; // name of dataset
 	matrix expression_matrix; // row_major
-	std::unordered_map<GeneExpressionMatrixRow, Gene*> row_to_gene; // TODO Bimap
+	std::vector<Gene*> row_to_gene; // row_to_gene[row] = gene
 	std::unordered_map<Gene*, GeneExpressionMatrixRow> gene_to_row; // inverse of gene_row_to_id
 };
 
@@ -106,8 +106,8 @@ void GeneExpressionMatrix::serialize(Archive& ar, const unsigned int version) {
 	ar & row_to_gene;
 
 	if (Archive::is_loading::value) {
-		for (auto& p : row_to_gene) {
-			gene_to_row.emplace(p.second, p.first);
+		for (auto p : row_to_gene | boost::adaptors::indexed(0)) {
+			gene_to_row.emplace(p.value(), p.index());
 		}
 	}
 }

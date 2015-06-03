@@ -35,6 +35,7 @@
 #include <boost/range/algorithm_ext.hpp>
 #include <yaml-cpp/yaml.h>
 #include <deep_blue_genome/common/reader/Database.h>
+#include <deep_blue_genome/common/writer/GeneCorrelationMatrix.h>
 #include <deep_blue_genome/util/printer.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/database_all.h>
@@ -193,6 +194,11 @@ int main(int argc, char** argv) {
 						neighbours.emplace_back(&group);
 					}
 				}
+
+				// Output correlation matrix
+				std::ofstream out(expression_matrix->get_name() + ".correlation_matrix"); // TODO write_file util func that opens an ofstream in this proper way for us
+				out.exceptions(ofstream::failbit | ofstream::badbit);
+				out << DEEP_BLUE_GENOME::COMMON::WRITER::write_plain(*expression_matrix, correlations);
 			}
 		}
 

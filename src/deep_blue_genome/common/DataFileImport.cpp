@@ -23,6 +23,7 @@
 #include <deep_blue_genome/common/TabGrammarRules.h>
 #include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/common/util.h>
+#include <deep_blue_genome/common/ublas.h>
 
 using namespace std;
 
@@ -154,33 +155,30 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 		auto current = begin;
 		TabGrammarRules rules(true);
 
-		// count lines in file  TODO extract as function  // TODO check performance, might want to use a spirit lexer (http://www.boost.org/doc/libs/1_43_0/libs/spirit/doc/html/spirit/lex/tutorials/lexer_quickstart3.html) or boost regex
-		int line_count = 0;
-		auto inc_line_count = [&line_count]() {
-			line_count++;
-		};
-		parse(begin, end, (rules.line[inc_line_count]) % rules.line_separator);
+		// Note: Since we don't know line count up front, we buffer lines in a vector before putting it in a matrix.
+		// 		 Since lines can be skipped, we cannot trivially count the number of newlines.
 
 		// parse header
-		std::vector<std::string> header_items;
-		parse(current, end, rules.line > eol, header_items);
-
-		// resize matrix
-		gem->expression_matrix.resize(line_count-1, header_items.size()-1, false);
+		int column_count;
+		{
+			std::vector<std::string> header_items;
+			parse(current, end, rules.line > eol, header_items);
+			column_count = header_items.size() - 1;
+		}
 
 		// parse gene lines
-		int i = -1; // row/line
-		int j = -1;
-
+		std::vector<std::vector<matrix::value_type>> lines; // values on each line, does not include skipped lines
 		int line_number = 1;  // start at 1 because of header
 		bool skip_line = false;
 
-		auto on_new_gene = [this, &gem, &i, &j, &line_number, &skip_line](std::string name) { // start new line
-			ensure(i<0 || j==gem->expression_matrix.size2()-1, (
-					make_string() << "Line " << i+2 << " (1-based, header included): expected "
-					<< gem->expression_matrix.size2() << " columns, got " << j+1).str(),
-					ErrorType::GENERIC
-			);
+		auto on_new_gene = [this, &gem, &lines, &line_number, &skip_line, column_count](std::string name) { // start new line
+			// TODO current ensure always constructs its error message, want to delay that (a lambda probably is needed)
+			if(!(lines.empty() || lines.back().size()==column_count)) {
+				ensure(false,
+						(make_string() << "Line " << line_number << " (1-based, header included): expected "
+										<< column_count << " columns, got " << lines.back().size()).str()
+				);
+			}
 
 			line_number++;
 
@@ -195,35 +193,37 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 
 			Gene& gene = database.get_gene_variant(name).get_gene();
 
-			i++;
+			lines.emplace_back(vector<matrix::value_type>());
+			lines.back().reserve(column_count);
 
-			bool created = gem->gene_to_row.emplace(&gene, i).second;
+			bool created = gem->gene_to_row.emplace(&gene, lines.size()-1).second;
 			ensure(created,
-					(make_string() << "Duplicate gene: " << name).str(),
-					ErrorType::GENERIC
+					(make_string() << "Duplicate gene: " << name).str()
 			);
 
-			gem->row_to_gene[i] = &gene;
-			j = -1;
+			gem->row_to_gene.emplace_back(&gene);
 		};
 
-		auto on_gene_value = [this, &i, &j, &gem, &skip_line, line_number](double value) { // gene expression value
-			if (skip_line)
-				return;
-			j++;
-
-			ensure(j < gem->expression_matrix.size2(),
-					(make_string() << "Error: Line " << line_number << ": More values than columns").str()
-			);
-			gem->expression_matrix(i, j) = value;
+		auto on_gene_value = [&lines, &skip_line](double value) { // gene expression value
+			if (!skip_line)
+				lines.back().emplace_back(value);
 		};
 
 		parse(current, end, (rules.field[on_new_gene] > rules.separator > (double_[on_gene_value] % rules.separator)) % rules.line_separator);
 
-		ensure(j == gem->expression_matrix.size2()-1,
-				(make_string() << "Error while reading " << path << ": Incomplete line: " << j+1 << " values instead of " << gem->expression_matrix.size2()).str(),
-				ErrorType::GENERIC
+		// Validate last line
+		ensure(lines.back().size() == column_count,
+				(make_string() << "Last (non-skipped) line: " << lines.back().size() << " values instead of " << column_count).str()
 		);
+
+		// Convert to matrix
+		gem->expression_matrix.resize(lines.size(), column_count, false);
+		for (matrix::size_type i=0; i<lines.size(); ++i) {
+			auto&& line = lines.at(i);
+			for (matrix::size_type j=0; j<column_count; j++) {
+				gem->expression_matrix(i,j) = line.at(j);
+			}
+		}
 
 		return current;
 	});

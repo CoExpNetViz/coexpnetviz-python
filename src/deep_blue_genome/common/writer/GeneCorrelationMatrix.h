@@ -17,39 +17,25 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "GeneExpressionMatrix.h"
+/**
+ * Writers of ortholog groups
+ */
 
-using namespace std;
+#pragma once
+
+#include <string>
 
 namespace DEEP_BLUE_GENOME {
 
-GeneExpressionMatrix::GeneExpressionMatrix()
-{
-}
+class GeneExpressionMatrix;
+class GeneCorrelationMatrix;
 
-GeneExpressionMatrixRow GeneExpressionMatrix::get_gene_row(Gene& gene) const {
-	assert(has_gene(gene));
-	return gene_to_row.find(&gene)->second;
-}
+namespace COMMON {
+namespace WRITER {
 
-Gene& GeneExpressionMatrix::get_gene(GeneExpressionMatrixRow row) const {
-	return *row_to_gene.at(row);
-}
+/**
+ * Write gene correlation matrix to stream as plain text
+ */
+std::string write_plain(const GeneExpressionMatrix&, const GeneCorrelationMatrix&);
 
-bool GeneExpressionMatrix::has_gene(const Gene& gene) const {
-	return gene_to_row.find(const_cast<Gene*>(&gene)) != gene_to_row.end();
-}
-
-string GeneExpressionMatrix::get_name() const {
-	return name;
-}
-
-void GeneExpressionMatrix::dispose_expression_data() {
-	expression_matrix.resize(0, 0);
-}
-
-const matrix& GeneExpressionMatrix::get() const {
-	return expression_matrix;
-}
-
-} // end namespace
+}}} // end namespace
