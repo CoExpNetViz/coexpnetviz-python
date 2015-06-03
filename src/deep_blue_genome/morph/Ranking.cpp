@@ -198,7 +198,7 @@ void Ranking::rank_self(const Rankings& rankings) {
 
 	// calculate ausr
 	double auc = 0.0; // area under curve
-	for (size_type i = 0; i < K; i++) {
+	for (size_type i = 0; i < K; i++) { // TODO couldn't we just take the sum/size?
 		// TODO can continue last search for upper bound where we left last one...
 		auto supremum = upper_bound(rank_indices.begin(), rank_indices.end(), i);
 		auto count = distance(rank_indices.begin(), supremum);
