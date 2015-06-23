@@ -42,6 +42,7 @@ flat_set<OrthologGroup*> read_orthologs(Database& database, std::string path) { 
 	cout << "Loading orthologs '" << path << "'\n";
 	flat_set<OrthologGroup*> groups;
 
+	// TODO copy pasted from DataFileImport
 	read_file(path, [&database, path, &groups](const char* begin, const char* end) {
 		using namespace boost::spirit::qi;
 
@@ -92,6 +93,7 @@ double get_score(const OrthologGroup& group1, const OrthologGroup& group2) {
 	return max(max(jaccard, (double)intersection_size / group1.size()), (double)intersection_size / group2.size());
 }
 
+// unused now
 void print_stats(flat_set<OrthologGroup*> groups1, flat_set<OrthologGroup*> groups2) {
 	std::array<long, 50> bin_counts; // number of scores that fall in the bin
 	boost::fill(bin_counts, 0);
@@ -121,12 +123,44 @@ void print_stats(flat_set<OrthologGroup*> groups1, flat_set<OrthologGroup*> grou
 	cout << intercalate(",", bin_counts) << endl;
 }
 
+/**
+ * Write graph to file in MCL abc format
+ */
+void write_graph(flat_set<OrthologGroup*> groups1, flat_set<OrthologGroup*> groups2) {
+	// TODO this only works for sets of groups with no overlap in group ids
+	ofstream out("graph");
+	out.exceptions(ofstream::failbit | ofstream::badbit);
+	auto get_name = [](const OrthologGroup& group) {
+		// assuming just one external id, ignoring source
+		return boost::begin(group.get_external_ids())->get_id();
+	};
+	size_t i=0;
+	size_t milestone = groups1.size() / 100;
+	int progress=0;
+	for (auto group1 : groups1) {
+		for (auto group2 : groups2) {
+			double score = get_score(*group1, *group2);
+			if (score > 0.0) {
+				out << get_name(*group1) << "\t" << get_name(*group2) << "\t" << score << "\n";
+			}
+		}
+		if (i == milestone) {
+			i = 0;
+			cout << ++progress << "%" << endl;
+		}
+		else {
+			++i;
+		}
+	}
+}
+
 int main(int argc, char** argv) {
 	graceful_main([argc, argv]() {
 		cout << "Warning: This program needs further modification to be reusable." << endl;
 		Database database("tmpdb", true);
 		auto&& groups1 = read_orthologs(database, argv[1]);
 		auto&& groups2 = read_orthologs(database, argv[2]);
-		print_stats(groups1, groups2);
+		//print_stats(groups1, groups2);
+		write_graph(groups1, groups2);
 	});
 }
