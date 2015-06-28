@@ -26,14 +26,13 @@ using namespace std;
 namespace DEEP_BLUE_GENOME {
 
 Gene::Gene()
-:	gene_collection(nullptr), ortholog_group(nullptr)
+:	gene_collection(nullptr)
 {
 }
 
-Gene::Gene(const std::string& name, GeneCollection& gene_collection, OrthologGroup& ortholog_group)
-:	name(name), gene_collection(&gene_collection), ortholog_group(nullptr)
+Gene::Gene(const std::string& name, GeneCollection& gene_collection)
+:	name(name), gene_collection(&gene_collection)
 {
-	ortholog_group.add(*this);
 }
 
 GeneCollection& Gene::get_gene_collection() const {
@@ -42,10 +41,6 @@ GeneCollection& Gene::get_gene_collection() const {
 
 std::string Gene::get_name() const {
 	return name;
-}
-
-OrthologGroup& Gene::get_ortholog_group() const {
-	return *ortholog_group;
 }
 
 SpliceVariant& Gene::get_splice_variant(SpliceVariantId id) {

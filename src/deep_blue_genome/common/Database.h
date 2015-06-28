@@ -55,6 +55,8 @@ class GeneVariant;
  *
  * Note: names of data are stored case-sensitive, but any lookup by name is case-insensitive
  *
+ * Gene families may overlap.
+ *
  * Invariant: a gene is part of 0 or 1 ortholog group
  */
 class Database : public boost::noncopyable {
@@ -94,13 +96,6 @@ public:
 	OrthologGroup& add_ortholog_group(const GeneFamilyId& external_id);
 
 	/**
-	 * Create singleton ortholog group
-	 *
-	 * @returns created group
-	 */
-	OrthologGroup& add_ortholog_group();
-
-	/**
 	 * @throws NotFoundException if doesn't exist
 	 */
 	GeneExpressionMatrix& get_gene_expression_matrix(std::string name);
@@ -134,13 +129,10 @@ public:
 
 public: // return type deduced funcs (can't be moved outside the class def)
 	/**
-	 * Get range of all non-dummy ortholog groups
+	 * Get range of all families
 	 */
 	auto get_ortholog_groups() const {
-		auto not_singleton = [](const OrthologGroup& group) {
-			return !group.is_dummy();
-		};
-		return ortholog_groups | boost::adaptors::indirected | boost::adaptors::filtered(make_function(not_singleton));
+		return ortholog_groups | boost::adaptors::indirected;
 	}
 
 public: // treat as private (failed to friend boost::serialization)
@@ -157,8 +149,6 @@ private:
 	 * Get path to file that contains the main data
 	 */
 	std::string get_main_file() const;
-
-	OrthologGroup& add_ortholog_group(std::unique_ptr<OrthologGroup>&&);
 
 private:
 	GeneCollection unknown_gene_collection; // a catch-all gene collection that collects genes that didn't match any of the known collections

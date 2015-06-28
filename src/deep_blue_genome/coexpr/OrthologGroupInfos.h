@@ -22,6 +22,9 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <boost/noncopyable.hpp>
+#include <boost/range/adaptors.hpp>
+#include <deep_blue_genome/common/Gene.h>
+#include <deep_blue_genome/coexpr/OrthologGroupInfo.h>
 #include <deep_blue_genome/coexpr/OrthologGroupInfo.h>
 
 namespace DEEP_BLUE_GENOME {
@@ -42,14 +45,22 @@ public:
 	 */
 	OrthologGroupInfos(Genes&& gene_collections);
 
+	OrthologGroupInfo& get(const OrthologGroup& group);
+
+public:
 	/**
-	 * Get Group of gene
+	 * Get range of family infos of gene
 	 */
-	OrthologGroupInfo& get(const Gene& gene);
+	auto get(const Gene& gene) {
+		auto get_info = make_function([this](const OrthologGroup* group) -> OrthologGroupInfo& {
+			return get(*group);
+		});
+		return gene.get_ortholog_groups() | boost::adaptors::transformed(get_info);
+	}
 
 private:
 	Genes genes;
-	std::unordered_map<OrthologGroup*, OrthologGroupInfo> groups;
+	std::unordered_map<const OrthologGroup*, OrthologGroupInfo> groups;
 };
 
 }} // end namespace

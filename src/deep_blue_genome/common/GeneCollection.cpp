@@ -89,15 +89,10 @@ GeneVariant* GeneCollection::try_get_gene_variant(const std::string& name_) {
 	// Get gene
 	auto gene_it = name_to_gene.find(name);
 	if (gene_it == name_to_gene.end()) {
-		// Add gene if does not exist yet
-
-		// start with a dummy ortholog group
-		auto& ortho_group = database->add_ortholog_group();
-
-		// now add gene
+		// Add gene since it does not exist yet
 		gene_it = name_to_gene.emplace(
 				name,
-				make_unique<Gene>(name, *this, ortho_group)
+				make_unique<Gene>(name, *this)
 		).first;
 
 		// Warn if we don't truly know its gene collection

@@ -99,9 +99,7 @@ void DataFileImport::add_orthologs(std::string source_name, std::string path) {
 		using namespace boost::spirit::qi;
 
 		// Assign ortholog groups
-		uint32_t unknown_genes = 0;
-
-		auto on_line = [this, source_name, &unknown_genes](const std::vector<std::string>& line) {
+		auto on_line = [this, source_name](const std::vector<std::string>& line) {
 			if (line.size() < 3) {
 				// Ignore singletons
 				return;
@@ -112,31 +110,17 @@ void DataFileImport::add_orthologs(std::string source_name, std::string path) {
 			for (int i=1; i < line.size(); i++) {
 				auto& name = line.at(i);
 				try {
-					try {
-						auto& gene = database.get_gene_variant(name).as_gene();
-						auto&& group2 = gene.get_ortholog_group();
-
-						if (&group2 != &group) {
-							group.merge(std::move(group2), database);
-						}
-					}
-					catch(const TypedException& e) {
-						if (e.get_type() != ErrorType::SPLICE_VARIANT_INSTEAD_OF_GENE) {
-							throw;
-						}
-						cout << "Warning: ignoring splice variant in orthologs file: " << name << "\n";
-					}
+					auto& gene = database.get_gene_variant(name).as_gene();
+					gene.add_ortholog_group(group);
 				}
-				catch (const NotFoundException&) {
-					unknown_genes++; // TODO this currently no longer happens due to them being put in unknown gene collection
+				catch(const TypedException& e) { // TODO hierarchy on exceptions instead of the TypedException thing; though do add an get_error_code to them?
+					if (e.get_type() != ErrorType::SPLICE_VARIANT_INSTEAD_OF_GENE) {
+						throw;
+					}
+					cout << "Warning: ignoring splice variant in orthologs file: " << name << "\n";
 				}
 			}
 		};
-
-		if (unknown_genes > 0) {
-			cout << "Warning: ignored " << unknown_genes << " genes of unrecognised gene collections" << "\n";
-		}
-
 
 		TabGrammarRules rules(true);
 		parse(begin, end, rules.line[on_line] % eol);

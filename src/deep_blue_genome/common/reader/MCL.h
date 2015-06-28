@@ -17,32 +17,51 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "OrthologGroupInfos.h"
+/**
+ * MCL file formats
+ */
 
-using namespace std;
-using namespace DEEP_BLUE_GENOME;
+#pragma once
+
+#include <yaml-cpp/yaml.h>
 
 namespace DEEP_BLUE_GENOME {
-namespace COEXPR {
 
-OrthologGroupInfos::OrthologGroupInfos(Genes&& genes)
-:	genes(std::move(genes))
+class Database;
+
+namespace COMMON {
+namespace READER {
+
+typedef std::vector<std::string> Cluster;
+
+/**
+ * Generic clustering
+ *
+ * Unlabeled clusters of items identified by string.
+ */
+class Clustering
 {
-}
-
-OrthologGroupInfo& OrthologGroupInfos::get(const OrthologGroup& group) {
-	auto it = groups.find(&group);
-	if (it == groups.end()) {
-		// make group
-		auto p = groups.emplace(piecewise_construct,
-				forward_as_tuple(&group),
-				forward_as_tuple(group, genes)
-		);
-		return p.first->second;
+public:
+	/**
+	 * Get range of Cluster in the clustering
+	 */
+	auto get_clusters() {
+		return clusters;
 	}
-	else {
-		return it->second;
-	}
-}
 
-}} // end namespace
+	void add_cluster(const Cluster&);
+
+private:
+	std::vector<Cluster> clusters;
+};
+
+class MCL
+{
+public:
+	/**
+	 * Read clustering outputted by an --abc run
+	 */
+	Clustering read_clustering(const std::string& path);
+};
+
+}}} // end namespace

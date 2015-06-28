@@ -39,7 +39,7 @@ class Database;
  *
  * To construct a valid object you need to first construct it, and then supply iterator to group via set_iterator.
  */
-class OrthologGroup : private boost::noncopyable // TODO There's nothing specific to orthologs in here, could rename it to... GeneFamily?
+class OrthologGroup : private boost::noncopyable // TODO There's nothing specific to orthologs in here, could rename it to... GeneFamily?  // TODO biology would call these a family, not a group. Stick to bioinformatics terms
 {
 public:
 	typedef boost::container::flat_set<Gene*> Genes; // Turns out flat_set is more efficient than unordered_set with its insertions, up to about 500000 elements
@@ -50,15 +50,11 @@ public:
 	friend std::ostream& operator<<(std::ostream&, const OrthologGroup&);
 
 public:
-	/**
-	 * Construct dummy group, can contain 1 gene
-	 *
-	 * These must be used as a default for genes not part of any other group
-	 */
-	OrthologGroup();
-
 	OrthologGroup(GeneFamilyId);
 
+	/**
+	 * Set iterator to itself in Database that owns it
+	 */
 	void set_iterator(OrthologGroup::DatabaseIterator);
 
 	/**
@@ -71,11 +67,11 @@ public:
 	void add(Gene&);
 
 	/**
-	 * Merge other group into this one
+	 * Merge with other group.
 	 *
-	 * Note: this removes the other group from database
+	 * Other group is deleted after the merge.
 	 */
-	void merge(OrthologGroup&&, Database&);
+	void merge(OrthologGroup&& other, Database& database);
 
 	/**
 	 * Get range of external ids assigned to this ortholog group
@@ -99,21 +95,22 @@ public:
 	std::size_t size() const;
 
 	/**
-	 * Get whether it's a dummy group.
+	 * Return whether the group is a union of families
 	 *
-	 * See OrthologGroup() ctor doc
+	 * I.e. size(get_external_ids()) > 1
 	 */
-	bool is_dummy() const;
+	bool is_merged() const;
 
 public: // treat as private (failed to friend boost::serialization)
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version);
 
+	OrthologGroup() {}
+
 private:
 	ExternalIds external_ids;
 	Genes genes;
-	DatabaseIterator database_it; // iterator to self in database that owns the group
-	bool dummy;
+	DatabaseIterator database_it;
 };
 
 /**

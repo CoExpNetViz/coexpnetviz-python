@@ -28,13 +28,7 @@ using namespace std;
 
 namespace DEEP_BLUE_GENOME {
 
-OrthologGroup::OrthologGroup() // TODO biology would call these a family, not a group. Stick to bioinformatics terms
-:	dummy(true)
-{
-}
-
-OrthologGroup::OrthologGroup(GeneFamilyId id) // TODO change all arg passing to what matches guidelines
-:	dummy(false)
+OrthologGroup::OrthologGroup(GeneFamilyId id) // TODO change all arg passing to what matches C++ guidelines
 {
 	external_ids.emplace(std::move(id));
 }
@@ -44,9 +38,7 @@ void OrthologGroup::set_iterator(OrthologGroup::DatabaseIterator it) {
 }
 
 void OrthologGroup::add(Gene& gene) {
-	assert(contains(genes, &gene) || genes.size() == 0 || !is_dummy()); // can't add more than 1 gene to a dummy group
-
-	gene.set_ortholog_group(*this);
+	gene.add_ortholog_group(*this);
 	genes.emplace(&gene);
 }
 
@@ -58,9 +50,10 @@ const OrthologGroup::Genes& OrthologGroup::get_genes() const {
 void OrthologGroup::merge(OrthologGroup&& other, Database& database) {
 	assert(&other != this);
 
-	// Set other genes to this group
+	// Update other genes to this group
 	for (auto gene : other.genes) {
-		gene->set_ortholog_group(*this);
+		gene->remove_ortholog_group(other);
+		gene->add_ortholog_group(*this);
 	}
 
 	// merge external ids
@@ -86,12 +79,8 @@ std::size_t OrthologGroup::size() const {
 	return genes.size();
 }
 
-bool OrthologGroup::is_dummy() const {
-	return dummy;
-}
-
 std::ostream& operator<<(std::ostream& out, const OrthologGroup& group) {
-	out << "ortholog family {" << intercalate(";", group.get_external_ids()) << "}";
+	out << "OrthologFamily {" << intercalate(";", group.get_external_ids()) << "}";
 	return out;
 }
 
@@ -105,6 +94,10 @@ OrthologGroup::ExternalIdsGrouped OrthologGroup::get_external_ids_grouped() cons
 		ids[id.get_source()].emplace(id);
 	}
 	return ids;
+}
+
+bool OrthologGroup::is_merged() const {
+	return external_ids.size() > 1;
 }
 
 } // end namespace

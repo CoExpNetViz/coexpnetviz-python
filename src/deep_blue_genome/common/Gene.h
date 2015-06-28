@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <boost/container/flat_set.hpp>
 #include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/GeneVariant.h>
@@ -28,7 +29,7 @@ namespace DEEP_BLUE_GENOME {
 class OrthologGroup;
 class SpliceVariant;
 
-class Gene : public GeneVariant
+class Gene : public GeneVariant  // TODO conceptually a Gene is not a GeneVariant, variants of a Gene are gene variants. Probably just need to rename the base class to.. something else
 {
 public:
 	/**
@@ -36,23 +37,9 @@ public:
 	 *
 	 * @param group Ortholog group the gene is part of
 	 */
-	Gene(const std::string& name, GeneCollection&, OrthologGroup&);
+	Gene(const std::string& name, GeneCollection&);
 
 	std::string get_name() const;
-
-	/**
-	 * Get ortholog group
-	 */
-	OrthologGroup& get_ortholog_group() const;
-
-	/**
-	 * Set ortholog group
-	 *
-	 * @param group Ortholog group the gene is part of
-	 */
-	inline void set_ortholog_group(OrthologGroup& group) {
-		ortholog_group = &group;
-	}
 
 	/**
 	 * Get splice variant
@@ -67,6 +54,33 @@ public:
 	Gene& get_gene();
 	Gene& as_gene();
 
+public:
+	/**
+	 * Get range of ortholog groups this gene is a part of
+	 */
+	auto get_ortholog_groups() const {
+		return ortholog_groups;
+	}
+
+public: // Internal methods
+	/**
+	 * Internal method: add family to gene without adding gene to family
+	 *
+	 * @param group Ortholog group the gene is part of
+	 */
+	void add_ortholog_group(OrthologGroup& group) {
+		ortholog_groups.emplace(&group);
+	}
+
+	/**
+	 * Internal method: remove family from gene without removing gene from family
+	 *
+	 * @param group Ortholog group the gene is part of
+	 */
+	void remove_ortholog_group(OrthologGroup& group) {
+		ortholog_groups.erase(&group);
+	}
+
 protected:
 	void print(std::ostream&) const;
 
@@ -80,7 +94,7 @@ private:
 	// Note: we use pointers instead of references as Gene needs to be default constructible to be conveniently usable with boost serialization
 	std::string name; // unique name of gene
 	GeneCollection* gene_collection; // genes collection which this gene is part of. Not null
-	OrthologGroup* ortholog_group; // ortholog group this gene is part of. Not null after ctor has finished
+	boost::container::flat_set<OrthologGroup*> ortholog_groups; // ortholog groups this gene is part of.
 	std::vector<std::unique_ptr<SpliceVariant>> splice_variants; // TODO stable_vector
 };
 
@@ -97,7 +111,7 @@ template<class Archive>
 void Gene::serialize(Archive& ar, const unsigned int version) {
 	ar & name;
 	ar & gene_collection;
-	ar & ortholog_group;
+	ar & ortholog_groups;
 	ar & splice_variants;
 }
 

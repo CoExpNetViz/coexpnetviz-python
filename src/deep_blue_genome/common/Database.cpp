@@ -55,15 +55,7 @@ GeneVariant* Database::try_get_gene_variant(const std::string& name) {
 }
 
 OrthologGroup& Database::add_ortholog_group(const GeneFamilyId& external_id) {
-	return add_ortholog_group(make_unique<OrthologGroup>(external_id));
-}
-
-OrthologGroup& Database::add_ortholog_group() {
-	return add_ortholog_group(make_unique<OrthologGroup>());
-}
-
-OrthologGroup& Database::add_ortholog_group(std::unique_ptr<OrthologGroup>&& group_) {
-	ortholog_groups.emplace_front(std::move(group_));
+	ortholog_groups.emplace_front(make_unique<OrthologGroup>(external_id));
 	auto& group = *ortholog_groups.front();
 	group.set_iterator(ortholog_groups.begin());
 	return group;

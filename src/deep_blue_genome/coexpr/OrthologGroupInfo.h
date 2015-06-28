@@ -48,7 +48,7 @@ public:
 	typedef boost::container::flat_set<const Gene*> Genes;
 
 public:
-	OrthologGroupInfo(OrthologGroup& group, const std::unordered_set<const Gene*>& all_genes);
+	OrthologGroupInfo(const OrthologGroup& group, const std::unordered_set<const Gene*>& all_genes);
 
 	bool operator==(const OrthologGroup& other) const = delete;
 
@@ -87,7 +87,7 @@ public:
 	const OrthologGroup& get() const;
 
 private:
-	OrthologGroup& group;
+	const OrthologGroup& group;
 	std::vector<BaitCorrelations> bait_correlations;
 	BaitGroup* bait_group;
 	Genes correlating_genes; // genes in this->genes which actually correlate with a bait

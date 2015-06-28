@@ -60,15 +60,16 @@ private:
 
 	// genes.yaml
 	void write_genes();
-	YAML::Node get_gene_node(const Gene& gene, bool is_bait);
+	YAML::Node get_bait_node(const Gene& gene);
+	YAML::Node get_family_node(const OrthologGroupInfo&);
 
 	// node attr file
 	void write_node_attr();
 	void write_node_attr_baits(std::ostream& out);
 	void write_node_attr_targets(std::ostream& out);
 
-	template <class GeneRange, class IdsRange>
-	void write_node_attr(std::ostream& out, const Node& node, const GeneRange& gene_names, const IdsRange& family_names_by_source, const std::string& species, const std::string& colour);
+	template <class GeneRange, class FamiliesRange>
+	void write_node_attr(std::ostream& out, const Node& node, const GeneRange& gene_names, const FamiliesRange& families, const std::string& species, const std::string& colour);
 
 private:
 	std::string install_dir;

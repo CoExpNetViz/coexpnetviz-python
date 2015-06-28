@@ -62,7 +62,7 @@ public:
 	 * Expected format:
 	 * - plain text
 	 * - Each line is a mapping from one gene to multiple genes, all of which are orthologs of the gene
-	 * - line format (regex style): ortho_group_id\tgene\tgene(,gene)*
+	 * - line format (perl regex style): ortho_group_id(\tgene){2,}
 	 *
 	 * Each ortho_group_id may appear only once.
 	 *

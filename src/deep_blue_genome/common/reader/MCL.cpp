@@ -17,32 +17,40 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "OrthologGroupInfos.h"
+#include "MCL.h"
+#include <deep_blue_genome/common/util.h>
+#include <deep_blue_genome/common/TabGrammarRules.h>
+#include <boost/spirit/include/qi.hpp>
 
 using namespace std;
 using namespace DEEP_BLUE_GENOME;
 
 namespace DEEP_BLUE_GENOME {
-namespace COEXPR {
+namespace COMMON {
+namespace READER {
 
-OrthologGroupInfos::OrthologGroupInfos(Genes&& genes)
-:	genes(std::move(genes))
-{
+void Clustering::add_cluster(const Cluster& cluster) {
+	clusters.emplace_back(cluster);
 }
 
-OrthologGroupInfo& OrthologGroupInfos::get(const OrthologGroup& group) {
-	auto it = groups.find(&group);
-	if (it == groups.end()) {
-		// make group
-		auto p = groups.emplace(piecewise_construct,
-				forward_as_tuple(&group),
-				forward_as_tuple(group, genes)
-		);
-		return p.first->second;
-	}
-	else {
-		return it->second;
-	}
+Clustering MCL::read_clustering(const std::string& path) {
+	Clustering clustering;
+	cout << "Loading MCL clustering '" << path << "'\n";
+
+	read_file(path, [this, &clustering](const char* begin, const char* end) {
+		using namespace boost::spirit::qi;
+
+		// Assign ortholog groups
+		auto on_line = [this, &clustering](const std::vector<std::string>& line) {
+			// TODO validation
+			clustering.add_cluster(line);
+		};
+
+		TabGrammarRules rules(true);
+		parse(begin, end, rules.line[on_line] % eol);
+		return begin;
+	});
+	return clustering;
 }
 
-}} // end namespace
+}}} // end namespace

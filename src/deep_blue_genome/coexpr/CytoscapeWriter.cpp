@@ -61,7 +61,7 @@ std::vector<BaitBaitOrthRelation>& CytoscapeWriter::get_bait_orthology_relations
 		// get a set of ortholog groups of the baits
 		vector<OrthologGroupInfo*> bait_groups;
 		for (auto bait : baits) {
-			bait_groups.emplace_back(&groups.get(*bait));
+			boost::push_back(bait_groups, groups.get(*bait));
 		}
 		erase_duplicates(bait_groups);
 
@@ -84,7 +84,7 @@ std::vector<BaitBaitOrthRelation>& CytoscapeWriter::get_bait_orthology_relations
 				}
 			}
 		}
-
+		erase_duplicates(bait_orthologies);
 		bait_orthologies_cached = true;
 	}
 
@@ -129,7 +129,7 @@ void CytoscapeWriter::write_node_attr_baits(ostream& out) {
 		std::string gene_names[] = {bait->get_name()};
 
 		// write
-		write_node_attr(out, bait_nodes[bait], gene_names, groups.get(*bait).get_external_ids_grouped(), bait->get_gene_collection().get_species(), colour);
+		write_node_attr(out, bait_nodes[bait], gene_names, groups.get(*bait), bait->get_gene_collection().get_species(), colour);
 	}
 }
 
@@ -177,25 +177,42 @@ void CytoscapeWriter::write_node_attr_targets(ostream& out) {
  * @param species Species name of bait if a bait node, empty string otherwise
  * @param colour Colour of node
  */
-template <class GeneRange, class IdsRange>
-void CytoscapeWriter::write_node_attr(ostream& out, const Node& node, const GeneRange& gene_names, const IdsRange& external_ids_grouped, const std::string& species, const std::string& colour) {
+template <class GeneRange, class FamiliesRange>
+void CytoscapeWriter::write_node_attr(ostream& out, const Node& node, const GeneRange& gene_names, const FamiliesRange& families, const std::string& species, const std::string& colour) {
 	// gene_names
 	auto genes = intercalate(" ", gene_names);
 
-	// family_names_by_source -> families
-	auto get_id = make_function([](const GeneFamilyId& id) {
-		return id.get_id();
-	});
-	typedef std::pair<std::string, boost::container::flat_set<GeneFamilyId>> IdSubset; // TODO note in util printer that once at the point of passing an intercalate/printer to an ostream, its inputs must still exist in memory. Provide a counter-example
-	auto get_family_string = make_function([&get_id](const IdSubset& p) {
-		return make_printer([&p, &get_id](ostream& out) {
-			out << "From " << p.first << ": " << intercalate(", ", p.second | transformed(get_id));
+	// families
+	// TODO extract into some writer: families -> human readable string identifying the family
+	// TODO not very readable code
+	// TODO note in util printer that once at the point of passing an intercalate/printer to an ostream, its inputs must still exist in memory. Provide a counter-example
+	typedef std::pair<std::string, boost::container::flat_set<GeneFamilyId>> IdSubset;
+	auto get_id_string = std::bind(&GeneFamilyId::get_id, std::placeholders::_1);
+	auto get_ids_string = make_function([&get_id_string](const IdSubset& p){
+		return make_printer([&p, &get_id_string](ostream& out){
+			out << "from " << p.first << ": " << intercalate(", ", p.second | transformed(get_id_string));
 		});
 	});
-	auto families = intercalate(". ", external_ids_grouped | transformed(get_family_string));
+	auto get_family_string = make_function([&get_ids_string](OrthologGroup* family) {
+		if (family->is_merged()) {
+			// TODO write a concatenate function
+			return intercalate_("",
+					"Merged family { ",
+					intercalate("; ", family->get_external_ids_grouped() | transformed(get_ids_string)),
+					" }"
+			);
+		}
+		else {
+			return make_printer([family](ostream& out) {
+				auto&& id = *boost::begin(family->get_external_ids());
+				out << "Family " << id.get_id() << " from " << id.get_source();
+			});
+		}
+	});
+	auto formatted_families = intercalate_("", intercalate(". ", families | transformed(get_family_string)), ".");
 
 	// output attr line
-	out << intercalate_("\t", node, families, genes, species, colour) << "\n";
+	out << intercalate_("\t", node, formatted_families, genes, species, colour) << "\n";
 }
 
 /**
@@ -226,39 +243,50 @@ void CytoscapeWriter::write_genes() {
 	out << YAML::Dump(root);
 }
 
-YAML::Node CytoscapeWriter::get_gene_node(const Gene& gene, bool is_bait) {
-	auto&& ortho_group = groups.get(gene);
+YAML::Node CytoscapeWriter::get_bait_node(const Gene& gene) {
+	auto&& family_infos = groups.get(gene);
 
 	YAML::Node gene_;
-	gene_["id"] = gene.get_name(); // matches gene ids used in the node attr file (genes column)
+	gene_["id"] = gene.get_name(); // matches gene ids used in the node attr file (genes column)  TODO shouldn't this match the node id instead?
 	// gene_["go_terms"] = TODO;
-	gene_["is_bait"] = is_bait;
-	if (is_bait) {
-		// families
-		gene_["families"] = write_yaml(ortho_group.get());
+	gene_["is_bait"] = true;
 
-		// orthologs
-		auto is_not_gene = make_function([&gene](const Gene* g) {
-			return g != &gene;
-		});
-		auto get_name = make_function([](const Gene* g) {
-					return g->get_name();
-		});
-		vector<std::string> orthologs;
-		boost::push_back(orthologs, ortho_group.get_correlating_genes() | filtered(is_not_gene) | transformed(get_name));
-		gene_["orthologs"] = orthologs;
+	// families
+	for (auto&& family : family_infos) {
+		gene_["families"].push_back(write_yaml(family.get())); // TODO now returning a sequence, will need to adjust the java plugin
 	}
-	else {
-		// baits
-		for (auto bait_correlation : ortho_group.get_bait_correlations()) {
-			YAML::Node bait;
-			bait["node_id"] = (make_string() << bait_nodes[&bait_correlation.get_bait()]).str();
-			bait["r_value"] = bait_correlation.get_max_correlation();
-			gene_["baits"].push_back(bait);
+
+	// orthologs
+	flat_set<std::string> orthologs;
+	for (auto&& family : family_infos) {
+		for (auto&& g : family.get_correlating_genes()) {
+			if (g != &gene) {
+				orthologs.insert(g->get_name());
+			}
 		}
 	}
+	gene_["orthologs"] = std::vector<std::string>(orthologs.begin(), orthologs.end());
 
 	return gene_;
+}
+
+YAML::Node CytoscapeWriter::get_family_node(const OrthologGroupInfo& group) {
+	auto&& family_infos = groups.get(gene);
+
+	YAML::Node node;
+	node["id"] = gene.get_name(); // matches gene ids used in the node attr file (genes column)
+	// gene_["go_terms"] = TODO;
+	node["is_bait"] = false;
+
+	// baits
+	for (auto bait_correlation : group.get_bait_correlations()) {
+		YAML::Node bait;
+		bait["node_id"] = (make_string() << bait_nodes[&bait_correlation.get_bait()]).str();
+		bait["r_value"] = bait_correlation.get_max_correlation();
+		node["baits"].push_back(bait);
+	}
+
+	return node;
 }
 
 

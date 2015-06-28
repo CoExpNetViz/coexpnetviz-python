@@ -188,9 +188,10 @@ int main(int argc, char** argv) {
 					auto corr = correlations_(row, col_index);
 					if (corr < negative_treshold || corr > positive_treshold) {
 						auto& gene = expression_matrix->get_gene(row);
-						auto&& group = groups->get(gene);
-						group.add_bait_correlation(gene, bait, corr);
-						neighbours.emplace_back(&group);
+						for (auto&& group : groups->get(gene)) {
+							group.add_bait_correlation(gene, bait, corr);
+							neighbours.emplace_back(&group);
+						}
 					}
 				}
 
