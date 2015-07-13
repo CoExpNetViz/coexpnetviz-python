@@ -24,6 +24,7 @@
 #pragma once
 
 #include <yaml-cpp/yaml.h>
+#include <boost/range.hpp>
 
 namespace DEEP_BLUE_GENOME {
 
@@ -42,6 +43,14 @@ typedef std::vector<std::string> Cluster;
 class Clustering
 {
 public:
+	auto begin() {
+		return boost::begin(clusters);
+	}
+
+	auto end() {
+		return boost::end(clusters);
+	}
+
 	/**
 	 * Get range of Cluster in the clustering
 	 */

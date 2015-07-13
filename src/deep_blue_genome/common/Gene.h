@@ -31,6 +31,8 @@ class SpliceVariant;
 
 class Gene : public GeneVariant  // TODO conceptually a Gene is not a GeneVariant, variants of a Gene are gene variants. Probably just need to rename the base class to.. something else
 {
+	friend OrthologGroup;
+
 public:
 	/**
 	 * Construct gene
@@ -62,7 +64,16 @@ public:
 		return ortholog_groups;
 	}
 
-public: // Internal methods
+protected:
+	void print(std::ostream&) const;
+
+public: // treat as private (failed to friend boost::serialization)
+	template<class Archive>
+	void serialize(Archive& ar, const unsigned int version);
+
+	Gene();
+
+private: // Methods used by OrthologGroup
 	/**
 	 * Internal method: add family to gene without adding gene to family
 	 *
@@ -80,15 +91,6 @@ public: // Internal methods
 	void remove_ortholog_group(OrthologGroup& group) {
 		ortholog_groups.erase(&group);
 	}
-
-protected:
-	void print(std::ostream&) const;
-
-public: // treat as private (failed to friend boost::serialization)
-	template<class Archive>
-	void serialize(Archive& ar, const unsigned int version);
-
-	Gene();
 
 private:
 	// Note: we use pointers instead of references as Gene needs to be default constructible to be conveniently usable with boost serialization

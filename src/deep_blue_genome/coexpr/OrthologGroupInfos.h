@@ -49,7 +49,7 @@ public:
 
 public:
 	/**
-	 * Get range of family infos of gene
+	 * Get range of OrthologGroupInfo&, family infos of gene
 	 */
 	auto get(const Gene& gene) {
 		auto get_info = make_function([this](const OrthologGroup* group) -> OrthologGroupInfo& {

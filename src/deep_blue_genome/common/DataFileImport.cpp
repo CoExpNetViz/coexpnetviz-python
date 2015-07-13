@@ -111,7 +111,7 @@ void DataFileImport::add_orthologs(std::string source_name, std::string path) {
 				auto& name = line.at(i);
 				try {
 					auto& gene = database.get_gene_variant(name).as_gene();
-					gene.add_ortholog_group(group);
+					group.add(gene);
 				}
 				catch(const TypedException& e) { // TODO hierarchy on exceptions instead of the TypedException thing; though do add an get_error_code to them?
 					if (e.get_type() != ErrorType::SPLICE_VARIANT_INSTEAD_OF_GENE) {

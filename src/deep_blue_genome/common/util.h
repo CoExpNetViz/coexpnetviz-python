@@ -124,6 +124,14 @@ auto operator|(ForwardRange&& range, impl::referenced) {
 	}));
 }
 
+/**
+ * A boost range containing a single element
+ */
+template <class Item>
+auto make_singleton_range(Item& item) {
+	return boost::make_iterator_range(&item, (&item)+1);
+}
+
 } // end namespace
 
 #if GCC_VERSION <= 40800

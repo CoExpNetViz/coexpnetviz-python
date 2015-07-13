@@ -29,7 +29,9 @@
 #include <boost/range/algorithm_ext.hpp>
 #include <boost/container/set.hpp>
 #include <boost/function_output_iterator.hpp>
+#include <deep_blue_genome/common/reader/MCL.h>
 #include <deep_blue_genome/common/util.h>
+#include <deep_blue_genome/common/DataFileImport.h>
 #include <deep_blue_genome/common/TabGrammarRules.h>
 #include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/util/printer.h>
@@ -37,50 +39,6 @@
 using namespace std;
 using namespace DEEP_BLUE_GENOME;
 using boost::container::flat_set;
-
-flat_set<OrthologGroup*> read_orthologs(Database& database, std::string path) { // TODO refactor: this is a copy paste and change
-	cout << "Loading orthologs '" << path << "'\n";
-	flat_set<OrthologGroup*> groups;
-
-	// TODO copy pasted from DataFileImport
-	read_file(path, [&database, path, &groups](const char* begin, const char* end) {
-		using namespace boost::spirit::qi;
-
-		auto on_line = [path, &database, &groups](const std::vector<std::string>& line) {
-			if (line.size() < 3) {
-				cout << "Warning: Encountered line in ortholog file with " << line.size() << " < 3 columns\n";
-				return;
-			}
-
-			auto& group = database.add_ortholog_group(GeneFamilyId(path, line.at(0)));
-			groups.emplace(&group);
-
-			for (int i=1; i < line.size(); i++) {
-				auto& name = line.at(i);
-				try {
-					try {
-						auto& gene = database.get_gene_variant(name).as_gene();
-						group.add(gene);
-					}
-					catch(const TypedException& e) {
-						if (e.get_type() != ErrorType::SPLICE_VARIANT_INSTEAD_OF_GENE) {
-							throw;
-						}
-						cout << "Warning: ignoring splice variant in orthologs file: " << name << "\n";
-					}
-				}
-				catch (const NotFoundException&) {
-				}
-			}
-		};
-
-		TabGrammarRules rules(true);
-		parse(begin, end, rules.line[on_line] % eol);
-		return begin;
-	});
-
-	return groups;
-}
 
 double get_score(const OrthologGroup& group1, const OrthologGroup& group2) {
 	long intersection_size = 0;
@@ -158,9 +116,47 @@ int main(int argc, char** argv) {
 	graceful_main([argc, argv]() {
 		cout << "Warning: This program needs further modification to be reusable." << endl;
 		Database database("tmpdb", true);
-		auto&& groups1 = read_orthologs(database, argv[1]);
-		auto&& groups2 = read_orthologs(database, argv[2]);
 		//print_stats(groups1, groups2);
-		write_graph(groups1, groups2);
+		//write_graph(groups1, groups2);
+
+		// Load families
+		DataFileImport reader(database);
+		reader.add_orthologs("monocots", argv[1]);
+		reader.add_orthologs("dicots", argv[2]);
+		cout << "Families (before): " << boost::distance(database.get_ortholog_groups()) << endl;
+
+		// Load family clustering
+		DEEP_BLUE_GENOME::COMMON::READER::MCL mcl;
+		auto&& clustering = mcl.read_clustering(argv[3]);
+
+		// Build name -> family map
+		map<std::string, OrthologGroup*> families;
+		for (auto&& family : database.get_ortholog_groups()) {
+			assert(!family.is_merged());
+			assert(family.size()>0);
+			families[(*boost::begin(family.get_external_ids())).get_id()] = &family;
+		}
+
+		// Merge families according to clustering
+		for (auto&& cluster : clustering) {
+			OrthologGroup* first = nullptr;
+			for (auto&& family_name : cluster) {
+				auto&& family = *families.at(family_name);
+				if (!first) {
+					first = &family;
+				}
+				else {
+					first->merge(std::move(family), database);
+				}
+			}
+		}
+
+		// Print family sizes
+		cout << "Families (after): " << boost::distance(database.get_ortholog_groups()) << endl;
+		ofstream out("family_sizes.stat");
+		for (auto&& family : database.get_ortholog_groups()) {
+			//assert(family.size() > 0);
+			out << family.size() << " ";
+		}
 	});
 }

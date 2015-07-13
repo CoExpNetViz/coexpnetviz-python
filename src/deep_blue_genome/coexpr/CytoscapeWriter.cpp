@@ -59,11 +59,10 @@ CytoscapeWriter::CytoscapeWriter(std::string install_dir, const std::vector<Gene
 std::vector<BaitBaitOrthRelation>& CytoscapeWriter::get_bait_orthology_relations() {
 	if (!bait_orthologies_cached) {
 		// get a set of ortholog groups of the baits
-		vector<OrthologGroupInfo*> bait_groups;
+		flat_set<const OrthologGroupInfo*> bait_groups;
 		for (auto bait : baits) {
-			boost::push_back(bait_groups, groups.get(*bait));
+			boost::insert(bait_groups, groups.get(*bait) | referenced);
 		}
-		erase_duplicates(bait_groups);
 
 		// enumerate all possible pairs of baits of the same group
 		for (auto group : bait_groups) {
@@ -165,7 +164,7 @@ void CytoscapeWriter::write_node_attr_targets(ostream& out) {
 		auto gene_names = neigh->get_correlating_genes() | transformed(get_name);
 
 		// write
-		write_node_attr(out, target_nodes[neigh], gene_names, neigh->get_external_ids_grouped(), "", neigh->get_bait_group().get_colour());
+		write_node_attr(out, target_nodes[neigh], gene_names, make_singleton_range(*neigh), "", neigh->get_bait_group().get_colour());
 	}
 }
 
@@ -193,18 +192,19 @@ void CytoscapeWriter::write_node_attr(ostream& out, const Node& node, const Gene
 			out << "from " << p.first << ": " << intercalate(", ", p.second | transformed(get_id_string));
 		});
 	});
-	auto get_family_string = make_function([&get_ids_string](OrthologGroup* family) {
-		if (family->is_merged()) {
+	auto get_family_string = make_function([&get_ids_string](OrthologGroupInfo& info) {
+		auto&& family = info.get();
+		if (family.is_merged()) {
 			// TODO write a concatenate function
 			return intercalate_("",
 					"Merged family { ",
-					intercalate("; ", family->get_external_ids_grouped() | transformed(get_ids_string)),
+					intercalate("; ", family.get_external_ids_grouped() | transformed(get_ids_string)),
 					" }"
 			);
 		}
 		else {
-			return make_printer([family](ostream& out) {
-				auto&& id = *boost::begin(family->get_external_ids());
+			return make_printer([&family](ostream& out) {
+				auto&& id = *boost::begin(family.get_external_ids());
 				out << "Family " << id.get_id() << " from " << id.get_source();
 			});
 		}
@@ -223,7 +223,7 @@ void CytoscapeWriter::write_genes() {
 
 	// baits to yaml nodes
 	for (auto gene : baits) {
-		root["genes"].push_back(get_gene_node(*gene, true));
+		root["genes"].push_back(get_bait_node(*gene));
 	}
 
 	// collect targets
@@ -234,7 +234,9 @@ void CytoscapeWriter::write_genes() {
 
 	// targets to yaml nodes
 	for (auto gene : targets) {
-		root["genes"].push_back(get_gene_node(*gene, false));
+		for (auto&& family_info : groups.get(*gene)) {
+			root["genes"].push_back(get_family_node(family_info));
+		}
 	}
 
 	// Write to file
@@ -271,10 +273,8 @@ YAML::Node CytoscapeWriter::get_bait_node(const Gene& gene) {
 }
 
 YAML::Node CytoscapeWriter::get_family_node(const OrthologGroupInfo& group) {
-	auto&& family_infos = groups.get(gene);
-
 	YAML::Node node;
-	node["id"] = gene.get_name(); // matches gene ids used in the node attr file (genes column)
+	node["id"] = target_nodes[&group].get_name(); // matches gene ids used in the node attr file (genes column)
 	// gene_["go_terms"] = TODO;
 	node["is_bait"] = false;
 

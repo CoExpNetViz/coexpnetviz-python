@@ -18,6 +18,7 @@
  */
 
 #include "Node.h"
+#include <deep_blue_genome/common/util.h>
 
 using namespace std;
 using namespace DEEP_BLUE_GENOME;
@@ -37,6 +38,10 @@ uint64_t Node::get_id() const {
 std::ostream& operator <<(std::ostream& out, const Node& node) {
 	out << "n" << node.get_id();
 	return out;
+}
+
+string Node::get_name() const {
+	return (make_string() << *this).str();
 }
 
 }} // end namespace

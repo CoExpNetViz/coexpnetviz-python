@@ -31,6 +31,7 @@ public:
 	Node();
 
 	uint64_t get_id() const;
+	std::string get_name() const;
 
 private:
 	uint64_t id;

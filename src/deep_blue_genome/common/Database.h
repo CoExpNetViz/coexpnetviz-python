@@ -59,7 +59,7 @@ class GeneVariant;
  *
  * Invariant: a gene is part of 0 or 1 ortholog group
  */
-class Database : public boost::noncopyable {
+class Database : public boost::noncopyable { // TODO be consistent in the usage of ranges, and those should be ranges of &, not *. Furthermore, you want boost collections for collections of pointers; those have an interface of references
 public:
 	typedef std::vector<std::string>::const_iterator name_iterator;
 	typedef std::list<std::unique_ptr<OrthologGroup>> OrthologGroups; // Note: pointer because of boost serialization: serialising something as pointer and elsewhere as reference = trouble // TODO it would be nice if boost serialization didn't have that restriction. There also are a bunch of std::move things that should be done to boost::serialization, like the ones we already have put in util/serialization
