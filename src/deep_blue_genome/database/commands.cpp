@@ -18,6 +18,7 @@
  */
 
 #include "commands.h"
+#include <iostream>
 #include <yaml-cpp/yaml.h>
 #include <deep_blue_genome/common/DataFileImport.h>
 #include <deep_blue_genome/common/database_all.h>
@@ -122,7 +123,7 @@ void database_dump(const string& database_path, const std::string& dump_path) {
 	}*/
 
 	// Orthologs
-	for (auto& group : database.get_ortholog_groups()) {
+	for (auto&& group : database.get_ortholog_groups()) {
 		root["ortholog_groups"].push_back(write_yaml_with_genes(group));
 	}
 

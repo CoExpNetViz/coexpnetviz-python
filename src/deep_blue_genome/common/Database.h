@@ -112,6 +112,11 @@ public:
 	 */
 	void erase(OrthologGroups::iterator);
 
+	/**
+	 * Delete all families
+	 */
+	void erase_families();
+
 	void add(std::unique_ptr<GeneCollection>&&);
 
 	/**

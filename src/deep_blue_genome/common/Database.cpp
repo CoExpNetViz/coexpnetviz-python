@@ -201,4 +201,15 @@ void Database::verify() {
 	cout << "Verification complete, all is well" << endl;
 }
 
+void Database::erase_families() {
+	while (!ortholog_groups.empty()) {
+		(*boost::begin(ortholog_groups))->erase(*this);
+	}
+#ifndef NDEBUG
+	for (auto&& gene : get_genes()) {
+		assert(boost::empty(gene->get_ortholog_groups()));
+	}
+#endif
+}
+
 } // end namespace

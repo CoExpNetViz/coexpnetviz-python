@@ -60,7 +60,7 @@ public:
 	/**
 	 * Get range of ortholog groups this gene is a part of
 	 */
-	auto get_ortholog_groups() const {
+	auto&& get_ortholog_groups() const {
 		return ortholog_groups;
 	}
 

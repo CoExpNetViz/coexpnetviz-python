@@ -101,6 +101,11 @@ public:
 	 */
 	bool is_merged() const;
 
+	/**
+	 * Erase from database
+	 */
+	void erase(Database&);
+
 public: // treat as private (failed to friend boost::serialization)
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version);

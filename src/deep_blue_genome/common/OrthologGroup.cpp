@@ -100,4 +100,8 @@ bool OrthologGroup::is_merged() const {
 	return external_ids.size() > 1;
 }
 
+void OrthologGroup::erase(Database& database) {
+	database.erase(database_it);
+}
+
 } // end namespace

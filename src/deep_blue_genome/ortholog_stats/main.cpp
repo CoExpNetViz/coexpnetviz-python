@@ -18,7 +18,7 @@
  */
 
 /**
- * Compares 2 sets of ortholog families, printing out stats
+ * Compares 2 sets of ortholog families, printing out stats, ... (changes all the time, lots of hacks and copy pasta)
  */
 
 #include <cmath>
@@ -112,22 +112,23 @@ void write_graph(flat_set<OrthologGroup*> groups1, flat_set<OrthologGroup*> grou
 	}
 }
 
+// TODO this adds merged orthologs to the database, we want to get a less hacked together way of doing this!
 int main(int argc, char** argv) {
 	graceful_main([argc, argv]() {
 		cout << "Warning: This program needs further modification to be reusable." << endl;
-		Database database("tmpdb", true);
+		Database database(argv[1], false);
 		//print_stats(groups1, groups2);
 		//write_graph(groups1, groups2);
 
 		// Load families
 		DataFileImport reader(database);
-		reader.add_orthologs("monocots", argv[1]);
-		reader.add_orthologs("dicots", argv[2]);
+		reader.add_orthologs("monocots", argv[2]);
+		reader.add_orthologs("dicots", argv[3]);
 		cout << "Families (before): " << boost::distance(database.get_ortholog_groups()) << endl;
 
 		// Load family clustering
 		DEEP_BLUE_GENOME::COMMON::READER::MCL mcl;
-		auto&& clustering = mcl.read_clustering(argv[3]);
+		auto&& clustering = mcl.read_clustering(argv[4]);
 
 		// Build name -> family map
 		map<std::string, OrthologGroup*> families;
@@ -151,12 +152,50 @@ int main(int argc, char** argv) {
 			}
 		}
 
+		// Load itag -> pgsc mapping
+		map<Gene*, Gene*> itag_to_pgsc;
+		read_file(argv[5], [&database, &itag_to_pgsc](const char* begin, const char* end) { // TODO copy paste for the win
+			using namespace boost::spirit::qi;
+
+			auto on_line = [&database, &itag_to_pgsc](const std::vector<std::string>& line) {
+				ensure(line.size() == 2,
+						(make_string() << "Bogus row, expected col count == 2").str()
+				);
+				auto&& itag = database.get_gene_variant(line.at(1)).get_gene();
+				auto&& pgsc = database.get_gene_variant(line.at(0)).get_gene();
+				itag_to_pgsc[&itag] = &pgsc;
+			};
+
+			TabGrammarRules rules(true);
+			parse(begin, end, rules.line[on_line] % eol);
+			return begin;
+		});
+
+		// For each ITAG gene in family, add the (hopefully) equivalent PGSC gene
+		for (auto&& family : database.get_ortholog_groups()) {
+			flat_set<Gene*> pgsc_genes;
+			for (auto&& gene : family.get_genes()) {
+				if (contains(itag_to_pgsc, gene)) {
+					pgsc_genes.insert(itag_to_pgsc.at(gene));
+				}
+			}
+			for (auto&& gene : pgsc_genes) {
+				family.add(*gene);
+			}
+		}
+
 		// Print family sizes
 		cout << "Families (after): " << boost::distance(database.get_ortholog_groups()) << endl;
 		ofstream out("family_sizes.stat");
 		for (auto&& family : database.get_ortholog_groups()) {
-			//assert(family.size() > 0);
+			assert(family.size() > 0);
 			out << family.size() << " ";
 		}
+
+		// Save work
+		for (auto&& group : database.get_gene_variant("AT1G02660").as_gene().get_ortholog_groups()) {
+			cout << (uint64_t)group << endl;
+		}
+		database.save();
 	});
 }

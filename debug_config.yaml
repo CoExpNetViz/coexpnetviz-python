@@ -347,10 +347,10 @@ gene_mappings:
 # Orthologs
 # Plain text files where each line is a group of orthologs.
 # You're allowed to specify a gene on multiple lines, as long as the corresponding groups are equal (same set of genes)
-orthologs:
-    - name: 'Plaza Monocot'
-      path: '/mnt/midas/group/biocomp/projects/morph/coexpr/data/plaza_source/orthologs_monocot'
-    - name: 'Plaza Dicot'
-      path: '/mnt/midas/group/biocomp/projects/morph/coexpr/data/plaza_source/orthologs_dicot'
-    - name: 'PGSC - ITAG mapping'
-      path: '/mnt/midas/group/biocomp/projects/morph/coexpr/data/pgsc_itag/orthologs'
+#orthologs:
+#    - name: 'Plaza Monocot'
+#      path: '/mnt/midas/group/biocomp/projects/morph/coexpr/data/plaza_source/orthologs_monocot'
+#    - name: 'Plaza Dicot'
+#      path: '/mnt/midas/group/biocomp/projects/morph/coexpr/data/plaza_source/orthologs_dicot'
+#    - name: 'PGSC - ITAG mapping'
+#      path: '/mnt/midas/group/biocomp/projects/morph/coexpr/data/pgsc_itag/orthologs'
