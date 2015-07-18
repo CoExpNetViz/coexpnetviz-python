@@ -32,12 +32,17 @@ public:
 
 	uint64_t get_id() const;
 
+	/**
+	 * Get node id for use in cytoscape
+	 *
+	 * Can't use numbers as node ids in cytoscape, see bug https://groups.google.com/d/msg/qiime-forum/_s83iQKnoAo/5_GgRhItbKgJ
+	 */
+	std::string get_cytoscape_id() const;
+
 private:
 	uint64_t id;
 	static uint64_t next_id;
 };
-
-std::ostream& operator <<(std::ostream& out, const Node& node);
 
 
 }} // end namespace

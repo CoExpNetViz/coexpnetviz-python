@@ -135,7 +135,7 @@ void CytoscapeWriter::write_node_attr_baits(ostream& out) {
 		auto&& formatted_families = intercalate(". ", groups.get(*bait) | transformed(bind(&OrthologGroupInfo::get, std::placeholders::_1)) | transformed(format_long_id));
 
 		// write line
-		out << intercalate_("\t", node.get_id(), label, colour, type, gene, species, formatted_families, "", "") << "\n";
+		out << intercalate_("\t", node.get_cytoscape_id(), label, colour, type, gene, species, formatted_families, "", "") << "\n";
 	}
 }
 
@@ -178,7 +178,7 @@ void CytoscapeWriter::write_node_attr_targets(ostream& out) {
 		auto&& formatted_family = format_long_id(neigh->get());
 
 		// write line
-		out << intercalate_("\t", node.get_id(), label, colour, type, "", "", "", formatted_family, corr_genes_in_fam) << "\n";
+		out << intercalate_("\t", node.get_cytoscape_id(), label, colour, type, "", "", "", formatted_family, corr_genes_in_fam) << "\n";
 	}
 }
 
@@ -241,14 +241,14 @@ YAML::Node CytoscapeWriter::get_bait_node(const Gene& gene) {
 
 YAML::Node CytoscapeWriter::get_family_node(const OrthologGroupInfo& group) {
 	YAML::Node node;
-	node["id"] = target_nodes[&group].get_id(); // matches gene ids used in the node attr file (genes column)
+	node["id"] = target_nodes[&group].get_cytoscape_id(); // matches gene ids used in the node attr file (genes column)
 	// gene_["go_terms"] = TODO;
 	node["is_bait"] = false;
 
 	// baits
 	for (auto bait_correlation : group.get_bait_correlations()) {
 		YAML::Node bait;
-		bait["node_id"] = (make_string() << bait_nodes[&bait_correlation.get_bait()]).str();
+		bait["node_id"] = bait_nodes[&bait_correlation.get_bait()].get_cytoscape_id();
 		bait["r_value"] = bait_correlation.get_max_correlation();
 		node["baits"].push_back(bait);
 	}
@@ -271,10 +271,10 @@ void CytoscapeWriter::write_sif() {
 	// target -> bait correlation
 	for (auto& neigh : neighbours) {
 		auto&& delimiter = "\t";
-		auto&& prefix = intercalate_(delimiter, target_nodes[neigh], "cor");
+		auto&& prefix = intercalate_(delimiter, target_nodes[neigh].get_cytoscape_id(), "cor");
 		if (!neigh->get_bait_correlations().empty()) {
 			auto get_name = make_function([this](const BaitCorrelations& bait_correlation) {
-				return (make_string() << bait_nodes[&bait_correlation.get_bait()]).str();
+				return bait_nodes[&bait_correlation.get_bait()].get_cytoscape_id();
 			});
 			auto&& bait_nodes_ = intercalate(delimiter, neigh->get_bait_correlations() | transformed(get_name));
 			out << intercalate_(delimiter, prefix, bait_nodes_) << "\n";
@@ -283,7 +283,7 @@ void CytoscapeWriter::write_sif() {
 
 	// bait <-> bait orthology
 	for (auto& p : get_bait_orthology_relations()) {
-		out << bait_nodes[p.first] << "\thom\t" << bait_nodes[p.second] << "\n";
+		out << bait_nodes[p.first].get_cytoscape_id() << "\thom\t" << bait_nodes[p.second].get_cytoscape_id() << "\n";
 		// TODO we are printing pairs per line, not: src rel dst1 dst2 .. dstN. Does that read stuff fine?
 	}
 }
@@ -300,14 +300,14 @@ void CytoscapeWriter::write_edge_attr() {
 	for (auto&& neigh : neighbours) {
 		if (!neigh->get_bait_correlations().empty()) {
 			for (auto& bait_correlation : neigh->get_bait_correlations()) {
-				out << target_nodes[neigh] << " (cor) " << bait_nodes[&bait_correlation.get_bait()] << "\t" << bait_correlation.get_max_correlation() << "\n";
+				out << target_nodes[neigh].get_cytoscape_id() << " (cor) " << bait_nodes[&bait_correlation.get_bait()].get_cytoscape_id() << "\t" << bait_correlation.get_max_correlation() << "\n";
 			}
 		}
 	}
 
 	// bait <-> bait orthology
 	for (auto& p : get_bait_orthology_relations()) {
-		out << bait_nodes[p.first] << " (hom) " << bait_nodes[p.second] << "\tNA\n";
+		out << bait_nodes[p.first].get_cytoscape_id() << " (hom) " << bait_nodes[p.second].get_cytoscape_id() << "\tNA\n";
 	}
 }
 

@@ -35,9 +35,8 @@ uint64_t Node::get_id() const {
 	return id;
 }
 
-std::ostream& operator <<(std::ostream& out, const Node& node) {
-	out << node.get_id();
-	return out;
+string Node::get_cytoscape_id() const {
+	return (make_string() << "n" << get_id()).str();
 }
 
 }} // end namespace
