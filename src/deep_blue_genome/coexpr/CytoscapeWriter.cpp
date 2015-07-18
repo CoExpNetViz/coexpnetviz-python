@@ -114,7 +114,7 @@ void CytoscapeWriter::write() {
 void CytoscapeWriter::write_node_attr() {
 	ofstream out(network_name + ".node.attr");
 	out.exceptions(ofstream::failbit | ofstream::badbit);
-	auto fields = {"id", "label", "families", "genes", "species", "color"};
+	auto fields = {"id", "label", "type", "families", "genes", "species", "color"};
 	out << intercalate("\t", fields) << "\n";
 
 	write_node_attr_baits(out);
@@ -128,7 +128,7 @@ void CytoscapeWriter::write_node_attr_baits(ostream& out) {
 		std::string gene_names[] = {bait->get_name()};
 
 		// write
-		write_node_attr(out, bait_nodes[bait], gene_names, groups.get(*bait), bait->get_gene_collection().get_species(), colour);
+		write_node_attr(out, bait_nodes[bait], true, gene_names, groups.get(*bait), bait->get_gene_collection().get_species(), colour);
 	}
 }
 
@@ -164,7 +164,7 @@ void CytoscapeWriter::write_node_attr_targets(ostream& out) {
 		auto gene_names = neigh->get_correlating_genes() | transformed(get_name);
 
 		// write
-		write_node_attr(out, target_nodes[neigh], gene_names, make_singleton_range(*neigh), "", neigh->get_bait_group().get_colour());
+		write_node_attr(out, target_nodes[neigh], false, gene_names, make_singleton_range(*neigh), "", neigh->get_bait_group().get_colour());
 	}
 }
 
@@ -177,7 +177,9 @@ void CytoscapeWriter::write_node_attr_targets(ostream& out) {
  * @param colour Colour of node
  */
 template <class GeneRange, class FamiliesRange>
-void CytoscapeWriter::write_node_attr(ostream& out, const Node& node, const GeneRange& gene_names, const FamiliesRange& families, const std::string& species, const std::string& colour) {
+void CytoscapeWriter::write_node_attr(ostream& out, const Node& node, bool bait, const GeneRange& gene_names, const FamiliesRange& families, const std::string& species, const std::string& colour) {
+	auto type = bait ? "bait node" : "family node";
+
 	// gene_names
 	auto genes = intercalate(", ", gene_names);
 	auto label = genes;
@@ -213,7 +215,7 @@ void CytoscapeWriter::write_node_attr(ostream& out, const Node& node, const Gene
 	auto formatted_families = intercalate_("", intercalate(". ", families | transformed(get_family_string)), ".");
 
 	// output attr line
-	out << intercalate_("\t", node.get_id(), label, formatted_families, genes, species, colour) << "\n";
+	out << intercalate_("\t", node.get_id(), label, type, formatted_families, genes, species, colour) << "\n";
 }
 
 /**
