@@ -75,9 +75,8 @@ void read_yaml(std::string path, Database& database, string& baits_path, double&
 		expression_matrices.emplace_back(&matrix);
 	}
 
-	// TODO if orth provided, throw away current (plaza) orths
 	auto&& orthologs_node = job_node["orthologs"];
-	if (orthologs_node) {
+	if (orthologs_node.size() > 0) {
 		// clear current list of homology families
 		database.erase_families();
 
