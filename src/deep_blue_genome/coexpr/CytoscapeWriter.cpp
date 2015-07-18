@@ -114,7 +114,7 @@ void CytoscapeWriter::write() {
 void CytoscapeWriter::write_node_attr() {
 	ofstream out(network_name + ".node.attr");
 	out.exceptions(ofstream::failbit | ofstream::badbit);
-	auto fields = {"node_id", "families", "genes", "species", "color"};
+	auto fields = {"id", "label", "families", "genes", "species", "color"};
 	out << intercalate("\t", fields) << "\n";
 
 	write_node_attr_baits(out);
@@ -179,7 +179,8 @@ void CytoscapeWriter::write_node_attr_targets(ostream& out) {
 template <class GeneRange, class FamiliesRange>
 void CytoscapeWriter::write_node_attr(ostream& out, const Node& node, const GeneRange& gene_names, const FamiliesRange& families, const std::string& species, const std::string& colour) {
 	// gene_names
-	auto genes = intercalate(" ", gene_names);
+	auto genes = intercalate(", ", gene_names);
+	auto label = genes;
 
 	// families
 	// TODO extract into some writer: families -> human readable string identifying the family
@@ -212,7 +213,7 @@ void CytoscapeWriter::write_node_attr(ostream& out, const Node& node, const Gene
 	auto formatted_families = intercalate_("", intercalate(". ", families | transformed(get_family_string)), ".");
 
 	// output attr line
-	out << intercalate_("\t", node.get_id(), formatted_families, genes, species, colour) << "\n";
+	out << intercalate_("\t", node.get_id(), label, formatted_families, genes, species, colour) << "\n";
 }
 
 /**
