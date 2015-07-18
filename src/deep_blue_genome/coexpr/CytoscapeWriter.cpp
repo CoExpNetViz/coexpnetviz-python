@@ -212,7 +212,7 @@ void CytoscapeWriter::write_node_attr(ostream& out, const Node& node, const Gene
 	auto formatted_families = intercalate_("", intercalate(". ", families | transformed(get_family_string)), ".");
 
 	// output attr line
-	out << intercalate_("\t", node, formatted_families, genes, species, colour) << "\n";
+	out << intercalate_("\t", node.get_id(), formatted_families, genes, species, colour) << "\n";
 }
 
 /**
@@ -274,7 +274,7 @@ YAML::Node CytoscapeWriter::get_bait_node(const Gene& gene) {
 
 YAML::Node CytoscapeWriter::get_family_node(const OrthologGroupInfo& group) {
 	YAML::Node node;
-	node["id"] = target_nodes[&group].get_name(); // matches gene ids used in the node attr file (genes column)
+	node["id"] = target_nodes[&group].get_id(); // matches gene ids used in the node attr file (genes column)
 	// gene_["go_terms"] = TODO;
 	node["is_bait"] = false;
 
