@@ -48,6 +48,8 @@ namespace COEXPR {
 
 uint64_t Node::next_id = 1;
 
+// TODO fantastic idea: header includes to third party libs used in a project -> use a precompiled header so we have less work on getting the includes right
+
 CytoscapeWriter::CytoscapeWriter(std::string install_dir, const std::vector<Gene*>& baits, const std::vector<OrthologGroupInfo*>& neighbours, OrthologGroupInfos& groups)
 :	install_dir(install_dir), baits(baits), neighbours(neighbours), groups(groups), network_name("network"), bait_orthologies_cached(false)
 {
@@ -114,7 +116,7 @@ void CytoscapeWriter::write() {
 void CytoscapeWriter::write_node_attr() {
 	ofstream out(network_name + ".node.attr");
 	out.exceptions(ofstream::failbit | ofstream::badbit);
-	auto fields = {"id", "label", "type", "families", "genes", "species", "color"};
+	auto fields = {"id", "label", "colour", "type", "bait_gene", "species", "families", "family", "correlating_genes_in_family"};
 	out << intercalate("\t", fields) << "\n";
 
 	write_node_attr_baits(out);
@@ -125,10 +127,15 @@ void CytoscapeWriter::write_node_attr_baits(ostream& out) {
 	std::string colour = "#FFFFFF";
 	for (auto bait : baits) {
 		// fetch data
-		std::string gene_names[] = {bait->get_name()};
+		auto&& gene = bait->get_name();
+		auto&& node = bait_nodes[bait];
+		auto&& label = gene;
+		auto&& type = "bait node";
+		auto&& species = bait->get_gene_collection().get_species();
+		auto&& formatted_families = intercalate(". ", groups.get(*bait) | transformed(bind(&OrthologGroupInfo::get, std::placeholders::_1)) | transformed(format_long_id));
 
-		// write
-		write_node_attr(out, bait_nodes[bait], true, gene_names, groups.get(*bait), bait->get_gene_collection().get_species(), colour);
+		// write line
+		out << intercalate_("\t", node.get_id(), label, colour, type, gene, species, formatted_families, "", "") << "\n";
 	}
 }
 
@@ -157,65 +164,22 @@ void CytoscapeWriter::write_node_attr_targets(ostream& out) {
 
 	// output targets (= family nodes)
 	for (auto&& neigh : neighbours) {
-		// fetch data
-		auto get_name = make_function([](const Gene* g) { // TODO could use std bind
+		// gene_names
+		auto&& get_name = make_function([](const Gene* g) { // TODO could use std bind
 			return g->get_name();
 		});
-		auto gene_names = neigh->get_correlating_genes() | transformed(get_name);
+		auto&& corr_genes_in_fam = intercalate(", ", neigh->get_correlating_genes() | transformed(get_name));
 
-		// write
-		write_node_attr(out, target_nodes[neigh], false, gene_names, make_singleton_range(*neigh), "", neigh->get_bait_group().get_colour());
+		// other
+		auto&& label = corr_genes_in_fam;
+		auto&& node = target_nodes[neigh];
+		auto&& colour = neigh->get_bait_group().get_colour();
+		auto&& type = "family node";
+		auto&& formatted_family = format_long_id(neigh->get());
+
+		// write line
+		out << intercalate_("\t", node.get_id(), label, colour, type, "", "", "", formatted_family, corr_genes_in_fam) << "\n";
 	}
-}
-
-/**
- * Write out attributes of single node
- *
- * @param gene_names Names of genes in node
- * @param family_names_by_source All external ids by source of associated ortholog group
- * @param species Species name of bait if a bait node, empty string otherwise
- * @param colour Colour of node
- */
-template <class GeneRange, class FamiliesRange>
-void CytoscapeWriter::write_node_attr(ostream& out, const Node& node, bool bait, const GeneRange& gene_names, const FamiliesRange& families, const std::string& species, const std::string& colour) {
-	auto type = bait ? "bait node" : "family node";
-
-	// gene_names
-	auto genes = intercalate(", ", gene_names);
-	auto label = genes;
-
-	// families
-	// TODO extract into some writer: families -> human readable string identifying the family
-	// TODO not very readable code
-	// TODO note in util printer that once at the point of passing an intercalate/printer to an ostream, its inputs must still exist in memory. Provide a counter-example
-	typedef std::pair<std::string, boost::container::flat_set<GeneFamilyId>> IdSubset;
-	auto get_id_string = std::bind(&GeneFamilyId::get_id, std::placeholders::_1);
-	auto get_ids_string = make_function([&get_id_string](const IdSubset& p){
-		return make_printer([&p, &get_id_string](ostream& out){
-			out << "from " << p.first << ": " << intercalate(", ", p.second | transformed(get_id_string));
-		});
-	});
-	auto get_family_string = make_function([&get_ids_string](OrthologGroupInfo& info) {
-		auto&& family = info.get();
-		if (family.is_merged()) {
-			// TODO write a concatenate function
-			return intercalate_("",
-					"Merged family { ",
-					intercalate("; ", family.get_external_ids_grouped() | transformed(get_ids_string)),
-					" }"
-			);
-		}
-		else {
-			return make_printer([&family](ostream& out) {
-				auto&& id = *boost::begin(family.get_external_ids());
-				out << "Family " << id.get_id() << " from " << id.get_source();
-			});
-		}
-	});
-	auto formatted_families = intercalate_("", intercalate(". ", families | transformed(get_family_string)), ".");
-
-	// output attr line
-	out << intercalate_("\t", node.get_id(), label, type, formatted_families, genes, species, colour) << "\n";
 }
 
 /**

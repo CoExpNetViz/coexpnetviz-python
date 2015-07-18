@@ -32,6 +32,9 @@
  *   the lib uses intermediate strings.
  * - Once GCC has c++14, the lib can be upgraded to stream instead of using intermediate strings,
  *   without breaking the current interface.
+ *
+ * Caveats:
+ * - Arguments passed to intercalate and printer must remain in memory up til the point the returned printers are last written to an ostream.
  */
 #pragma once
 

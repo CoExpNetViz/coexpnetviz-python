@@ -68,9 +68,6 @@ private:
 	void write_node_attr_baits(std::ostream& out);
 	void write_node_attr_targets(std::ostream& out);
 
-	template <class GeneRange, class FamiliesRange>
-	void write_node_attr(std::ostream& out, const Node& node, bool bait, const GeneRange& gene_names, const FamiliesRange& families, const std::string& species, const std::string& colour);
-
 private:
 	std::string install_dir;
 	const std::vector<Gene*>& baits;
