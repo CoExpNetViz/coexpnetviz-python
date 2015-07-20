@@ -49,36 +49,39 @@ YAML::Node write_yaml(const OrthologGroup&);
  */
 YAML::Node write_yaml_with_genes(const OrthologGroup&);
 
-/**
- * Get human readable format identifying the family
- */
-auto format_long_id(const OrthologGroup& family) {
-	using namespace std;
-	using namespace boost;
-	using namespace boost::adaptors;
+class OrthologGroupWriter {
+public:
+	/**
+	 * Get human readable format identifying the family
+	 */
+	static auto format_long_id(const OrthologGroup& family) { // Note: C++1y only *really* supports return type deduction on methods, not functions
+		using namespace std;
+		using namespace boost;
+		using namespace boost::adaptors;
 
-	typedef std::pair<std::string, boost::container::flat_set<GeneFamilyId>> IdSubset;
-	auto get_id_string = std::bind(&GeneFamilyId::get_id, std::placeholders::_1);
-	auto get_ids_string = make_function([&get_id_string](const IdSubset& p){
-		return make_printer([&p, &get_id_string](ostream& out){
-			out << "from " << p.first << ": " << intercalate(", ", p.second | transformed(get_id_string));
+		typedef std::pair<std::string, boost::container::flat_set<GeneFamilyId>> IdSubset;
+		auto get_id_string = std::bind(&GeneFamilyId::get_id, std::placeholders::_1);
+		auto get_ids_string = make_function([&get_id_string](const IdSubset& p){
+			return make_printer([&p, &get_id_string](ostream& out){
+				out << "from " << p.first << ": " << intercalate(", ", p.second | transformed(get_id_string));
+			});
 		});
-	});
 
-	if (family.is_merged()) {
-		// TODO write a concatenate function
-		return intercalate_("",
-			"Merged family { ",
-			intercalate("; ", family.get_external_ids_grouped() | transformed(get_ids_string)),
-			" }"
-		);
+		if (family.is_merged()) {
+			// TODO write a concatenate function
+			return intercalate_("",
+				"Merged family { ",
+				intercalate("; ", family.get_external_ids_grouped() | transformed(get_ids_string)),
+				" }"
+			);
+		}
+		else {
+			return make_printer([&family](ostream& out) {
+				auto&& id = *boost::begin(family.get_external_ids());
+				out << "Family " << id.get_id() << " from " << id.get_source();
+			});
+		}
 	}
-	else {
-		return make_printer([&family](ostream& out) {
-			auto&& id = *boost::begin(family.get_external_ids());
-			out << "Family " << id.get_id() << " from " << id.get_source();
-		});
-	}
-}
+};
 
 }}} // end namespace

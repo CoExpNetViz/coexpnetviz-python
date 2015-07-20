@@ -132,7 +132,7 @@ void CytoscapeWriter::write_node_attr_baits(ostream& out) {
 		auto&& label = gene;
 		auto&& type = "bait node";
 		auto&& species = bait->get_gene_collection().get_species();
-		auto&& formatted_families = intercalate(". ", groups.get(*bait) | transformed(bind(&OrthologGroupInfo::get, std::placeholders::_1)) | transformed(format_long_id));
+		auto&& formatted_families = intercalate(". ", groups.get(*bait) | transformed(bind(&OrthologGroupInfo::get, std::placeholders::_1)) | transformed(OrthologGroupWriter::format_long_id));
 
 		// write line
 		out << intercalate_("\t", node.get_cytoscape_id(), label, colour, type, gene, species, formatted_families, "", "") << "\n";
@@ -175,7 +175,7 @@ void CytoscapeWriter::write_node_attr_targets(ostream& out) {
 		auto&& node = target_nodes[neigh];
 		auto&& colour = neigh->get_bait_group().get_colour();
 		auto&& type = "family node";
-		auto&& formatted_family = format_long_id(neigh->get());
+		auto&& formatted_family = OrthologGroupWriter::format_long_id(neigh->get());
 
 		// write line
 		out << intercalate_("\t", node.get_cytoscape_id(), label, colour, type, "", "", "", formatted_family, corr_genes_in_fam) << "\n";

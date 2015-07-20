@@ -58,7 +58,7 @@ public:
 
 public:
 	/**
-	 * Get range of ortholog groups this gene is a part of
+	 * Get Range(OrthologGroup*); range of ortholog groups this gene is a part of
 	 */
 	auto&& get_ortholog_groups() const {
 		return ortholog_groups;
@@ -75,7 +75,7 @@ public: // treat as private (failed to friend boost::serialization)
 
 private: // Methods used by OrthologGroup
 	/**
-	 * Internal method: add family to gene without adding gene to family
+	 * Add family to gene without adding gene to family
 	 *
 	 * @param group Ortholog group the gene is part of
 	 */
@@ -84,7 +84,7 @@ private: // Methods used by OrthologGroup
 	}
 
 	/**
-	 * Internal method: remove family from gene without removing gene from family
+	 * Remove family from gene without removing gene from family
 	 *
 	 * @param group Ortholog group the gene is part of
 	 */

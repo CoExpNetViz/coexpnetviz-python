@@ -22,6 +22,7 @@
 #include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/util/printer.h>
+#include <deep_blue_genome/common/writer/OrthologGroup.h> // TODO rm, debug
 
 using namespace std;
 
@@ -207,7 +208,11 @@ void Database::erase_families() {
 	}
 #ifndef NDEBUG
 	for (auto&& gene : get_genes()) {
-		assert(boost::empty(gene->get_ortholog_groups()));
+		if (!boost::empty(gene->get_ortholog_groups())) {
+			//cout << *gene << endl;
+			//cout << OrthologGroupWriter::format_long_id(**boost::begin(gene->get_ortholog_groups())) << endl;
+			assert(false);
+		}
 	}
 #endif
 }

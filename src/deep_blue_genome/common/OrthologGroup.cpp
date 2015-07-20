@@ -101,6 +101,9 @@ bool OrthologGroup::is_merged() const {
 }
 
 void OrthologGroup::erase(Database& database) {
+	for (auto&& gene : genes) {
+		gene->remove_ortholog_group(*this);
+	}
 	database.erase(database_it);
 }
 
