@@ -56,7 +56,7 @@ void DataFileImport::add_gene_mappings(const std::string& path) {
 		};
 
 		TabGrammarRules rules(true);
-		parse(begin, end, rules.line[on_line] % eol);
+		parse(begin, end, rules.line[on_line] % rules.line_separator);
 		return begin;
 	});
 
@@ -87,7 +87,7 @@ void DataFileImport::add_functional_annotations(const string& path) {
 		};
 
 		TabGrammarRules rules(true);
-		parse(begin, end, rules.line[on_line] % eol);
+		parse(begin, end, rules.line[on_line] % rules.line_separator);
 		return begin;
 	});
 }
@@ -123,7 +123,7 @@ void DataFileImport::add_orthologs(std::string source_name, std::string path) {
 		};
 
 		TabGrammarRules rules(true);
-		parse(begin, end, rules.line[on_line] % eol);
+		parse(begin, end, rules.line[on_line] % rules.line_separator);
 		return begin;
 	});
 }
@@ -263,7 +263,7 @@ void DataFileImport::add_clustering(const std::string& name, const std::string& 
 		};
 
 		TabGrammarRules rules(true);
-		parse(begin, end, rules.line[on_cluster_item] % eol);
+		parse(begin, end, rules.line[on_cluster_item] % rules.line_separator);
 
 		// Move clusters' values to this->clusters
 		clustering->clusters.reserve(clusters.size());
