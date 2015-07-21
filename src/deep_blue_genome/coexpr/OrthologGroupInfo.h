@@ -38,23 +38,21 @@ class BaitGroup;
 class BaitGroups;
 
 /**
- * A view on an ortholog group, filtered by a list of gene collections.
- *
- * I.e. genes not part of one of the listed collections are filtered out by this view.
+ * Ortholog group annotated with correlations to baits
  */
 class OrthologGroupInfo : public boost::noncopyable // TODO this class is a mix of ortho group filtered by list of species, and things specific to a target node
 {
 public:
-	typedef boost::container::flat_set<const Gene*> Genes;
+	typedef boost::container::flat_set<Gene*> Genes;
 
 public:
-	OrthologGroupInfo(const OrthologGroup& group, const std::unordered_set<const Gene*>& all_genes);
+	OrthologGroupInfo(const OrthologGroup& group);
 
 	bool operator==(const OrthologGroup& other) const = delete;
 
 	std::string get_name() const;
 
-	void add_bait_correlation(const Gene& target, const Gene& bait, double correlation);
+	void add_bait_correlation(Gene& target, Gene& bait, double correlation);
 
 	const std::vector<BaitCorrelations>& get_bait_correlations() const;
 
@@ -75,11 +73,6 @@ public:
 	const OrthologGroup::ExternalIds& get_external_ids() const;
 
 	/**
-	 * Get range of containing genes
-	 */
-	const Genes& get_genes() const;
-
-	/**
 	 * Get range of containing genes, which correlate with a bait
 	 */
 	const Genes& get_correlating_genes() const;
@@ -91,7 +84,6 @@ private:
 	std::vector<BaitCorrelations> bait_correlations;
 	BaitGroup* bait_group;
 	Genes correlating_genes; // genes in this->genes which actually correlate with a bait
-	Genes genes; // genes in group, filtered by particular species
 };
 
 }} // end namespace

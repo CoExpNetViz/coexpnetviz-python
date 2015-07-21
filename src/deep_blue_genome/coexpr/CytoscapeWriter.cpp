@@ -71,7 +71,7 @@ std::vector<BaitBaitOrthRelation>& CytoscapeWriter::get_bait_orthology_relations
 			// filter out genes not present in our set of baits
 			vector<const Gene*> genes;
 			assert(group);
-			for (auto gene : group->get_genes()) {
+			for (auto gene : group->get().get_genes()) {
 				if (contains(baits, gene)) {
 					genes.emplace_back(gene);
 				}

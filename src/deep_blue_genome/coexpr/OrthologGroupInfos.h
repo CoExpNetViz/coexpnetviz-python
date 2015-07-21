@@ -38,13 +38,6 @@ namespace COEXPR {
 class OrthologGroupInfos : public boost::noncopyable
 {
 public:
-	typedef std::unordered_set<const Gene*> Genes;
-
-	/**
-	 * All genes present in a expression matrix
-	 */
-	OrthologGroupInfos(Genes&& gene_collections);
-
 	OrthologGroupInfo& get(const OrthologGroup& group);
 
 public:
@@ -59,7 +52,6 @@ public:
 	}
 
 private:
-	Genes genes;
 	std::unordered_map<const OrthologGroup*, OrthologGroupInfo> groups;
 };
 

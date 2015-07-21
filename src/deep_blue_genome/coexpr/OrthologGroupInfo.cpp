@@ -32,17 +32,9 @@ using namespace boost::adaptors;
 namespace DEEP_BLUE_GENOME {
 namespace COEXPR {
 
-OrthologGroupInfo::OrthologGroupInfo(const OrthologGroup& group, const std::unordered_set<const Gene*>& all_genes)
+OrthologGroupInfo::OrthologGroupInfo(const OrthologGroup& group)
 :	group(group)
 {
-	auto is_known = [&all_genes](const Gene* g) {
-		return contains(all_genes, g);
-	};
-	boost::insert(genes, group.get_genes() | filtered(make_function(is_known)));
-}
-
-const OrthologGroupInfo::Genes& OrthologGroupInfo::get_genes() const {
-	return genes;
 }
 
 string OrthologGroupInfo::get_name() const {
@@ -65,7 +57,7 @@ string OrthologGroupInfo::get_name() const {
 	return name;
 }
 
-void OrthologGroupInfo::add_bait_correlation(const Gene& target, const Gene& bait, double correlation) {
+void OrthologGroupInfo::add_bait_correlation(Gene& target, Gene& bait, double correlation) {
 	auto match_bait = [&bait](const BaitCorrelations& bait_correlation) {
 		return &bait_correlation.get_bait() == &bait;
 	};

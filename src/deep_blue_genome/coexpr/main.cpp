@@ -85,7 +85,7 @@ void read_yaml(std::string path, Database& database, string& baits_path, double&
 	}
 
 	// Get set of all genes
-	OrthologGroupInfos::Genes genes;
+	unordered_set<Gene*> genes;
 	for (auto& matrix : expression_matrices) {
 		for (auto& gene : matrix->get_genes()) {
 			ensure(genes.emplace(gene).second,
@@ -94,8 +94,16 @@ void read_yaml(std::string path, Database& database, string& baits_path, double&
 		}
 	}
 
+	// Make sure each gene is part of at least 1 family, even if it's just a singleton
+	size_t singleton_id = 0;
+	for (auto&& gene : genes) {
+		if (boost::empty(gene->get_ortholog_groups())) {
+			database.add_ortholog_group(GeneFamilyId("singleton", (make_string() << singleton_id++).str())).add(*gene);
+		}
+	}
+
 	//
-	groups = make_unique<OrthologGroupInfos>(std::move(genes));
+	groups = make_unique<OrthologGroupInfos>();
 }
 
 /**
