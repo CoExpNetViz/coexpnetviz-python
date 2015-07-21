@@ -91,7 +91,7 @@
             <visualProperty name="EDGE_WIDTH" default="30.0">
                 <discreteMapping attributeType="string" attributeName="interaction">
                     <discreteMappingEntry value="5.0" attributeValue="hom"/>
-                    <discreteMappingEntry value="1.0" attributeValue="cor"/>
+                    <discreteMappingEntry value="1.001" attributeValue="cor"/>
                 </discreteMapping>
             </visualProperty>
             <visualProperty name="EDGE_TRANSPARENCY" default="255"/>
