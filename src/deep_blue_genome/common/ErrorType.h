@@ -19,9 +19,6 @@
 
 #pragma once
 
-#include <string>
-#include <stdexcept>
-
 namespace DEEP_BLUE_GENOME {
 
 // Note: when changing enum, be sure to update list in usage printing of Application.cpp

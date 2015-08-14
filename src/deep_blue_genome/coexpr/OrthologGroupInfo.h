@@ -19,10 +19,6 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-#include <boost/noncopyable.hpp>
-#include <boost/container/set.hpp>
 #include <deep_blue_genome/common/OrthologGroup.h>
 #include <deep_blue_genome/coexpr/BaitCorrelations.h>
 

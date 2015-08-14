@@ -24,16 +24,7 @@
 
 // Note: we work with orthologs, i.e. we work at the level of 'Gene's, not 'GeneVariant's
 
-#include <iostream>
-#include <fstream>
-#include <cstdlib>
-#include <unordered_set>
-#include <unordered_map>
-#include <random>
-#include <boost/filesystem.hpp>
-#include <boost/range/algorithm.hpp>
-#include <boost/range/algorithm_ext.hpp>
-#include <yaml-cpp/yaml.h>
+#include <deep_blue_genome/coexpr/stdafx.h>
 #include <deep_blue_genome/common/reader/Database.h>
 #include <deep_blue_genome/common/writer/GeneCorrelationMatrix.h>
 #include <deep_blue_genome/util/printer.h>
@@ -115,8 +106,7 @@ std::vector<Gene*> load_baits(Database& database, std::string baits_path) {
 	// read file
 	Baits baits_(baits_path);
 	for (const auto& gene_name : baits_.get_genes()) {
-		auto& gene_variant = database.get_gene_variant(gene_name);
-		auto& gene = gene_variant.as_gene();
+		auto& gene = database.get_gene(gene_name);
 		baits.emplace_back(&gene);
 	}
 

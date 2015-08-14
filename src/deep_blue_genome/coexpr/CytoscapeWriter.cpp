@@ -17,15 +17,8 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/coexpr/stdafx.h>
 #include "CytoscapeWriter.h"
-#include <iostream>
-#include <fstream>
-#include <functional>
-#include <boost/range.hpp>
-#include <boost/range/adaptors.hpp>
-#include <boost/range/join.hpp>
-#include <boost/range/algorithm_ext.hpp>
-#include <boost/container/set.hpp>
 #include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/writer/OrthologGroup.h>

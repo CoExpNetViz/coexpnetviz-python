@@ -17,36 +17,14 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "GeneVariant.h"
-#include <boost/algorithm/string.hpp>
-
-
-using namespace std;
+#pragma once
 
 namespace DEEP_BLUE_GENOME {
 
-GeneVariant::GeneVariant()
-:	dna_sequence(*this)
+class GeneVariantsUnsupportedException : public std::runtime_error
 {
-}
-
-GeneVariant::~GeneVariant()
-{
-}
-
-DNASequence& GeneVariant::get_dna_sequence() {
-	return dna_sequence;
-}
-
-void GeneVariant::set_functional_annotation(std::string annotation) {
-	boost::algorithm::trim(annotation);
-	assert(!annotation.empty());
-	functional_annotation = annotation;
-}
-
-std::ostream& operator<<(std::ostream& str, const GeneVariant& variant) {
-	variant.print(str);
-	return str;
-}
+public:
+	GeneVariantsUnsupportedException(std::string what);
+};
 
 } // end namespace

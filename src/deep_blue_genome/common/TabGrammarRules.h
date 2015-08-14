@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include <boost/spirit/include/qi.hpp>
-
 namespace DEEP_BLUE_GENOME {
 
 /**
@@ -34,22 +32,22 @@ public:
 		using namespace boost::spirit::qi;
 		using namespace boost::fusion;
 
-		separator = lit("\t");
-		field %= as_string[lexeme[*(char_- (separator | eol))]];
+		field_separator = lit("\t");
+		field %= as_string[lexeme[*(char_- (field_separator | eol))]];
 		if (ignoreEmptyFields) {
-			line %= field % +separator;
+			line %= field % +field_separator;
 		}
 		else {
-			line %= field % separator;
+			line %= field % field_separator;
 		}
 		line_separator = +(lit("\n") | lit("\r"));
 
-		separator.name("field separator");
+		field_separator.name("field separator");
 		field.name("field");
 		line.name("line");
 	}
 
-	boost::spirit::qi::rule<Iterator> separator; // field separator
+	boost::spirit::qi::rule<Iterator> field_separator; // field separator
 	boost::spirit::qi::rule<Iterator, std::string()> field;
 	boost::spirit::qi::rule<Iterator, std::vector<std::string>()> line; // = fields
 	boost::spirit::qi::rule<Iterator> line_separator; // separates lines (also sucks up any blank lines)

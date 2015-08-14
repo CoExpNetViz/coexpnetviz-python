@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-#include <unordered_map>
 #include <deep_blue_genome/coexpr/BaitGroup.h>
 
 namespace DEEP_BLUE_GENOME {

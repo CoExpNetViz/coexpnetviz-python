@@ -19,12 +19,10 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-#include <boost/regex.hpp>
-#include <deep_blue_genome/common/Canonicaliser.h>
+#include <deep_blue_genome/common/database_all.h>
 
 namespace DEEP_BLUE_GENOME {
+
 namespace MORPH {
 
 /**
@@ -32,25 +30,27 @@ namespace MORPH {
  *
  * A collection of genes.
  */
-class GenesOfInterest
+class GenesOfInterest : private boost::noncopyable
 {
 public:
 	/**
 	 * @param name Name of goi
-	 * @param path Path to plain text TODO describe format
+	 * @param path Path to plain text
 	 */
-	GenesOfInterest(std::string name, std::string path, const boost::regex& gene_pattern);
-	const std::vector<std::string>& get_genes() const;
+	GenesOfInterest(Database&, std::string name, std::string path);
 	std::string get_name() const;
 
+public:
 	/**
-	 * Apply mappings to genes
+	 * Get Range(Gene&); the baits
 	 */
-	void canonicalise(const DEEP_BLUE_GENOME::Canonicaliser&);
+	auto get_genes() const {
+		return genes | boost::adaptors::indirected;
+	}
 
 private:
 	std::string name;
-	std::vector<std::string> genes;
+	boost::container::flat_set<Gene*> genes;
 };
 
 }}

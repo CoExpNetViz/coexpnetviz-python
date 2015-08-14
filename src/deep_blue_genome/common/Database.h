@@ -19,9 +19,6 @@
 
 #pragma once
 
-#include <list>
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
 #include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/types.h>
@@ -29,8 +26,6 @@
 #include <deep_blue_genome/common/OrthologGroup.h>
 
 // hpp includes
-#include <boost/range.hpp>
-#include <boost/range/adaptors.hpp>
 #include <deep_blue_genome/util/functional.h>
 
 namespace DEEP_BLUE_GENOME {
@@ -77,14 +72,17 @@ public:
 	void execute(const std::string& query);
 
 	/**
-	 * Get gene variant by name, inserts it if it doesn't exist yet
+	 * Get gene by name, inserts it if it doesn't exist yet
 	 *
-	 * @throws NotFoundException if name matches none of the gene collections
 	 * @param name Name of gene
+	 * @throws GeneVariantsUnsupportedException If name is a gene variant name instead of a gene name
 	 */
-	GeneVariant& get_gene_variant(const std::string& name);
+	Gene& get_gene(const std::string& name);
 
-	GeneVariant* try_get_gene_variant(const std::string& name);
+	/**
+	 * Get gene by name, inserts gene if it doesn't exist yet, returns null if it's a splice variant
+	 */
+	Gene* try_get_gene(const std::string& name);
 
 	GeneCollection& get_gene_collection(std::string name);
 
@@ -106,6 +104,11 @@ public:
 	 * @return the new matrix (now stored in database)
 	 */
 	GeneExpressionMatrix& add(std::unique_ptr<GeneExpressionMatrix>&& );
+
+	/**
+	 * Add clustering
+	 */
+	void add_clustering(std::unique_ptr<Clustering>&&);
 
 	/**
 	 * Delete ortholog group
@@ -134,10 +137,24 @@ public:
 
 public: // return type deduced funcs (can't be moved outside the class def)
 	/**
-	 * Get range of all families
+	 * Get Range(OrthologGroup&)
 	 */
 	auto get_ortholog_groups() const {
 		return ortholog_groups | boost::adaptors::indirected;
+	}
+
+	/**
+	 * Get Range(GeneExpressionMatrix&)
+	 */
+	auto get_gene_expression_matrices() const {
+		return gene_expression_matrices | boost::adaptors::map_values | boost::adaptors::indirected;
+	}
+
+	/**
+	 * Get Range(Clustering&)
+	 */
+	auto get_clusterings() const {
+		return clusterings | boost::adaptors::map_values | boost::adaptors::indirected;
 	}
 
 public: // treat as private (failed to friend boost::serialization)
@@ -160,6 +177,7 @@ private:
 	std::vector<std::unique_ptr<GeneCollection>> gene_collections; // TODO stable_vector, or ptr_vector from boost pointer container (e.g. if you find the compile time dependencies too harsh with non-pointer types; i.e. more includes)
 	OrthologGroups ortholog_groups;
 	std::unordered_map<std::string, std::unique_ptr<GeneExpressionMatrix>> gene_expression_matrices; // name -> matrix
+	std::unordered_map<std::string, std::unique_ptr<Clustering>> clusterings; // name -> clustering. General clusterings and those specific to a gene expression matrix
 
 	std::string database_path;
 };
@@ -176,6 +194,8 @@ template<class Archive>
 void Database::serialize(Archive& ar, const unsigned int version) {
 	ar & unknown_gene_collection;
 	ar & gene_expression_matrices;
+	ar & clusterings;
+
 	ar & gene_collections;
 	for (auto& gene_collection : gene_collections) {
 		gene_collection->init_serialised(*this);

@@ -17,33 +17,14 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <deep_blue_genome/coexpr/stdafx.h>
-#include "BaitGroups.h"
-
-using namespace std;
-using namespace DEEP_BLUE_GENOME;
+#pragma once
 
 namespace DEEP_BLUE_GENOME {
-namespace COEXPR {
 
-BaitGroup& BaitGroups::get(std::string name) {
-	auto it = groups.find(name);
-	if (it == groups.end()) {
-		return groups.emplace(piecewise_construct,
-				forward_as_tuple(name),
-				forward_as_tuple(name)).first->second;
-	}
-	else {
-		return it->second;
-	}
-}
+class MismatchException : public std::runtime_error
+{
+public:
+	MismatchException(std::string what);
+};
 
-BaitGroups::Groups::iterator BaitGroups::begin() {
-	return groups.begin();
-}
-
-BaitGroups::Groups::iterator BaitGroups::end() {
-	return groups.end();
-}
-
-}} // end namespace
+} // end namespace

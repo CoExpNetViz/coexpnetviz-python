@@ -17,18 +17,17 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/morph/stdafx.h>
 #include "Application.h"
-#include <iostream>
-#include <iomanip>
-#include <boost/filesystem.hpp>
-#include <yaml-cpp/yaml.h>
 #include <deep_blue_genome/common/ublas.h>
 #include <deep_blue_genome/common/util.h>
+#include <deep_blue_genome/morph/GOIResult.h>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
 using namespace ublas;
 namespace fs = boost::filesystem;
+using boost::container::flat_set;
 
 namespace DEEP_BLUE_GENOME {
 namespace MORPH {
@@ -75,10 +74,7 @@ Application::Application(int argc, char** argv)
 void Application::run() {
 	load_config();
 	load_jobs();
-
-	for (auto& species_ : species) {
-		species_.run_jobs(output_path, top_k, output_yaml);
-	}
+	run_jobs();
 }
 
 void Application::load_config() {
@@ -87,29 +83,68 @@ void Application::load_config() {
 }
 
 void Application::load_jobs() {
-	// Load all species (not really necessary except for the way the next code block is written)
-	for (auto name : database->get_species_names()) {
-		species.emplace_back(name, *database);
-	}
-
 	// Load jobs
 	YAML::Node job_list = YAML::LoadFile(job_list_path);
 	string data_root = job_list["data_path"].as<string>(".");
 
 	for (auto job_group : job_list["jobs"]) {
-		string species_name = job_group["species_name"].as<string>();
-		auto matches_name = [&species_name](const Species& s){
-			return s.get_name() == species_name;
-		};
-		auto it = find_if(species.begin(), species.end(), matches_name);
-		if (it == species.end()) {
-			throw runtime_error("Unknown species in job list: " + species_name);
-		}
-
+		// TODO change joblist to be: path to a directory of goi, or path to a goi. Not a YAML file
 		string goi_root = prepend_path(data_root, job_group["data_path"].as<string>("."));
-
 		for (auto goi : job_group["genes_of_interest"]) {
-			it->add_goi(goi["name"].as<string>(), prepend_path(goi_root, goi["path"].as<string>()));
+			string name = goi["name"].as<string>();
+			jobs.emplace(piecewise_construct, forward_as_tuple(name), forward_as_tuple(*database, name, prepend_path(goi_root, goi["path"].as<string>())));
+		}
+	}
+}
+
+void Application::run_jobs() {
+	// For each GeneExpression, ge.Cluster, GOI calculate the ranking and keep the best one per GOI
+	for (auto&& job : (jobs | boost::adaptors::map_values)) {
+		GOIResult result;
+
+		for (auto&& gene_expression : database->get_gene_expression_matrices()) {
+			// translate bait references to their row index in the gene expression matrix (if any); this drops genes missing in the gene expression matrix
+			flat_set<GeneExpressionMatrixRow> bait_indices;
+			for (auto&& gene : job.get_genes()) {
+				if (gene_expression.has_gene(gene)) {
+					bait_indices.emplace(gene_expression.get_gene_row(gene));
+				}
+			}
+
+			// generate correlations
+			DEEP_BLUE_GENOME::GeneCorrelationMatrix gene_correlations(gene_expression, bait_indices);
+
+			// clustering
+			for (auto&& clustering : database->get_clusterings()) {
+				try {
+					GeneExpressionMatrixClustering clustering_(gene_expression, clustering);
+					cout << job.get_name() << ", " << gene_expression.get_name() << ", " << clustering.get_name();
+					cout.flush();
+					if (bait_indices.size() < 5) {
+						cout << ": Skipping: Too few genes of interest found in dataset: " << bait_indices.size() << " < 5\n";
+						continue;
+					}
+					else {
+						// Rank genes
+						string name = (make_string() << job.get_name() << ".txt").str();
+						replace(begin(name), end(name), ' ', '_');
+						auto ranking = make_unique<Ranking>(bait_indices, clustering_, gene_correlations, name);
+						cout << ": AUSR=" << setprecision(2) << fixed << ranking->get_ausr() << "\n";
+						result.add(std::move(ranking));
+					}
+				}
+				catch (MismatchException ex) {
+					cout << "Info: Skipping " << clustering << " for " << gene_expression << " due to no overlap in set of genes\n";
+				}
+			}
+
+			// save best result if any
+			if (result.has_rankings()) {
+				result.get_best_ranking().save(output_path, top_k, job, result.get_average_ausr(), output_yaml);
+			}
+			else {
+				cout << "Warning: No output for " << job.get_name() << " due to lack of relevant gene expression data and clustering data\n";
+			}
 		}
 	}
 }

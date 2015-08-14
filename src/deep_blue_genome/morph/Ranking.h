@@ -19,17 +19,12 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-#include <unordered_map>
-#include <deep_blue_genome/common/ublas.h>
+#include <deep_blue_genome/common/database_all.h>
 
 namespace DEEP_BLUE_GENOME {
 
-class Species;
-class GeneExpressionMatrix;
 class GeneExpressionMatrixClustering;
 class GeneExpressionMatrixCluster;
-class GeneCorrelationMatrix;
 
 namespace MORPH {
 
@@ -40,9 +35,9 @@ class GenesOfInterest;
  */
 class Ranking_ClusterInfo : public boost::noncopyable { // TODO this could be tidier
 public:
-	Ranking_ClusterInfo(const DEEP_BLUE_GENOME::GeneCorrelationMatrix&, const std::vector<size_type>& genes_of_interest, const DEEP_BLUE_GENOME::GeneExpressionMatrixCluster& cluster);
+	Ranking_ClusterInfo(const DEEP_BLUE_GENOME::GeneCorrelationMatrix&, const std::vector<GeneExpressionMatrixRow>& genes_of_interest, const DEEP_BLUE_GENOME::GeneExpressionMatrixCluster& cluster);
 
-	size_type get_goi_count() {
+	auto get_goi_count() {
 		return goi.size();
 	}
 
@@ -64,14 +59,14 @@ class Ranking : public boost::noncopyable // TODO this is not a single ranking, 
 {
 public:
 
-	Ranking(std::vector<size_type> genes_of_interest, std::shared_ptr<DEEP_BLUE_GENOME::GeneExpressionMatrixClustering>, const DEEP_BLUE_GENOME::GeneCorrelationMatrix&, std::string name);
+	Ranking(std::vector<GeneExpressionMatrixRow> genes_of_interest, std::shared_ptr<DEEP_BLUE_GENOME::GeneExpressionMatrixClustering>, const DEEP_BLUE_GENOME::GeneCorrelationMatrix&, std::string name);
 
 	/**
 	 * Save top k results in given directory
 	 *
 	 * Full goi: goi without genes missing in dataset removed
 	 */
-	void save(std::string directory, int top_k, const DEEP_BLUE_GENOME::Species&, const GenesOfInterest& full_goi, double average_ausr, bool output_yaml);
+	void save(std::string directory, int top_k, const GenesOfInterest& full_goi, double average_ausr, bool output_yaml) const;
 
 	double get_ausr() const;
 	bool operator>(const Ranking&) const;
@@ -81,7 +76,7 @@ private:
 
 	const matrix& get_gene_correlations();
 	const DEEP_BLUE_GENOME::GeneExpressionMatrix& get_gene_expression();
-	void rank_genes(const std::vector<size_type>& genes_of_interest, Rankings& rankings);
+	void rank_genes(const std::vector<GeneExpressionMatrixRow>& genes_of_interest, Rankings& rankings);
 	void rank_self(const Rankings& rankings);
 	void finalise_ranking(const Rankings& rankings);
 
@@ -96,7 +91,7 @@ private:
 	void finalise_sub_ranking(const Rankings& rankings, Rankings& final_rankings, const DEEP_BLUE_GENOME::indirect_array& sub_indices, Ranking_ClusterInfo&, long excluded_goi = -1);
 
 private:
-	std::vector<size_type> genes_of_interest; // genes_of_interest
+	std::vector<GeneExpressionMatrixRow> genes_of_interest;
 	std::shared_ptr<GeneExpressionMatrixClustering> clustering;
 	const GeneCorrelationMatrix& gene_correlations; // Note: only valid during construction
 	Rankings final_rankings; // finalised rankings, after ctor has finished

@@ -19,9 +19,6 @@
 
 #pragma once
 
-#include <vector>
-#include <utility>
-
 namespace DEEP_BLUE_GENOME {
 
 class Gene;

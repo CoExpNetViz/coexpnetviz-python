@@ -17,26 +17,26 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/common/stdafx.h>
 #include "GeneCorrelationMatrix.h"
-#include <cmath>
-#include <deep_blue_genome/common/util.h>
 
 using namespace std;
-namespace ublas = boost::numeric::ublas;
 
 namespace DEEP_BLUE_GENOME {
 
-GeneCorrelationMatrix::GeneCorrelationMatrix(const GeneExpressionMatrix& gene_expression_matrix, const std::vector<GeneExpressionMatrixRow>& gene_indices)
-:	gene_correlations(gene_expression_matrix.get().size1(), gene_indices.size())
+/*GeneCorrelationMatrix::GeneCorrelationMatrix(const GeneExpressionMatrix& gene_expression_matrix, const boost::container::flat_set<GeneExpressionMatrixRow>& gene_indices)
+:	gene_correlations(gene_expression_matrix.get().size1(), boost::size(gene_indices))
 {
+	using namespace std;
+	namespace ublas = boost::numeric::ublas;
 	using namespace ublas;
 
 	auto& expression_matrix = gene_expression_matrix.get();
 	DEEP_BLUE_GENOME::indirect_array gene_indices_(const_cast<GeneExpressionMatrixRow*>(&*gene_indices.begin()), const_cast<GeneExpressionMatrixRow*>(&*gene_indices.end()));
 
-	for (GeneExpressionMatrixRow i=0; i<gene_indices.size(); i++) {
-		row_to_column_indices[gene_indices.at(i)] = i;
-		column_to_row_indices.emplace_back(gene_indices.at(i));
+	for (auto gene : gene_indices) {
+		row_to_column_indices[gene] = column_to_row_indices.size();
+		column_to_row_indices.emplace_back(gene);
 	}
 
 	// calculate Pearson's correlation
@@ -59,9 +59,9 @@ GeneCorrelationMatrix::GeneCorrelationMatrix(const GeneExpressionMatrix& gene_ex
 
 	transform(sum_sq.begin(), sum_sq.end(), sum_sq.begin(), ::sqrt);
 	gene_correlations = element_div(sum_cross, outer_prod(sum_sq, project(sum_sq, gene_indices_)));
-}
+}*/
 
-const matrix& GeneCorrelationMatrix::get() const {
+const GeneCorrelationMatrix::MatrixType& GeneCorrelationMatrix::get() const {
 	return gene_correlations;
 }
 

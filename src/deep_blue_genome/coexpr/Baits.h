@@ -19,9 +19,6 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-
 namespace DEEP_BLUE_GENOME {
 namespace COEXPR {
 

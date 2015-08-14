@@ -23,9 +23,12 @@
  * Include all database related classes' headers
  */
 
+#include <deep_blue_genome/common/types.h>
 #include <deep_blue_genome/common/Database.h>
 #include <deep_blue_genome/common/GeneExpressionMatrix.h>
+#include <deep_blue_genome/common/GeneExpressionMatrixClustering.h>
 #include <deep_blue_genome/common/GeneCorrelationMatrix.h>
 #include <deep_blue_genome/common/Clustering.h>
-#include <deep_blue_genome/common/SpliceVariant.h>
 #include <deep_blue_genome/common/OrthologGroup.h>
+#include <deep_blue_genome/common/GeneVariantsUnsupportedException.h>
+#include <deep_blue_genome/common/MismatchException.h>

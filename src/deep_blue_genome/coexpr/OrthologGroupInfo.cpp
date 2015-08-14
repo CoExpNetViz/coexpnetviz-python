@@ -17,9 +17,8 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/coexpr/stdafx.h>
 #include "OrthologGroupInfo.h"
-#include <boost/range/adaptors.hpp>
-#include <boost/range/algorithm_ext.hpp>
 #include <deep_blue_genome/common/Gene.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/util/functional.h>

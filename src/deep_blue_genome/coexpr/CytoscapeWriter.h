@@ -19,12 +19,6 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-#include <vector>
-#include <string>
-#include <iostream>
-#include <unordered_map>
-#include <yaml-cpp/yaml.h>
 #include <deep_blue_genome/coexpr/Node.h>
 
 namespace DEEP_BLUE_GENOME {

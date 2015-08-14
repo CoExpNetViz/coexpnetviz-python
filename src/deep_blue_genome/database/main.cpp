@@ -17,8 +17,7 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
-#include <boost/program_options.hpp>
+#include <deep_blue_genome/database/stdafx.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/database/commands.h>

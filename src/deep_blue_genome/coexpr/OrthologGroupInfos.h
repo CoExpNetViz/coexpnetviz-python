@@ -19,10 +19,6 @@
 
 #pragma once
 
-#include <unordered_set>
-#include <unordered_map>
-#include <boost/noncopyable.hpp>
-#include <boost/range/adaptors.hpp>
 #include <deep_blue_genome/common/Gene.h>
 #include <deep_blue_genome/coexpr/OrthologGroupInfo.h>
 #include <deep_blue_genome/coexpr/OrthologGroupInfo.h>

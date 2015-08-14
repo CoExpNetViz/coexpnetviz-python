@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
 #include <deep_blue_genome/common/Serialization.h>
 
 namespace DEEP_BLUE_GENOME {

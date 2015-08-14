@@ -17,10 +17,10 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/common/stdafx.h>
 #include "MCL.h"
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/common/TabGrammarRules.h>
-#include <boost/spirit/include/qi.hpp>
 
 using namespace std;
 using namespace DEEP_BLUE_GENOME;

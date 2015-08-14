@@ -19,9 +19,6 @@
 
 #pragma once
 
-#include <string>
-#include <boost/noncopyable.hpp>
-
 namespace DEEP_BLUE_GENOME {
 namespace COEXPR {
 

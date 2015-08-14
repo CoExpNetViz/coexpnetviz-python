@@ -2,20 +2,10 @@
 
 #pragma once
 
-#include <exception>
-#include <map>
-#include <set>
-#include <unordered_set>
-#include <utility>
-#include <functional>
-#include <boost/spirit/include/qi.hpp>
 #include <deep_blue_genome/common/ErrorType.h>
 #include <deep_blue_genome/util/make_string.h>
 #include <deep_blue_genome/util/contains.h>
 #include <deep_blue_genome/util/functional.h>
-#include <boost/range/adaptors.hpp>
-#include <boost/range/algorithm.hpp>
-#include <boost/range/algorithm_ext.hpp>
 
 
 #define GCC_VERSION (__GNUC__ * 10000 \

@@ -19,22 +19,18 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
 #include <deep_blue_genome/common/GeneExpressionMatrix.h>
 #include <deep_blue_genome/common/GeneExpressionMatrixCluster.h>
 #include <deep_blue_genome/common/Clustering.h>
 
 namespace DEEP_BLUE_GENOME {
 
-// TODO attempt to simplify clustering made specific to GeneExpressionMatrix
-// TODO attempt to simplify many 'performance' decisions we made before actually profiling (i.e. check whether they truly gain us any decent performance)
-
 /**
  * A clustering specific to a GeneExpressionMatrix.
  *
  * Contains exactly all genes of its corresponding gene expression matrix
  */
-class GeneExpressionMatrixClustering : public boost::noncopyable
+class GeneExpressionMatrixClustering : private boost::noncopyable
 {
 public:
 	typedef std::vector<GeneExpressionMatrixCluster> Clusters;
@@ -42,14 +38,11 @@ public:
 
 public:
 	/**
-	 * Create invalid clustering for loading via serialization
-	 */
-	GeneExpressionMatrixClustering(std::shared_ptr<GeneExpressionMatrix>, std::string name);
-
-	/**
 	 * Create clustering specific to expression matrix from generic clustering
+	 *
+	 * @throws MismatchException if none of `clustering`'s genes are present in `matrix`
 	 */
-	GeneExpressionMatrixClustering(std::shared_ptr<GeneExpressionMatrix>, const Clustering& generic_clustering);
+	GeneExpressionMatrixClustering(GeneExpressionMatrix&, const Clustering& generic_clustering);
 
 	/**
 	 * Get iterator to first cluster
@@ -64,7 +57,7 @@ public:
 private:
 	std::string name;
 	Clusters clusters;  // mutually disjunct clusters
-	std::shared_ptr<GeneExpressionMatrix> gene_expression_matrix; // gene expression data we clustered
+	GeneExpressionMatrix* gene_expression_matrix; // gene expression data we clustered
 };
 
 

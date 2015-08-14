@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
-#include <boost/variant.hpp>
 #include <deep_blue_genome/common/ublas.h>
 
 namespace DEEP_BLUE_GENOME {

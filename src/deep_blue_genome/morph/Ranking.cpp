@@ -17,16 +17,9 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/morph/stdafx.h>
 #include "Ranking.h"
-#include "gsl/gsl_statistics_double.h"
-#include <fstream>
-#include <iomanip>
-#include <cmath>
-#include <boost/algorithm/string.hpp>
-#include <errno.h>
-#include <yaml-cpp/yaml.h>
 #include <deep_blue_genome/common/util.h>
-#include <deep_blue_genome/common/GeneDescriptions.h>
 #include <deep_blue_genome/common/GeneExpressionMatrixClustering.h>
 #include <deep_blue_genome/common/GeneCorrelationMatrix.h>
 #include <deep_blue_genome/morph/GenesOfInterest.h>
@@ -66,14 +59,10 @@ public: // TODO make privy
 	string gene_web_page;
 };
 
-
-size_type K = 1000;
-
-Ranking_ClusterInfo::Ranking_ClusterInfo(const GeneCorrelationMatrix& gene_correlations, const std::vector<size_type>& genes_of_interest, const
-		GeneExpressionMatrixCluster& c)
+Ranking_ClusterInfo::Ranking_ClusterInfo(const GeneCorrelationMatrix& gene_correlations, const std::vector<GeneExpressionMatrixRow>& genes_of_interest, const GeneExpressionMatrixCluster& c)
 {
 	auto& cluster = const_cast<GeneExpressionMatrixCluster&>(c);
-	auto is_goi = [&genes_of_interest](size_type gene) {
+	auto is_goi = [&genes_of_interest](GeneExpressionMatrixRow gene) {
 		return contains(genes_of_interest, gene);
 	};
 	auto candidates_begin = partition(cluster.begin(), cluster.end(), is_goi); // Note: modifying the order of cluster genes doesn't really change the cluster
@@ -86,13 +75,13 @@ Ranking_ClusterInfo::Ranking_ClusterInfo(const GeneCorrelationMatrix& gene_corre
 	genes = indirect_array(&*cluster.begin(), &*cluster.end());
 
 	goi_columns_ = array(goi.size());
-	for (size_type i=0; i<goi.size(); i++) {
+	for (decltype(goi.size()) i=0; i<goi.size(); i++) {
 		goi_columns_[i] = gene_correlations.get_column_index(goi_[i]);
 	}
 	goi_columns = indirect_array(goi_columns_.size(), goi_columns_);
 }
 
-Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<GeneExpressionMatrixClustering> clustering, const GeneCorrelationMatrix& gene_correlations, std::string name)
+Ranking::Ranking(std::vector<GeneExpressionMatrixRow> goi, std::shared_ptr<GeneExpressionMatrixClustering> clustering, const GeneCorrelationMatrix& gene_correlations, std::string name)
 :	genes_of_interest(goi), clustering(clustering), gene_correlations(gene_correlations), ausr(-1.0), name(name)
 {
 	Rankings rankings(gene_correlations.get().size1(), nan("undefined"));
@@ -108,7 +97,7 @@ Ranking::Ranking(std::vector<size_type> goi, std::shared_ptr<GeneExpressionMatri
 	rank_self(rankings);
 }
 
-void Ranking::rank_genes(const std::vector<size_type>& genes_of_interest, Rankings& rankings) {
+void Ranking::rank_genes(const std::vector<GeneExpressionMatrixRow>& genes_of_interest, Rankings& rankings) {
 	for (auto& cluster : *clustering) {
 		auto& info = cluster_info.emplace(piecewise_construct, make_tuple(&cluster), make_tuple(std::ref(gene_correlations), std::ref(genes_of_interest), std::ref(cluster))).first->second;
 
@@ -166,11 +155,12 @@ void Ranking::finalise_sub_ranking(const Rankings& rankings, Rankings& final_ran
 }
 
 void Ranking::rank_self(const Rankings& rankings) {
+	const size_t K = 1000;
+
 	// find rank_indices of leaving out a gene of interest one by one
-	std::vector<size_type> rank_indices;
+	std::vector<GeneExpressionMatrixRow> rank_indices;
 	Rankings final_rankings = this->final_rankings;
 	for (auto& p : cluster_info) {
-		auto& cluster = *p.first;
 		auto& info = p.second;
 		array candidates_and_gene_(info.candidates.size() + 1);
 		copy(info.candidates.begin(), info.candidates.end(), candidates_and_gene_.begin());
@@ -187,7 +177,7 @@ void Ranking::rank_self(const Rankings& rankings) {
 			else {
 				// TODO you can stop if you notice it's >=K
 				// TODO currently we do len(GOI) passes on the whole ranking, a sort + single pass is probably faster
-				size_type count = count_if(final_rankings.begin(), final_rankings.end(), [rank](double val){return val > rank && !std::isnan(val);});
+				GeneExpressionMatrixRow count = count_if(final_rankings.begin(), final_rankings.end(), [rank](double val){return val > rank && !std::isnan(val);});
 				rank_indices.emplace_back(count);
 			}
 		}
@@ -198,7 +188,7 @@ void Ranking::rank_self(const Rankings& rankings) {
 
 	// calculate ausr
 	double auc = 0.0; // area under curve
-	for (size_type i = 0; i < K; i++) { // TODO couldn't we just take the sum/size?
+	for (size_t i = 0; i < K; i++) { // TODO couldn't we just take the sum/size?
 		// TODO can continue last search for upper bound where we left last one...
 		auto supremum = upper_bound(rank_indices.begin(), rank_indices.end(), i);
 		auto count = distance(rank_indices.begin(), supremum);
@@ -207,14 +197,14 @@ void Ranking::rank_self(const Rankings& rankings) {
 	ausr = auc / K;
 }
 
-void Ranking::save(std::string path, int top_k, const DEEP_BLUE_GENOME::Species& species, const GenesOfInterest& full_goi, double average_ausr, bool output_yaml) {
+void Ranking::save(std::string path, int top_k, const GenesOfInterest& full_goi, double average_ausr, bool output_yaml) const {
 	// Sort results
-	std::vector<pair<double, string>> results; // vec<(rank, gene)>
+	std::vector<pair<double, Gene*>> results; // vec<(rank, gene)>
 	auto& gene_expression = clustering->get_source();
 	for (int i=0; i<final_rankings.size(); i++) {
 		if (std::isnan(final_rankings(i)))
 			continue; // don't include unranked genes in results
-		results.push_back(make_pair(final_rankings(i), gene_expression.get_gene_name(i)));
+		results.push_back(make_pair(final_rankings(i), &gene_expression.get_gene(i)));
 	}
 	sort(results.rbegin(), results.rend());
 
@@ -224,28 +214,35 @@ void Ranking::save(std::string path, int top_k, const DEEP_BLUE_GENOME::Species&
 
 	std::vector<string> goi_genes_present; // note: this is always non-empty
 	for (auto g : genes_of_interest) {
-		goi_genes_present.emplace_back(get_gene_expression().get_gene_name(g));
+		goi_genes_present.emplace_back(get_gene_expression().get_gene(g).get_name());
 	}
 
 	std::vector<string> goi_genes_missing;
-	for (auto g : full_goi.get_genes()) {
+	for (auto&& g : full_goi.get_genes()) {
 		if (!get_gene_expression().has_gene(g)) {
-			goi_genes_missing.emplace_back(g);
+			goi_genes_missing.emplace_back(g.get_name());
 		}
 	}
 
-	auto descriptions = species.get_gene_descriptions();
 	std::vector<Rank> ranks;
 	for (int i=0; i<results.size() && i<top_k; i++) {
 		auto& r = results.at(i);
-		auto& gene = r.second;
+		auto& gene = *r.second;
 		assert(!std::isnan(r.first));
-		ranks.emplace_back(i+1, gene, r.first, descriptions->get(gene));
+		auto optional_functional_annotation = gene.get_functional_annotation();
+		string functional_annotation;
+		if (optional_functional_annotation) {
+			functional_annotation = *optional_functional_annotation;
+		}
+		else {
+			functional_annotation = "";
+		}
+		ranks.emplace_back(i+1, gene.get_name(), r.first, functional_annotation);
 
-		if (species.has_gene_web_page()) {
-			std::string web_page = species.get_gene_web_page();
-			boost::replace_all(web_page, "$name", gene);
-			ranks.back().set_gene_web_page(web_page);
+		auto gene_web_page = gene.get_gene_collection().get_gene_web_page();
+		if (gene_web_page) {
+			boost::replace_all(*gene_web_page, "$name", gene.get_name());
+			ranks.back().set_gene_web_page(*gene_web_page);
 		}
 	}
 

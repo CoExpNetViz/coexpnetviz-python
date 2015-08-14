@@ -19,11 +19,6 @@
 
 #pragma once
 
-#include <string>
-#include <unordered_map>
-#include <boost/noncopyable.hpp>
-#include <boost/range/adaptors.hpp>
-#include <memory>
 #include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/types.h>
 #include <deep_blue_genome/common/ublas.h>
@@ -71,9 +66,6 @@ public:
 	}
 
 	std::string get_name() const;
-	std::string get_species_name() const;
-
-	void dispose_expression_data();
 
 	/**
 	 * Get inner matrix representation
@@ -92,6 +84,8 @@ private:
 };
 
 }
+
+std::ostream& operator<<(std::ostream&, const DEEP_BLUE_GENOME::GeneExpressionMatrix&);
 
 
 /////////////////////////

@@ -19,17 +19,15 @@
 
 #pragma once
 
-#include <boost/container/flat_set.hpp>
 #include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/util.h>
-#include <deep_blue_genome/common/GeneVariant.h>
 
 namespace DEEP_BLUE_GENOME {
 
 class OrthologGroup;
-class SpliceVariant;
+class GeneCollection;
 
-class Gene : public GeneVariant  // TODO conceptually a Gene is not a GeneVariant, variants of a Gene are gene variants. Probably just need to rename the base class to.. something else
+class Gene : public boost::noncopyable
 {
 	friend OrthologGroup;
 
@@ -43,18 +41,17 @@ public:
 
 	std::string get_name() const;
 
-	/**
-	 * Get splice variant
-	 *
-	 * The variant is created if it doesn't exist yet
-	 *
-	 * @throws NotFoundException Variant doesn't match naming scheme of this gene collection
-	 */
-	SpliceVariant& get_splice_variant(SpliceVariantId);
-
 	GeneCollection& get_gene_collection() const;
-	Gene& get_gene();
-	Gene& as_gene();
+
+	void set_functional_annotation(std::string);
+	boost::optional<std::string> get_functional_annotation();
+
+	/**
+	 * Add gene that's highly similar to this one
+	 *
+	 * Silently fails when adding a gene already present in list
+	 */
+	void add_highly_similar(Gene&);
 
 public:
 	/**
@@ -64,8 +61,20 @@ public:
 		return ortholog_groups;
 	}
 
-protected:
+	/**
+	 * Get Range(Gene&); range of genes that are highly similar to this gene by DNA (or protein) sequence.
+	 * 'highly' is determined by the user, by loading gene mappings denoting the highly similar.
+	 */
+	auto get_highly_similar_genes() const {
+		return highly_similar_genes | boost::adaptors::indirected;
+	}
+
+private:
+	/**
+	 * Print short human readable description of self to stream
+	 */
 	void print(std::ostream&) const;
+	friend std::ostream& operator<<(std::ostream&, const DEEP_BLUE_GENOME::Gene&);
 
 public: // treat as private (failed to friend boost::serialization)
 	template<class Archive>
@@ -97,8 +106,11 @@ private:
 	std::string name; // unique name of gene
 	GeneCollection* gene_collection; // genes collection which this gene is part of. Not null
 	boost::container::flat_set<OrthologGroup*> ortholog_groups; // ortholog groups this gene is part of.
-	std::vector<std::unique_ptr<SpliceVariant>> splice_variants; // TODO stable_vector
+	boost::optional<std::string> functional_annotation;
+	std::vector<Gene*> highly_similar_genes;  // 'highly' is determined by whatever mappings a user put in the database
 };
+
+std::ostream& operator<<(std::ostream&, const Gene&);
 
 
 } // end namespace
@@ -114,7 +126,8 @@ void Gene::serialize(Archive& ar, const unsigned int version) {
 	ar & name;
 	ar & gene_collection;
 	ar & ortholog_groups;
-	ar & splice_variants;
+	ar & functional_annotation;
+	ar & highly_similar_genes;
 }
 
 }

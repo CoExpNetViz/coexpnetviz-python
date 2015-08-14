@@ -17,8 +17,8 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/coexpr/stdafx.h>
 #include "Baits.h"
-#include <boost/spirit/include/qi.hpp>
 #include <deep_blue_genome/common/util.h>
 
 using namespace std;

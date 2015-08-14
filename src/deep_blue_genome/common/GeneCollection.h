@@ -19,18 +19,10 @@
 
 #pragma once
 
-#include <string>
-#include <boost/noncopyable.hpp>
-#include <boost/operators.hpp>
-#include <yaml-cpp/yaml.h>
 #include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/types.h>
 #include <deep_blue_genome/common/Gene.h>
 #include <deep_blue_genome/common/GeneParserRule.h>
-
-// hpp includes
-#include <boost/range.hpp>
-#include <boost/range/adaptors.hpp>
 
 namespace DEEP_BLUE_GENOME {
 
@@ -76,22 +68,23 @@ public:
 	std::string get_species() const;
 
 	/**
-	 * Get gene variant by name
+	 * Get gene by name
 	 *
-	 * A variant is created if it doesn't exist, but matches the naming scheme of this gene collection.
+	 * A gene is created if it doesn't exist, but matches the naming scheme of this gene collection.
 	 *
-	 * @throws NotFoundException Variant doesn't match naming scheme of this gene collection
+	 * @throws NotFoundException Gene doesn't match naming scheme of this gene collection
+	 * @throws GeneVariantsUnsupportedException If `name` refers to a gene variant other than gene.1
 	 */
-	GeneVariant& get_gene_variant(const std::string& name);
+	Gene& get_gene(const std::string& name);
 
 	/**
-	 * Get gene variant
+	 * Get gene by name
 	 *
-	 * Like get_gene_variant, but returns nullptr instead of throwing
+	 * Like get_gene, but returns nullptr upon not finding the gene
+	 *
+	 * @throws GeneVariantsUnsupportedException If `name` refers to a gene variant other than gene.1
 	 */
-	GeneVariant* try_get_gene_variant(const std::string& name);
-
-	void add_clustering(std::unique_ptr<Clustering>&&);
+	Gene* try_get_gene(const std::string& name);
 
 	bool operator==(const GeneCollection&) const;
 
@@ -109,7 +102,6 @@ private:
 	NullableGeneWebPage gene_web_page;
 	std::unordered_map<std::string, std::unique_ptr<Gene>> name_to_gene; // gene name to gene, for all genes // TODO no unique_ptr needed (unless perhaps to move something around constructed elsewhere...; But could fix that by constructing it here first)
 	std::vector<GeneParserRule> gene_parser_rules;
-	std::unordered_map<std::string, std::unique_ptr<Clustering>> clusterings; // name -> clustering. General clusterings and those specific to a gene expression matrix
 
 public:
 	/**
@@ -138,7 +130,6 @@ void GeneCollection::serialize(Archive& ar, const unsigned int version) {
 	ar & gene_web_page;
 	ar & name_to_gene;
 	ar & gene_parser_rules;
-	ar & clusterings;
 }
 
 }

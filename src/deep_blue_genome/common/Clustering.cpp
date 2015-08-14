@@ -17,20 +17,12 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/common/stdafx.h>
 #include "Clustering.h"
 
 using namespace std;
 
 namespace DEEP_BLUE_GENOME {
-
-Clustering::Clustering()
-:	gene_collection(nullptr), expression_matrix(nullptr)
-{
-}
-
-GeneCollection& Clustering::get_gene_collection() const {
-	return *gene_collection;
-}
 
 Clustering::const_iterator Clustering::begin() const {
 	return clusters.begin();
@@ -44,4 +36,9 @@ std::string Clustering::get_name() const {
 	return name;
 }
 
+} // end namespace
+
+ostream& operator<<(ostream& out, const DEEP_BLUE_GENOME::Clustering& clustering) {
+	out << "clustering '" << clustering.get_name() << "'";
+	return out;
 }

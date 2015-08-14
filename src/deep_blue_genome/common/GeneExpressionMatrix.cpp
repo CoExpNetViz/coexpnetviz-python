@@ -17,6 +17,7 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/common/stdafx.h>
 #include "GeneExpressionMatrix.h"
 
 using namespace std;
@@ -44,12 +45,13 @@ string GeneExpressionMatrix::get_name() const {
 	return name;
 }
 
-void GeneExpressionMatrix::dispose_expression_data() {
-	expression_matrix.resize(0, 0);
-}
-
 const matrix& GeneExpressionMatrix::get() const {
 	return expression_matrix;
 }
 
 } // end namespace
+
+ostream& operator<<(ostream& out, const DEEP_BLUE_GENOME::GeneExpressionMatrix& matrix) {
+	out << "gene expression matrix '" << matrix.get_name() << "'";
+	return out;
+}

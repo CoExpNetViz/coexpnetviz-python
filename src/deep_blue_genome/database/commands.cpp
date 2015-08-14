@@ -17,9 +17,8 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/database/stdafx.h>
 #include "commands.h"
-#include <iostream>
-#include <yaml-cpp/yaml.h>
 #include <deep_blue_genome/common/DataFileImport.h>
 #include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/common/writer/OrthologGroup.h>

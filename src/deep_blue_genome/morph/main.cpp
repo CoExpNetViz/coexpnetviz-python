@@ -17,7 +17,7 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iostream>
+#include <deep_blue_genome/morph/stdafx.h>
 #include <deep_blue_genome/common/util.h>
 #include "Application.h"
 

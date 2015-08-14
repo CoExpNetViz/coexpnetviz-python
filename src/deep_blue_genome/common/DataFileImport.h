@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include <string>
-
 namespace DEEP_BLUE_GENOME {
 
 class Database;
@@ -81,10 +79,8 @@ public:
 	 * Add clustering from plain text file
 	 *
 	 * TODO describe plain text format
-	 *
-	 * @param expression_matrix If it can only be used with a specific matrix, specify it here, otherwise pass "".
 	 */
-	void add_clustering(const std::string& name, const std::string& path, const std::string& expression_matrix_name);
+	void add_clustering(const std::string& name, const std::string& path);
 
 private:
 	Database& database;

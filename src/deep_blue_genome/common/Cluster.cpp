@@ -17,6 +17,7 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/common/stdafx.h>
 #include "Cluster.h"
 
 using namespace std;

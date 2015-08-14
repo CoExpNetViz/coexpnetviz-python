@@ -17,12 +17,10 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <boost/filesystem.hpp>
-#include <boost/range/algorithm_ext.hpp>
+#include <deep_blue_genome/common/stdafx.h>
 #include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/util/printer.h>
-#include <deep_blue_genome/common/writer/OrthologGroup.h> // TODO rm, debug
 
 using namespace std;
 
@@ -37,22 +35,25 @@ Database::Database(std::string path, bool start_fresh)
 	}
 }
 
-GeneVariant& Database::get_gene_variant(const std::string& name) {
-	auto variant = try_get_gene_variant(name);
-	if (variant)
-		return *variant;
-	else
-		throw NotFoundException("Gene not part of a known gene collection: " + name); // TODO we now have a default gene collection for unknown genes, so this can no longer happen
-}
-
-GeneVariant* Database::try_get_gene_variant(const std::string& name) {
+Gene& Database::get_gene(const std::string& name) {
 	for (auto& gene_collection : gene_collections) {
-		auto variant = gene_collection->try_get_gene_variant(name);
-		if (variant) {
-			return variant;
+		auto gene = gene_collection->try_get_gene(name);
+		if (gene) {
+			return *gene;
 		}
 	}
-	return &unknown_gene_collection.get_gene_variant(name); // Note: this should never fail (it's a bug otherwise)
+
+	return unknown_gene_collection.get_gene(name);
+}
+
+Gene* Database::try_get_gene(const std::string& name) {
+	try {
+		return &get_gene(name);
+	}
+	catch (GeneVariantsUnsupportedException e) {
+		cout << "Warning: Encountered gene variant id, variants are not supported and are ignored.\n";
+		return nullptr;
+	}
 }
 
 OrthologGroup& Database::add_ortholog_group(const GeneFamilyId& external_id) {
@@ -200,6 +201,16 @@ void Database::verify() {
 	// TODO no 2 ortholog groups should have the same external id
 
 	cout << "Verification complete, all is well" << endl;
+}
+
+void Database::add_clustering(unique_ptr<Clustering>&& clustering) {
+	ensure(clusterings.find(clustering->get_name()) == clusterings.end(),
+			(make_string() << "Cannot add 2 clusterings with the same name '" << clustering->get_name() << "'").str()
+	);
+
+	std::string name_lower = clustering->get_name();
+	to_lower(name_lower);
+	clusterings[name_lower] = std::move(clustering);
 }
 
 void Database::erase_families() {

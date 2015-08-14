@@ -19,11 +19,6 @@
 
 #pragma once
 
-#include <vector>
-#include <list>
-#include <boost/container/flat_map.hpp>
-#include <boost/container/flat_set.hpp>
-#include <boost/noncopyable.hpp>
 #include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/GeneFamilyId.h>
 

@@ -17,8 +17,8 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/common/stdafx.h>
 #include "Gene.h"
-#include <deep_blue_genome/common/SpliceVariant.h>
 #include <deep_blue_genome/common/OrthologGroup.h>
 
 using namespace std;
@@ -43,30 +43,31 @@ std::string Gene::get_name() const {
 	return name;
 }
 
-SpliceVariant& Gene::get_splice_variant(SpliceVariantId id) {
-	auto match_id = [id](const unique_ptr<SpliceVariant>& variant) {
-		return variant->get_splice_variant_id() == id;
-	};
-
-	auto it = find_if(splice_variants.begin(), splice_variants.end(), match_id);
-	if (it == splice_variants.end()) {
-		// Add if does not exist yet
-		splice_variants.emplace_back(make_unique<SpliceVariant>(*this, id));
-		return *splice_variants.back();
-	}
-	return **it;
-}
-
-Gene& Gene::get_gene() {
-	return *this;
-}
-
-Gene& Gene::as_gene() {
-	return *this;
-}
-
 void Gene::print(std::ostream& str) const {
 	str << "gene '" << name << "'";
+}
+
+void Gene::set_functional_annotation(std::string annotation) {
+	boost::algorithm::trim(annotation);
+	assert(!annotation.empty());
+	functional_annotation = annotation;
+}
+
+std::ostream& operator<<(std::ostream& str, const Gene& gene) {
+	gene.print(str);
+	return str;
+}
+
+void Gene::add_highly_similar(Gene& gene) {
+	if (contains(highly_similar_genes, &gene))
+		return;
+
+	ensure(&get_gene_collection() != &gene.get_gene_collection(),
+			(make_string() << "Encountered mapping between 2 genes of the same gene collection: " << *this << ", " << gene).str(), // TODO is that a problem?
+			ErrorType::GENERIC
+	);
+
+	highly_similar_genes.emplace_back(&gene);
 }
 
 } // end namespace

@@ -1,11 +1,7 @@
 // Author: Tim Diels <timdiels.m@gmail.com>
 
+#include <deep_blue_genome/common/stdafx.h>
 #include "util.h"
-#include <algorithm>
-#include <boost/iostreams/device/mapped_file.hpp>
-#include <boost/archive/archive_exception.hpp>
-#include <cctype>
-#include <yaml-cpp/yaml.h>
 
 using namespace std;
 

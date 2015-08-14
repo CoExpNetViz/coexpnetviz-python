@@ -17,9 +17,8 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/common/stdafx.h>
 #include "DataFileImport.h"
-#include <boost/spirit/include/qi.hpp>
-#include <boost/algorithm/string.hpp>
 #include <deep_blue_genome/common/TabGrammarRules.h>
 #include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/common/util.h>
@@ -48,10 +47,14 @@ void DataFileImport::add_gene_mappings(const std::string& path) {
 					ErrorType::GENERIC
 			);
 
-			auto& src = database.get_gene_variant(line.at(0)).get_dna_sequence();
-			for (int i=1; i<line.size(); i++) {
-				auto& dst = database.get_gene_variant(line.at(i)).get_dna_sequence();
-				src.add_highly_similar(dst);
+			auto src = database.try_get_gene(line.at(0));
+			if (src) {
+				for (int i=1; i<line.size(); i++) {
+					auto dst = database.try_get_gene(line.at(i));
+					if (dst) {
+						src->add_highly_similar(*dst);
+					}
+				}
 			}
 		};
 
@@ -78,11 +81,13 @@ void DataFileImport::add_functional_annotations(const string& path) {
 					ErrorType::GENERIC
 			);
 
-			auto& gene_variant = database.get_gene_variant(line.at(0));
-			auto description = line.at(1);
-			boost::algorithm::trim(description);
-			if (!description.empty()) {
-				gene_variant.set_functional_annotation(description);
+			auto gene = database.try_get_gene(line.at(0));
+			if (gene) {
+				auto description = line.at(1);
+				boost::algorithm::trim(description);
+				if (!description.empty()) {
+					gene->set_functional_annotation(description);
+				}
 			}
 		};
 
@@ -109,15 +114,9 @@ void DataFileImport::add_orthologs(std::string source_name, std::string path) {
 
 			for (int i=1; i < line.size(); i++) {
 				auto& name = line.at(i);
-				try {
-					auto& gene = database.get_gene_variant(name).as_gene();
-					group.add(gene);
-				}
-				catch(const TypedException& e) { // TODO hierarchy on exceptions instead of the TypedException thing; though do add an get_error_code to them?
-					if (e.get_type() != ErrorType::SPLICE_VARIANT_INSTEAD_OF_GENE) {
-						throw;
-					}
-					cout << "Warning: ignoring splice variant in orthologs file: " << name << "\n";
+				auto gene = database.try_get_gene(name);
+				if (gene) {
+					group.add(*gene);
 				}
 			}
 		};
@@ -175,17 +174,19 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 				skip_line = false;
 			}
 
-			Gene& gene = database.get_gene_variant(name).get_gene();
+			auto gene = database.try_get_gene(name);
+			if (!gene)
+				return;
 
 			lines.emplace_back(vector<matrix::value_type>());
 			lines.back().reserve(column_count);
 
-			bool created = gem->gene_to_row.emplace(&gene, lines.size()-1).second;
+			bool created = gem->gene_to_row.emplace(gene, lines.size()-1).second;
 			ensure(created,
 					(make_string() << "Duplicate gene: " << name).str()
 			);
 
-			gem->row_to_gene.emplace_back(&gene);
+			gem->row_to_gene.emplace_back(gene);
 		};
 
 		auto on_gene_value = [&lines, &skip_line](double value) { // gene expression value
@@ -193,7 +194,7 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 				lines.back().emplace_back(value);
 		};
 
-		parse(current, end, (rules.field[on_new_gene] > rules.separator > (double_[on_gene_value] % rules.separator)) % rules.line_separator);
+		parse(current, end, (rules.field[on_new_gene] > rules.field_separator > (double_[on_gene_value] % rules.field_separator)) % rules.line_separator);
 
 		// Validate last line
 		ensure(lines.back().size() == column_count,
@@ -217,13 +218,11 @@ GeneExpressionMatrix& DataFileImport::add_gene_expression_matrix(const std::stri
 
 // TODO did we drop variants along the way as we read in clusterings? If so, should we?
 // TODO should clusters allow splice variants or not? This code hasn't decided yet; though cluster has, it uses genes
-void DataFileImport::add_clustering(const std::string& name, const std::string& path, const std::string& expression_matrix_name) {
+void DataFileImport::add_clustering(const std::string& name, const std::string& path) {
 	cout << "Loading clustering '" << path << "'\n";
 
 	auto clustering = make_unique<Clustering>();
 
-	clustering->gene_collection = nullptr;
-	clustering->expression_matrix = nullptr;
 	clustering->name = name;
 
 	// Load
@@ -235,23 +234,10 @@ void DataFileImport::add_clustering(const std::string& name, const std::string& 
 		auto on_cluster_item = [this, &clustering, &clusters](const std::vector<std::string>& line) {
 			auto name = line.at(0);
 
-			auto gene_variant = database.try_get_gene_variant(name);
-			if (!gene_variant) {
-				cerr << "Warning: Gene of unknown collection '" << name << "'\n";
+			auto gene = database.try_get_gene(name);
+			if (!gene) {
 				return;
 			}
-
-			if (!clustering->gene_collection) {
-				clustering->gene_collection = &gene_variant->get_gene_collection();
-			}
-			else {
-				ensure(clustering->gene_collection == &gene_variant->get_gene_collection(),
-						"All genes in a clustering must be of the same gene collection. Conflicting gene: " + name,
-						ErrorType::GENERIC
-				);
-			}
-
-			Gene& gene = gene_variant->get_gene();
 
 			auto cluster_name = line.at(1);
 			auto it = clusters.find(cluster_name);
@@ -259,7 +245,7 @@ void DataFileImport::add_clustering(const std::string& name, const std::string& 
 				it = clusters.emplace(piecewise_construct, make_tuple(cluster_name), make_tuple(cluster_name)).first;
 			}
 			auto& cluster = it->second;
-			cluster.add(gene);
+			cluster.add(*gene);
 		};
 
 		TabGrammarRules rules(true);
@@ -304,11 +290,7 @@ void DataFileImport::add_clustering(const std::string& name, const std::string& 
 		}
 	}
 
-	if (!expression_matrix_name.empty()) {
-		clustering->expression_matrix = &database.get_gene_expression_matrix(expression_matrix_name);
-	}
-
-	clustering->get_gene_collection().add_clustering(move(clustering));
+	database.add_clustering(move(clustering));
 }
 
 }  // end namespace

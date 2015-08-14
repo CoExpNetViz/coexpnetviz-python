@@ -161,9 +161,11 @@ int main(int argc, char** argv) {
 				ensure(line.size() == 2,
 						(make_string() << "Bogus row, expected col count == 2").str()
 				);
-				auto&& itag = database.get_gene_variant(line.at(1)).get_gene();
-				auto&& pgsc = database.get_gene_variant(line.at(0)).get_gene();
-				itag_to_pgsc[&itag] = &pgsc;
+				auto itag = database.try_get_gene(line.at(1));
+				auto pgsc = database.try_get_gene(line.at(0));
+				if (itag && pgsc) {
+					itag_to_pgsc[itag] = pgsc;
+				}
 			};
 
 			TabGrammarRules rules(true);

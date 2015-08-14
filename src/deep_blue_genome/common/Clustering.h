@@ -19,14 +19,11 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
 #include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/Cluster.h>
 
 namespace DEEP_BLUE_GENOME {
 
-class GeneCollection;
-class GeneExpressionMatrix;
 
 /**
  * A clustering of genes
@@ -53,21 +50,18 @@ public:
 
 	std::string get_name() const;
 
-	GeneCollection& get_gene_collection() const;
-
 public: // treat as private (failed to friend boost::serialization)
 	template<class Archive>
 	void serialize(Archive& ar, const unsigned int version);
 
 private:
-	GeneCollection* gene_collection; // not null
-	GeneExpressionMatrix* expression_matrix; // nullable
 	Clusters clusters;  // mutually disjunct clusters
 	std::string name;
 };
 
+} // end namespace
 
-}
+std::ostream& operator<<(std::ostream&, const DEEP_BLUE_GENOME::Clustering&);
 
 
 /////////////////////////
@@ -77,8 +71,6 @@ namespace DEEP_BLUE_GENOME {
 
 template<class Archive>
 void Clustering::serialize(Archive& ar, const unsigned int version) {
-	ar & gene_collection;
-	ar & expression_matrix;
 	ar & clusters;
 	ar & name;
 }

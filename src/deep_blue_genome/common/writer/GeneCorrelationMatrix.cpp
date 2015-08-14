@@ -17,11 +17,8 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/common/stdafx.h>
 #include "GeneCorrelationMatrix.h"
-#include <iostream>
-#include <boost/range.hpp>
-#include <boost/range/irange.hpp>
-#include <boost/range/adaptors.hpp>
 #include <deep_blue_genome/common/Gene.h>
 #include <deep_blue_genome/common/GeneExpressionMatrix.h>
 #include <deep_blue_genome/common/GeneCorrelationMatrix.h>

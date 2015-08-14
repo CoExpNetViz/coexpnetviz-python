@@ -17,13 +17,14 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/common/stdafx.h>
 #include "GeneCollection.h"
 #include <deep_blue_genome/common/util.h>
-#include <deep_blue_genome/common/SpliceVariant.h>
 #include <deep_blue_genome/common/GeneExpressionMatrix.h>
 #include <deep_blue_genome/common/Clustering.h>
 #include <deep_blue_genome/common/Database.h>
 #include <deep_blue_genome/common/GeneFamilyId.h>
+#include <deep_blue_genome/common/GeneVariantsUnsupportedException.h>
 
 using namespace std;
 using namespace boost;
@@ -58,9 +59,9 @@ GeneCollection::GeneCollection(Database& database)
 	gene_parser_rules.emplace_back("(.+?)", "$1");
 }
 
-GeneVariant& GeneCollection::get_gene_variant(const std::string& name) {
+Gene& GeneCollection::get_gene(const std::string& name) {
 	assert(!name.empty());
-	auto result = try_get_gene_variant(name);
+	auto result = try_get_gene(name);
 	if (result) {
 		return *result;
 	}
@@ -70,7 +71,7 @@ GeneVariant& GeneCollection::get_gene_variant(const std::string& name) {
 	}
 }
 
-GeneVariant* GeneCollection::try_get_gene_variant(const std::string& name_) {
+Gene* GeneCollection::try_get_gene(const std::string& name_) {
 	// Parse name
 	bool parsed = false;
 	NullableSpliceVariantId splice_variant_id;
@@ -101,14 +102,13 @@ GeneVariant* GeneCollection::try_get_gene_variant(const std::string& name_) {
 		}
 	}
 
-	auto& gene = gene_it->second;
-
-	if (!splice_variant_id) {
-		return gene.get(); // gene was all that was requested
+	if (splice_variant_id && *splice_variant_id != 1) {
+		throw GeneVariantsUnsupportedException("Encountered gene variant id, gene variants are unsupported: " + name_);
 	}
 
-	// Get splice variant of gene
-	return &gene->get_splice_variant(*splice_variant_id);
+	auto& gene = gene_it->second;
+	return gene.get();
+
 }
 
 std::string GeneCollection::get_name() const {
@@ -121,17 +121,6 @@ NullableGeneWebPage GeneCollection::get_gene_web_page() const {
 
 bool GeneCollection::operator==(const GeneCollection& other) const {
 	return this == &other;
-}
-
-void GeneCollection::add_clustering(unique_ptr<Clustering>&& clustering) {
-	ensure(clusterings.find(clustering->get_name()) == clusterings.end(),
-			(make_string() << "Cannot add 2 clusterings with the same name '" << clustering->get_name() << "' to gene collection '" << name << "'").str(),
-			ErrorType::GENERIC
-	);
-
-	std::string name_lower = clustering->get_name();
-	to_lower(name_lower);
-	clusterings[name_lower] = std::move(clustering);
 }
 
 std::string GeneCollection::get_species() const {

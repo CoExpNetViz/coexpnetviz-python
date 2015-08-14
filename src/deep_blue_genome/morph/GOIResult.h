@@ -35,21 +35,33 @@ public:
 	{
 	}
 
-	void add_ausr(double ausr) {
-		ausr_sum += ausr;
+	void add(std::unique_ptr<Ranking>&& ranking) {
+		ausr_sum += ranking->get_ausr();
 		ausr_count++;
+		if (!has_rankings() || *ranking > *best_ranking) {
+			best_ranking = std::move(ranking);
+		}
 	}
 
 	double get_average_ausr() {
 		return ausr_sum / ausr_count; // TODO numerically stable mean
 	}
 
-public:
-	std::unique_ptr<Ranking> best_ranking;
+	/**
+	 * Whether any rankings have been added to the result
+	 */
+	bool has_rankings() {
+		return best_ranking.get();
+	}
+
+	const Ranking& get_best_ranking() const {
+		return *best_ranking;
+	}
 
 private:
 	double ausr_sum; // sum of all ausr
 	double ausr_count; // number of AUSRs added
+	std::unique_ptr<Ranking> best_ranking;
 };
 
 }}

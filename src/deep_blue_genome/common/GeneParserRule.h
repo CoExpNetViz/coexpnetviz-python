@@ -19,11 +19,6 @@
 
 #pragma once
 
-// TODO separate header
-#define BOOST_REGEX_USE_CPP_LOCALE
-#include <boost/regex.hpp>
-
-#include <string>
 #include <deep_blue_genome/common/Serialization.h>
 #include <deep_blue_genome/common/types.h>
 

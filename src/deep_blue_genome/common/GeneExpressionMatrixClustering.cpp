@@ -17,23 +17,20 @@
  * along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <deep_blue_genome/common/stdafx.h>
 #include "GeneExpressionMatrixClustering.h"
 #include <deep_blue_genome/common/util.h>
+#include <deep_blue_genome/common/MismatchException.h>
 
 using namespace std;
 
-#if false
 namespace DEEP_BLUE_GENOME {
 
-GeneExpressionMatrixClustering::GeneExpressionMatrixClustering(std::shared_ptr<GeneExpressionMatrix> matrix, std::string name)
-:	name(name), gene_expression_matrix(matrix)
+GeneExpressionMatrixClustering::GeneExpressionMatrixClustering(GeneExpressionMatrix& gene_expression_matrix, const Clustering& clustering)
+:	name(clustering.get_name()), gene_expression_matrix(&gene_expression_matrix)
 {
-}
-GeneExpressionMatrixClustering::GeneExpressionMatrixClustering(std::shared_ptr<GeneExpressionMatrix> gene_expression_matrix, const Clustering& clustering)
-:	name(clustering.get_name()), gene_expression_matrix(gene_expression_matrix)
-{
-	size_type genes_missing = 0;
-	vector<size_type> genes;
+	GeneExpressionMatrixRow genes_missing = 0;
+	vector<GeneExpressionMatrixRow> genes;
 
 	// Convert gene names to indices
 	for (auto& cluster : clustering) {
@@ -41,21 +38,25 @@ GeneExpressionMatrixClustering::GeneExpressionMatrixClustering(std::shared_ptr<G
 		auto& new_cluster = clusters.back();
 
 		for (auto& gene : cluster) {
-			if (!gene_expression_matrix->has_gene(gene)) {
+			if (!gene_expression_matrix.has_gene(*gene)) {
 				// Not all clusterings are generated from an expression matrix.
 				// So a clustering can contain genes that are not present in the expression matrix.
 				genes_missing++;
 			}
 			else {
-				auto index = gene_expression_matrix->get_gene_row(gene);
+				auto index = gene_expression_matrix.get_gene_row(*gene);
 				new_cluster.add(index);
 				genes.emplace_back(index);
 			}
 		}
 	}
 
+	if (genes.empty()) {
+		throw MismatchException((make_string() << clustering << " contains no genes present in " << gene_expression_matrix).str());
+	}
+
 	if (genes_missing > 0) {
-		cerr << "Warning: " << genes_missing << " genes in clustering not present in expression matrix\n";
+		cout << "Warning: " << genes_missing << " genes in clustering not present in expression matrix\n";
 	}
 
 	////////////////////////////////////
@@ -65,11 +66,11 @@ GeneExpressionMatrixClustering::GeneExpressionMatrixClustering(std::shared_ptr<G
 	auto& cluster = clusters.back();
 
 	sort(genes.begin(), genes.end());
-	genes.emplace_back(gene_expression_matrix->get().size1());
-	size_type last_gene = 0;
+	genes.emplace_back(gene_expression_matrix.get().size1());
+	GeneExpressionMatrixRow last_gene = 0;
 
 	for (auto gene : genes) {
-		for (size_type i=last_gene+1; i<gene; i++) {
+		for (GeneExpressionMatrixRow i=last_gene+1; i<gene; i++) {
 			cluster.add(i);
 		}
 		last_gene = gene;
@@ -97,4 +98,3 @@ std::string GeneExpressionMatrixClustering::get_name() const {
 }
 
 }
-#endif
