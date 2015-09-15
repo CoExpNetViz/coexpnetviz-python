@@ -49,9 +49,10 @@ const matrix& GeneExpressionMatrix::get() const {
 	return expression_matrix;
 }
 
-} // end namespace
-
 ostream& operator<<(ostream& out, const DEEP_BLUE_GENOME::GeneExpressionMatrix& matrix) {
 	out << "gene expression matrix '" << matrix.get_name() << "'";
 	return out;
 }
+
+} // end namespace
+

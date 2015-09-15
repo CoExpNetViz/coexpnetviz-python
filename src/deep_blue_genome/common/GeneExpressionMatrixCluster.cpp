@@ -29,6 +29,11 @@ GeneExpressionMatrixCluster::GeneExpressionMatrixCluster(string name)
 {
 }
 
+GeneExpressionMatrixCluster::GeneExpressionMatrixCluster(GeneExpressionMatrixCluster&& o)
+:	genes(std::move(genes)), name(std::move(name))
+{
+}
+
 void GeneExpressionMatrixCluster::add(GeneExpressionMatrixRow gene_index) {
 	genes.emplace_back(gene_index);
 }

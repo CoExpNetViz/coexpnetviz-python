@@ -24,7 +24,7 @@ using namespace std;
 
 namespace DEEP_BLUE_GENOME {
 
-/*GeneCorrelationMatrix::GeneCorrelationMatrix(const GeneExpressionMatrix& gene_expression_matrix, const boost::container::flat_set<GeneExpressionMatrixRow>& gene_indices)
+GeneCorrelationMatrix::GeneCorrelationMatrix(const GeneExpressionMatrix& gene_expression_matrix, const boost::container::flat_set<GeneExpressionMatrixRow>& gene_indices)
 :	gene_correlations(gene_expression_matrix.get().size1(), boost::size(gene_indices))
 {
 	using namespace std;
@@ -59,7 +59,7 @@ namespace DEEP_BLUE_GENOME {
 
 	transform(sum_sq.begin(), sum_sq.end(), sum_sq.begin(), ::sqrt);
 	gene_correlations = element_div(sum_cross, outer_prod(sum_sq, project(sum_sq, gene_indices_)));
-}*/
+}
 
 const GeneCorrelationMatrix::MatrixType& GeneCorrelationMatrix::get() const {
 	return gene_correlations;

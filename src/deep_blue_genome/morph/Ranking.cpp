@@ -59,7 +59,7 @@ public: // TODO make privy
 	string gene_web_page;
 };
 
-Ranking_ClusterInfo::Ranking_ClusterInfo(const GeneCorrelationMatrix& gene_correlations, const std::vector<GeneExpressionMatrixRow>& genes_of_interest, const GeneExpressionMatrixCluster& c)
+Ranking_ClusterInfo::Ranking_ClusterInfo(const GeneCorrelationMatrix& gene_correlations, const boost::container::flat_set<GeneExpressionMatrixRow>& genes_of_interest, const GeneExpressionMatrixCluster& c)
 {
 	auto& cluster = const_cast<GeneExpressionMatrixCluster&>(c);
 	auto is_goi = [&genes_of_interest](GeneExpressionMatrixRow gene) {
@@ -81,13 +81,13 @@ Ranking_ClusterInfo::Ranking_ClusterInfo(const GeneCorrelationMatrix& gene_corre
 	goi_columns = indirect_array(goi_columns_.size(), goi_columns_);
 }
 
-Ranking::Ranking(std::vector<GeneExpressionMatrixRow> goi, std::shared_ptr<GeneExpressionMatrixClustering> clustering, const GeneCorrelationMatrix& gene_correlations, std::string name)
-:	genes_of_interest(goi), clustering(clustering), gene_correlations(gene_correlations), ausr(-1.0), name(name)
+Ranking::Ranking(boost::container::flat_set<GeneExpressionMatrixRow> goi, GeneExpressionMatrixClustering& clustering, const GeneCorrelationMatrix& gene_correlations, const std::string& name)
+:	genes_of_interest(goi), clustering(&clustering), gene_correlations(gene_correlations), ausr(-1.0), name(name)
 {
 	Rankings rankings(gene_correlations.get().size1(), nan("undefined"));
 
 	// fill rankings with intermediary values
-	rank_genes(goi, rankings);
+	rank_genes(rankings);
 
 	// finish calculation of rankings
 	final_rankings = Rankings(rankings.size(), nan("undefined")); // TODO we might be able to drop the nan init and just have garble in it (everything gets assigned a new value I think)
@@ -97,7 +97,7 @@ Ranking::Ranking(std::vector<GeneExpressionMatrixRow> goi, std::shared_ptr<GeneE
 	rank_self(rankings);
 }
 
-void Ranking::rank_genes(const std::vector<GeneExpressionMatrixRow>& genes_of_interest, Rankings& rankings) {
+void Ranking::rank_genes(Rankings& rankings) {
 	for (auto& cluster : *clustering) {
 		auto& info = cluster_info.emplace(piecewise_construct, make_tuple(&cluster), make_tuple(std::ref(gene_correlations), std::ref(genes_of_interest), std::ref(cluster))).first->second;
 
@@ -308,11 +308,11 @@ double Ranking::get_ausr() const {
 	return ausr;
 }
 
-const matrix& Ranking::get_gene_correlations() {
+const matrix& Ranking::get_gene_correlations() const {
 	return gene_correlations.get();
 }
 
-const GeneExpressionMatrix& Ranking::get_gene_expression() {
+const GeneExpressionMatrix& Ranking::get_gene_expression() const {
 	return clustering->get_source();
 }
 

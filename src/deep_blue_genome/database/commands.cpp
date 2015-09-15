@@ -82,7 +82,7 @@ void database_update(bool create, const string& database_path, const string& yam
 		string clustering_name = clustering_node["name"].as<string>();
 		string clustering_path = prepend_path(data_root, clustering_node["path"].as<string>());
 
-		importer.add_clustering(clustering_name, clustering_path, clustering_node["expression_matrix"].as<string>(""));
+		importer.add_clustering(clustering_name, clustering_path);
 	}
 
 	database.save();

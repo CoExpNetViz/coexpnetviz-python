@@ -19,6 +19,7 @@
 
 #include <deep_blue_genome/morph/stdafx.h>
 #include "Application.h"
+#include <deep_blue_genome/common/database_all.h>
 #include <deep_blue_genome/common/ublas.h>
 #include <deep_blue_genome/common/util.h>
 #include <deep_blue_genome/morph/GOIResult.h>

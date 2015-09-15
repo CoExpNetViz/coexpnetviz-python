@@ -195,7 +195,7 @@ int main(int argc, char** argv) {
 		}
 
 		// Save work
-		for (auto&& group : database.get_gene_variant("AT1G02660").as_gene().get_ortholog_groups()) {
+		for (auto&& group : database.get_gene("AT1G02660").get_ortholog_groups()) {
 			cout << (uint64_t)group << endl;
 		}
 		database.save();

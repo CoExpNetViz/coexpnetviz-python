@@ -59,9 +59,9 @@ private:
 	std::string name;
 };
 
-} // end namespace
+std::ostream& operator<<(std::ostream&, const Clustering&);
 
-std::ostream& operator<<(std::ostream&, const DEEP_BLUE_GENOME::Clustering&);
+} // end namespace
 
 
 /////////////////////////

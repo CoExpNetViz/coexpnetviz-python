@@ -37,12 +37,12 @@ private:
 	void run_jobs();
 
 private:
-	boost::container::flat_map<std::string, GenesOfInterest> jobs; // name -> baits set
+	std::map<std::string, GenesOfInterest> jobs; // name -> baits set
 	std::string config_path;
 	std::string job_list_path;
 	std::string output_path;
 	std::unique_ptr<Database> database;
-	int top_k; // TODO is this being forwarded and used???
+	int top_k;
 	bool output_yaml;
 };
 

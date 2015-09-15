@@ -83,9 +83,9 @@ private:
 	std::unordered_map<Gene*, GeneExpressionMatrixRow> gene_to_row; // inverse of gene_row_to_id
 };
 
-}
+std::ostream& operator<<(std::ostream&, const GeneExpressionMatrix&);
 
-std::ostream& operator<<(std::ostream&, const DEEP_BLUE_GENOME::GeneExpressionMatrix&);
+} // end namespace
 
 
 /////////////////////////

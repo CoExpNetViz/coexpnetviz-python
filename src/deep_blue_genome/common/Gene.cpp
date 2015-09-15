@@ -70,4 +70,8 @@ void Gene::add_highly_similar(Gene& gene) {
 	highly_similar_genes.emplace_back(&gene);
 }
 
+boost::optional<std::string> Gene::get_functional_annotation() {
+	return functional_annotation;
+}
+
 } // end namespace

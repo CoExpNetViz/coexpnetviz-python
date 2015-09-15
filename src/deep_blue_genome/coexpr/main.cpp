@@ -41,7 +41,9 @@ using namespace std;
 using namespace DEEP_BLUE_GENOME;
 using namespace DEEP_BLUE_GENOME::COMMON::READER;
 using namespace DEEP_BLUE_GENOME::COEXPR;
-
+using namespace std::placeholders;
+using namespace boost::adaptors;
+using boost::container::flat_set;
 
 //////////////////////////
 // Funcs
@@ -151,33 +153,18 @@ int main(int argc, char** argv) {
 
 		cout.flush();
 
-		// Helper function: get matrix by bait
-		auto get_matrix = [&expression_matrices](const Gene& bait) -> GeneExpressionMatrix* {
-			auto match = [&bait] (const GeneExpressionMatrix* matrix) {
-				return matrix->has_gene(bait);
-			};
-			auto it = find_if(expression_matrices.begin(), expression_matrices.end(), match);
-			if (it == expression_matrices.end()) {
-				return nullptr;
-			}
-			else {
-				return *it;
-			}
-		};
-
-		// Group bait genes by expression matrix
-		unordered_map<GeneExpressionMatrix*, vector<GeneExpressionMatrixRow>> bait_indices;
-		for (auto bait : baits) {
-			auto matrix = get_matrix(*bait);
-			if (matrix && matrix->has_gene(*bait)) {
-				bait_indices[matrix].emplace_back(matrix->get_gene_row(*bait));
-			}
-		}
-
 		// Grab union of neighbours of each bait, where neighbour relation is sufficient (anti-)correlation
 		std::vector<OrthologGroupInfo*> neighbours;
 		for (auto expression_matrix : expression_matrices) {
-			auto& indices = bait_indices.at(expression_matrix);
+			// Filter baits and transform them to row indices
+			flat_set<GeneExpressionMatrixRow> indices;
+			boost::insert(indices, baits
+					| indirected
+					| boost::adaptors::filtered(std::bind(&GeneExpressionMatrix::has_gene, expression_matrix, _1))
+					| transformed(std::bind(&GeneExpressionMatrix::get_gene_row, expression_matrix, _1))
+			);
+
+			// Calculate correlations
 			GeneCorrelationMatrix correlations(*expression_matrix, indices);
 			auto& correlations_ = correlations.get();
 

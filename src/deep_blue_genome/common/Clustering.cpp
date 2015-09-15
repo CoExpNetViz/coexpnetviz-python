@@ -24,6 +24,10 @@ using namespace std;
 
 namespace DEEP_BLUE_GENOME {
 
+Clustering::Clustering()
+{
+}
+
 Clustering::const_iterator Clustering::begin() const {
 	return clusters.begin();
 }
@@ -36,9 +40,9 @@ std::string Clustering::get_name() const {
 	return name;
 }
 
-} // end namespace
-
 ostream& operator<<(ostream& out, const DEEP_BLUE_GENOME::Clustering& clustering) {
 	out << "clustering '" << clustering.get_name() << "'";
 	return out;
 }
+
+} // end namespace
