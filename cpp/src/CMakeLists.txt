@@ -70,16 +70,16 @@ set_target_properties(morph PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT "deep_blue_
 cotire(morph)
 
 #############
-# coexpr
-file(GLOB_RECURSE coexpr_sources deep_blue_genome/coexpr/*.cpp)
-add_executable(coexpr ${coexpr_sources})
+# coexpnetviz
+file(GLOB_RECURSE coexpnetviz_sources deep_blue_genome/coexpr/*.cpp)
+add_executable(coexpnetviz ${coexpnetviz_sources})
 
-target_link_libraries(coexpr
+target_link_libraries(coexpnetviz
 	common
 )
 
-set_target_properties(coexpr PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT "deep_blue_genome/coexpr/stdafx.h") # precompiled header file
-cotire(coexpr)
+set_target_properties(coexpnetviz PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT "deep_blue_genome/coexpr/stdafx.h") # precompiled header file
+cotire(coexpnetviz)
 
 
 #############
@@ -94,3 +94,10 @@ target_link_libraries(ortholog_stats
 set_target_properties(ortholog_stats PROPERTIES COTIRE_CXX_PREFIX_HEADER_INIT "deep_blue_genome/ortholog_stats/stdafx.h") # precompiled header file
 cotire(ortholog_stats)
 
+##############
+# Install instructions
+install(TARGETS common database morph coexpnetviz ortholog_stats
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
