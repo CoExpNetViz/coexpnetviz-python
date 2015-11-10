@@ -1,6 +1,10 @@
 syntax: regexp
 .*\.orig
 .*\.swp
-^\.project$
-^\.cproject$
+\.project$
+\.cproject$
 ^build$
+python3/test
+data
+.*\.pyc
+__pycache__
