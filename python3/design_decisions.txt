@@ -6,4 +6,6 @@ Odds are, the local file is already cached by the kernel if it's used frequently
 
 With remote data, frequent requests (of small data) must be bundled together or performance will cripple due to network round trip time. One could perhaps use a sort of Future object to introduce laziness in the retrieved values so that the requests can be buffered until the requested data is actually used. However, this is more difficult to program and maintain.
 
-A local database can be set up with hardly any penalty to ease of use by using sqlite. It is unsure whether e.g. MySQL would fare much better in terms of performance, I doubt it, but I haven't tested.  
+A local database can be set up with hardly any penalty to ease of use by using sqlite. It is unsure whether e.g. MySQL would fare much better in terms of performance, I doubt it, but I haven't tested.
+
+E.g. all gene_info from NCBI is downloaded in bulk and stored locally, to be refreshed every now and then during some nightly update batch run.  

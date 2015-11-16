@@ -15,34 +15,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-import pandas
-from itertools import chain
-
-def is_sorted(l):
-    return all(l[i] <= l[i+1] for i in range(len(l)-1))
-
-def fill_na_with_none(df):
-    '''
-    Fill all NaN in DataFrame with None.
+class Context(object):
     
-    These None values will not be treated as 'missing' by DataFrame, as the dtypes will be set to 'object'
     '''
-    df.where(pandas.notnull(df), None, inplace=True)
+    Deep Blue Genome context
     
-def flatten(lists):
+    Bundles together a genes database, ... This way you don't have to pass them
+    separately into functions that use them.
     '''
-    Flatten shallow list
     
-    Parameters
-    ----------
-    list-like of list-like
-        Shallow list
-    '''
-    return list(chain(*lists))
-    
-# TODO throw in a debug.py
-import os
-import psutil
-def print_mem():
-    process = psutil.Process(os.getpid())
-    print('{}MB memory usage'.format(int(process.memory_info().rss / 2**20)))
+    def __init__(self):
+        # For now we hardcode, in the future we can allow users to specify their own genes class, ...
+        self._genes = Genes()
+        
+    @property
+    def genes(self):
+        return self._genes

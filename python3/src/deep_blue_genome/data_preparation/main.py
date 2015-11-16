@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
+from deep_blue_genome.core.database.database import Database
+
 '''
 The main tool to prepare data for DBG tools
 '''
@@ -22,5 +24,5 @@ The main tool to prepare data for DBG tools
 from deep_blue_genome.data_preparation.genes import load_gene_info
 
 if __name__ == '__main__':
-    database = None
+    database = Database()
     load_gene_info(database)
