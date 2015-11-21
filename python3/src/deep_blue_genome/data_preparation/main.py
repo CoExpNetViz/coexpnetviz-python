@@ -23,6 +23,13 @@ The main tool to prepare data for DBG tools
 
 from deep_blue_genome.data_preparation.genes import load_gene_info
 
-if __name__ == '__main__':
+def main():
     database = Database()
     load_gene_info(database)
+
+# TODO We need to commit every now and then to put stuff on disk, but at least
+# parts of it should be locked. This would happen in a daily or weekly nightly
+# batch.
+# ... we need to design the required locking (e.g. prep in a separate file, then swap files and in the meantime prevent writes to the previous one or something. Or simply have downtime.)
+if __name__ == '__main__':
+    main()

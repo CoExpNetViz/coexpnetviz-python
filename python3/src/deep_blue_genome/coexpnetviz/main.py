@@ -14,13 +14,19 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
-from deep_blue_genome.reader import read_baits_file, read_expression_matrix_file,\
+
+# TODO wouldn't it be interesting to show correlation between baits as well?
+
+from deep_blue_genome.core.reader.various import read_baits_file, read_expression_matrix_file,\
     read_gene_families_file
 import sys
 import argparse
-from deep_blue_genome.context import Context
+import pandas
+from deep_blue_genome.core.util import print_abbreviated_dict, invert_multidict,\
+    keydefaultdict, invert_dict
+from collections import defaultdict, namedtuple
+from deep_blue_genome.core.expression_matrix import ExpressionMatrix
 
-# TODO move to init vvv
 '''
 CoExpNetViz
 
@@ -30,10 +36,67 @@ Terminology used:
 - target gene: any gene that's not a bait gene
 - family node: a node containing targets of the same orthology family
 '''
- 
+
+Network = namedtuple('Network', 'bait_nodes family_nodes edges partitions'.split())
+    
+class Node(object):
+    
+    def __init__(self, name):
+        self._name = name
+        
+    @property
+    def name(self):
+        return self._name
+    
+    def __lt__(self, other):
+        return self.name < other.name
+    
+class BaitNode(Node):
+    
+    def __init__(self, name):
+        super().__init__(name)
+    
+    def __repr__(self):
+        return 'BaitNode({!r})'.format(self.name)
+
+class FamilyNode(Node):
+    
+    def __init__(self, family_name):
+        super().__init__(family_name)
+    
+    def __repr__(self):
+        return 'FamilyNode({!r})'.format(self.name)
+    
+class CorrelationEdge(object):
+    
+    def __init__(self, left, right, correlation):
+        self._left = left
+        self._right = right
+        self._correlation = correlation
+
+class HomologyEdge(object):
+    
+    def __init__(self, left, right):
+        self._left = left
+        self._right = right
+
 def coexpnetviz(context, baits, gene_families, expression_matrices):
     '''
     Run CoExpNetViz.
+    
+    Calculate the following:
+    
+    - bait nodes
+    - family nodes
+    - partitions
+    
+    Bait node iff bait (even when no fam node correlates to it)
+    
+    Family nodes only contain the genes of the family that actually correlate to
+    a bait. Families that don't correlate with any bait are omitted from the
+    output.
+    
+    Partitions are the grouping of fam nodes by the subset of baits they correlate to.
     
     Parameters
     ----------
@@ -42,129 +105,102 @@ def coexpnetviz(context, baits, gene_families, expression_matrices):
     gene_families : dict of gene to family
         gene families of the genes in the expression matrices. This may be omitted if all baits are of the same species
     expression_matrices : pandas.DataFrame
-        gene expression matrices containing the baits and other genes 
+        gene expression matrices containing the baits and other genes
+        
+    Returns
+    -------
+    (nodes, edges, partitions)
+        A network/graph of typed nodes, edges and partitions 
     '''
-    #print(baits)
-    #print(gene_families)
-    #print(expression_matrices)
+    cutoff = 0.8  # hardcoded cut-off, wooptiTODO
     
-    for expression_matrix in expression_matrices:
-        for name in expression_matrix.index:
-            # TODO ping pong name finding is waaaay too slow. Batch name find might do. But if the data files are small (and thus quick to load in memory; or we can grab a local database; then that shit is better. Want also to remain easy to configure on some random biologist's pc)
-            print(name)
-            context.genes.find_by_name(name)
-    cutoff = 0.8  # hardcoded cut-off, wooptido
+    # Create bait nodes
+    bait_nodes = pandas.Series({bait: BaitNode(bait) for bait in baits})
     
-    # Simply run it
+    gene_to_families = invert_multidict(gene_families)
+    
+    # Create family nodes, correlation edges
+    family_nodes = keydefaultdict(lambda name: FamilyNode(name))  # family name -> FamilyNode
+    edges = []
+    inverse_partitions = defaultdict(lambda: set())
+    for exp_mat in expression_matrices:
+        matrix = exp_mat.data
+        
+        # Baits present in matrix
+        baits_mask = matrix.index.isin(baits)
+        baits_ = matrix.index[baits_mask]
+        
+        # Drop genes which aren't part of a family (and thus can't be used for comparative transcriptomics)
+        # TODO Log genes not part of a family
+        matrix = matrix.loc[matrix.index.isin(gene_to_families.keys()) | baits_mask]
+        
+        # Correlation matrix
+        corrs = ExpressionMatrix(matrix).pearson_r(baits_)
+        corrs.to_csv(exp_mat.name + '.corr_mat.txt', sep='\t')
+        
+        # Family nodes, CorrelationEdges
+        corrs.columns = bait_nodes[baits_]
+        corrs.drop(baits_, inplace=True)
+        corrs = corrs[abs(corrs) > cutoff].dropna(how='all')
+        for (target, bait_node), correlation in corrs.stack().to_dict().items():
+            family_nodes_ = (family_nodes[name] for name in gene_to_families[target])
+            for family_node in family_nodes_:
+                edges.append(CorrelationEdge(family_node, bait_node, correlation))
+                inverse_partitions[family_node].add(bait_node)
+                
+    # Create partitions
+    inverse_partitions = {k: frozenset(v) for k,v in inverse_partitions.items()}
+    partitions = invert_dict(inverse_partitions)
+                
+    # Add homology edges between baits (some genes in a family node will surely also be in another family node, but we won't show that)
+    for i, bait in enumerate(baits):
+        if bait not in gene_to_families:
+            continue
+        genes = set.union(*(gene_families[family_name] for family_name in gene_to_families[bait])) 
+        edges.extend(HomologyEdge(bait_nodes[bait], bait_nodes[bait_]) for bait_ in set(baits[i+1:]) & genes)
+    
+    # Return
+    return Network(
+        bait_nodes = bait_nodes.tolist(),
+        family_nodes = list(family_nodes.values()),
+        edges=edges,
+        partitions=partitions
+    )
 
 
 # Why get the geneid? Some genes have multiple names, with mere strings they wouldn't match, after mapping them to their id, they would.
 
 # We don't actually care what organism (or taxon rather) a gene is of. We just want all the matrices that have in it, the genes that we are looking for 
 
-# TODO compute
-# TODO write cytoscape
-# ignore species of genes for now, genes will be some kind of object; and they will have info on them, but not yet
-# TODO try build merged plaza in python. Add a test
 
-# We need to abstract our actual data sources (e.g. Entrez genes, vs NCBI genes, ...)
-# TODO something to identify a gene from its name and get its species name (take into account that some gene names aren't globally unique (the horrors)) 
-# Consider storing data according to BioSQL standard using BioPython modules. This way all Bio* can work on the same data at the same time; because database + shared schema. Screw performance, that's only for when the hardware becomes too expensive to calc it.
+def main():
+    main_(sys.argv)
 
-# TODO no yaml, just a python func that can be called directly to do all of it
-# TODO just document for sphinx in numpydoc syntax, and http://stackoverflow.com/a/24385103/1031434
-# TODO no mention of gene variants (unless as a warning to when we encounter a gene variant)
-
-# for morph:
-# TODO a meta-db that tells us what exp mats we have, e.g. search by the species it contains
-
-if __name__ == '__main__':
+def main_(argv):
     # Parse CLI args
     parser = argparse.ArgumentParser(description='Comparative Co-Expression Network Construction and Visualization (CoExpNetViz): Command line interface')
-    parser.add_argument('-b', '--baits-file', metavar='B', required=True,
+    parser.add_argument('--baits-file', metavar='B', required=True,
                        help='path to file listing the bait genes to use')
-    parser.add_argument('-f', '--gene-families', metavar='F',
+    parser.add_argument('--gene-families', metavar='F',
                        help='path to file with gene families to use. If omitted, Plaza is used')
     parser.add_argument('-e', '--expression-matrices', metavar='M', required=True, nargs='+',
                        help='path to expression matrix to use')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     # Read files
-    baits = read_baits_file(args.baits_file)
+    baits = [bait.lower() for bait in read_baits_file(args.baits_file)]
     gene_families = read_gene_families_file(args.gene_families) if args.gene_families else None
-    expression_matrices = [read_expression_matrix_file(matrix) for matrix in args.expression_matrices]
+    expression_matrices = [read_expression_matrix_file(matrix) for matrix in args.expression_matrices] # TODO should remove non-varying rows in user-submitted exp mats (in any exp mats really, but we can trust our own prepped mats already have this step performed)
     
     # Run alg
-    context = Context()
-    coexpnetviz(context, baits, gene_families, expression_matrices)
-    
-    # Write
+    context = None # TODO
+    graph = coexpnetviz(context, baits, gene_families, expression_matrices)
+
+    # Write network to cytoscape files
     print('TODO write') # TODO
+    
 
-#     string install_dir = fs::canonical(fs::path(argv[0])).remove_filename().parent_path().native();
-
-    # Load database
-#     Database database(argv[1]);
-
-    # Read input
-#     string baits_path;
 #     unique_ptr<OrthologGroupInfos> groups;
-#     vector<GeneExpressionMatrix*> expression_matrices;
-#     read_yaml(argv[2], database, baits_path, negative_treshold, positive_treshold, groups, expression_matrices);
-# 
-#     vector<Gene*> baits = load_baits(database, baits_path);
-# 
-#     cout.flush();
-
-    # Actual computation:
-    #
-    # Grab union of neighbours of each bait, where neighbour relation is sufficient (anti-)correlation
-    #
-    # Put differently, filter the coexpression network by: link contains a bait, abs(correlation) is sufficiently high.
-    # Additionally, group non-bait genes by gene family
-#     std::vector<OrthologGroupInfo*> neighbours;
-#     for (auto expression_matrix : expression_matrices) {
-#         # Filter baits and transform them to row indices
-#         flat_set<GeneExpressionMatrixRow> indices;
-#         boost::insert(indices, baits
-#                 | indirected
-#                 | boost::adaptors::filtered(std::bind(&GeneExpressionMatrix::has_gene, expression_matrix, _1))
-#                 | transformed(std::bind(&GeneExpressionMatrix::get_gene_row, expression_matrix, _1))
-#         );
-# 
-#         # Calculate correlations
-#         GeneCorrelationMatrix correlations(*expression_matrix, indices);
-#         auto& correlations_ = correlations.get();
-# 
-#         # Make edges to nodes with sufficient correlation
-#         for (auto row_index : indices) {
-#             auto col_index = correlations.get_column_index(row_index);
-#             auto& bait = expression_matrix->get_gene(row_index);
-#             for (GeneExpressionMatrixRow row = 0; row < correlations_.size1(); row++) {
-#                 if (contains(indices, row)) {
-#                     continue; // Don't make edges between baits
-#                 }
-# 
-#                 auto corr = correlations_(row, col_index);
-#                 if (corr < negative_treshold || corr > positive_treshold) {
-#                     auto& gene = expression_matrix->get_gene(row);
-#                     for (auto&& group : groups->get(gene)) {
-#                         group.add_bait_correlation(gene, bait, corr);
-#                         neighbours.emplace_back(&group);
-#                     }
-#                 }
-#             }
-# 
-#             # Output correlation matrix
-#             boost::filesystem::path path(expression_matrix->get_name());  // XXX this part is coupled to the way we name the matrices while adding them
-#             std::ofstream out(path.filename().native() + ".correlation_matrix"); // TODO write_file util func that opens an ofstream in this proper way for us
-#             out.exceptions(ofstream::failbit | ofstream::badbit);
-#             out << DEEP_BLUE_GENOME::COMMON::WRITER::write_plain(*expression_matrix, correlations);
-#         }
-#     }
-# 
-#     sort(neighbours.begin(), neighbours.end());
-#     neighbours.erase(unique(neighbours.begin(), neighbours.end()), neighbours.end());
 
     # Write output
 #     CytoscapeWriter writer(install_dir, baits, neighbours, *groups);
@@ -242,3 +278,13 @@ if __name__ == '__main__':
 # }
 
 # TODO could merging of ortho groups be done badly? Look at DataFileImport
+# TODO no mention of gene variants (unless as a warning to when we encounter a gene variant)
+
+# for morph:
+# TODO a meta-db that tells us what exp mats we have, e.g. search by the species it contains
+
+if __name__ == '__main__':
+    main()
+    
+    
+    

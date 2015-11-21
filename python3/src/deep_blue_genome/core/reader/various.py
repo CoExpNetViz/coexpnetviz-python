@@ -1,5 +1,7 @@
 import pandas
 import csv
+from plumbum import local
+from deep_blue_genome.core.expression_matrix import ExpressionMatrix
 
 # TODO validation should be part of reading. We at least want to save a log of
 # warnings. TODO input validation error handling + setting stuff as warning or
@@ -20,25 +22,21 @@ Input validation error handling can be configured to either:
 
 # TODO in the future this may be of interest https://pypi.python.org/pypi/python-string-utils/0.3.0  We could donate our own things to that library eventually...
 
-def sanitise_plain_text(text):
+def sanitise_plain_text_file(file):
     '''
-    Sanitise plain text for reading.
+    Sanitise plain text file.
     
-    Remove null characters, fix newlines (does drop empty lines by consequence).
-    
-    Supports the most insane forms of whitespace (e.g. '\r\r\n' as a newline).
+    - Remove null characters
+    - Fix newlines, drop empty lines
+    - Replace multiple tabs by single tab.
     
     Parameters
     ----------
-    text : str
+    file : str-like
         string to sanitise
-        
-    Returns
-    -------
-    str
-        sanitised string
     '''
-    raise NotImplementedError
+    sed = local['sed']
+    sed('-ir', '-e', u's/[\\x0]//g', '-e', 's/[\\r\\n]+/\\n/g', '-e', 's/(\t)+/\t/g', file)
 
 # TODO consider
 def read_expression_matrix_file(path):
@@ -60,12 +58,12 @@ def read_expression_matrix_file(path):
     
     Returns
     -------
-    pandas.DataFrame
+    ExpressionMatrix
         The expression matrix
     '''
     mat = pandas.read_table(path, index_col=0, header=0, engine='python')
     mat.index = mat.index.str.lower()
-    return mat
+    return ExpressionMatrix(mat, name=local.path(path).name)
 
 def read_whitespace_separated_2d_array_file(path):
     '''
@@ -100,8 +98,10 @@ def read_gene_families_file(path):
     '''
     Read a gene families file.
     
-    Each line is a gene family. See `read_whitespace_separated_2d_array_file`
-    for the expected syntax. A gene may occur in multiple gene families.
+    Expected format: csv format with tabs as separator (instead of ',').
+    
+    Each row is a gene family: `family_name gene1 gene2 ...`. (A gene may occur
+    in multiple gene families).
     
     Parameters
     ----------
@@ -110,10 +110,13 @@ def read_gene_families_file(path):
     
     Returns
     -------
-    list of list of (gene : str)
-        List of gene families
+    { family_name -> {gene : str} }
+        Gene families
     '''
-    read_whitespace_separated_2d_array_file(path)
+    sanitise_plain_text_file(path)
+    with open(path, 'r') as f:
+        reader = csv.reader(f, delimiter="\t")
+        return {row[0].lower() : set(map(str.lower, row[1:])) for row in reader}
 
 def read_baits_file(path):
     '''

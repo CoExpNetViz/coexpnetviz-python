@@ -15,12 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-from deep_blue_genome.genes import Genes
-
-'''
-Configuration, performance tuning parameters mostly
-'''
-
-def get_disk_read_speed():
-    '''HDD read speed in bytes/s''' 
-    return 128 * 2**20
+# Versions should comply with PEP440.
+# https://www.python.org/dev/peps/pep-0440/
+# Starting from version 2.0.0.dev1, we abide by these rules: https://python-packaging-user-guide.readthedocs.org/en/latest/distributing/#semantic-versioning-preferred
+__version__ = '2.0.0.dev1'

@@ -1,5 +1,5 @@
 from plumbum import local
-import deep_blue_genome.probe_gene_map as probe_gene_map
+import deep_blue_genome.todo.probe_gene_map as probe_gene_map
 from deep_blue_genome.shell.gup_script import gupup
 
 root_dir = local.path(local.env['root_dir'])
