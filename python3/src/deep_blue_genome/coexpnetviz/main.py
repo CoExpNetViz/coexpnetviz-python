@@ -26,6 +26,7 @@ from deep_blue_genome.core.util import print_abbreviated_dict, invert_multidict,
     keydefaultdict, invert_dict
 from collections import defaultdict, namedtuple
 from deep_blue_genome.core.expression_matrix import ExpressionMatrix
+from _functools import reduce
 
 '''
 CoExpNetViz
@@ -117,6 +118,12 @@ def coexpnetviz(context, baits, gene_families, expression_matrices):
     # Create bait nodes
     bait_nodes = pandas.Series({bait: BaitNode(bait) for bait in baits})
     
+    # Add singleton families for genes without family
+    orphans = reduce(lambda x,y: x.union(y), (exp_mat.data.index for exp_mat in expression_matrices))
+    orphans.drop(set.union(*map(set, gene_families.values())), errors='ignore')
+    for i, orphan in enumerate(orphans):
+        gene_families['singleton{}'.format(i)] = set(orphan)
+    
     gene_to_families = invert_multidict(gene_families)
     
     # Create family nodes, correlation edges
@@ -129,10 +136,6 @@ def coexpnetviz(context, baits, gene_families, expression_matrices):
         # Baits present in matrix
         baits_mask = matrix.index.isin(baits)
         baits_ = matrix.index[baits_mask]
-        
-        # Drop genes which aren't part of a family (and thus can't be used for comparative transcriptomics)
-        # TODO Log genes not part of a family
-        matrix = matrix.loc[matrix.index.isin(gene_to_families.keys()) | baits_mask]
         
         # Correlation matrix
         corrs = ExpressionMatrix(matrix).pearson_r(baits_)
@@ -197,66 +200,6 @@ def main_(argv):
     graph = coexpnetviz(context, baits, gene_families, expression_matrices)
 
     # Write network to cytoscape files
-    print('TODO write') # TODO
-    
-
-#     unique_ptr<OrthologGroupInfos> groups;
-
-    # Write output
-#     CytoscapeWriter writer(install_dir, baits, neighbours, *groups);
-#     writer.write();
-
-# void read_yaml(std::string path, Database& database, string& baits_path, double& negative_treshold, double& positive_treshold, unique_ptr<OrthologGroupInfos>& groups, vector<GeneExpressionMatrix*>& expression_matrices) {
-#     YAML::Node job_node = YAML::LoadFile(path);
-#     baits_path = job_node["baits"].as<string>();
-# 
-#     negative_treshold = job_node["negative_treshold"].as<double>();
-#     ensure(fabs(negative_treshold) <= 1.0+1e-7, "negative_treshold must be a double between -1 and 1", ErrorType::GENERIC);
-# 
-#     positive_treshold = job_node["positive_treshold"].as<double>();
-#     ensure(fabs(positive_treshold) <= 1.0+1e-7, "positive_treshold must be a double between -1 and 1", ErrorType::GENERIC);
-# 
-#     DataFileImport importer(database);
-# 
-#     for (auto matrix_node : job_node["expression_matrices"]) {
-#         string matrix_path = matrix_node.as<string>();
-#         string matrix_name = matrix_path;
-#         auto& matrix = importer.add_gene_expression_matrix(matrix_name, matrix_path);
-# 
-#         expression_matrices.emplace_back(&matrix);
-#     }
-# 
-#     auto&& orthologs_node = job_node["orthologs"];
-#     if (orthologs_node.size() > 0) {
-#         // clear current list of homology families
-#         database.erase_families();
-# 
-#         // add new families
-#         read_orthologs_yaml(database, orthologs_node); // TODO in general you want every command to take something of the form that acts like database --add before running the alg; to allow the user to add his/her own data.
-#     }
-# 
-#     // Get set of all genes
-#     unordered_set<Gene*> genes;
-#     for (auto& matrix : expression_matrices) {
-#         for (auto& gene : matrix->get_genes()) {
-#             ensure(genes.emplace(gene).second,
-#                     (make_string() << "Gene " << *gene << " present in multiple matrices").str()
-#             );;
-#         }
-#     }
-# 
-#     // Make sure each gene is part of at least 1 family, even if it's just a singleton
-#     size_t singleton_id = 0;
-#     for (auto&& gene : genes) {
-#         if (boost::empty(gene->get_ortholog_groups())) {
-#             database.add_ortholog_group(GeneFamilyId("singleton", (make_string() << singleton_id++).str())).add(*gene);
-#         }
-#     }
-# 
-#     //
-#     groups = make_unique<OrthologGroupInfos>();
-# }
-# 
 # /**
 #  * Load baits as distinct list of groups
 #  */
@@ -276,6 +219,7 @@ def main_(argv):
 # 
 #     return baits;
 # }
+    assert False
 
 # TODO could merging of ortho groups be done badly? Look at DataFileImport
 # TODO no mention of gene variants (unless as a warning to when we encounter a gene variant)
