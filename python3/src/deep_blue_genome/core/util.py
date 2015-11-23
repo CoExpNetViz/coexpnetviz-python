@@ -120,15 +120,18 @@ def df_expand_iterable_values(df, columns):
     Parameters
     ----------
     df : pandas.DataFrame
-    columns :
-        Columns to expand. Their values should be repeatably iterable.
+    columns : iterable of str, or str
+        Columns (or column) to expand. Their values should be repeatably iterable.
         
     Returns
     -------
     pandas.DataFrame
         Data frame with values in `columns` split to rows
     '''
-    #TODO could add option to keep_index by using reset_index and eventually set_index. index names trickery: MultiIndex.names, Index.name. Both can be None. If Index.name can be None in which case it translates to 'index' or if that already exists, it translates to 'level_0'. If MultiIndex.names is None, it translates to level_0,... level_N 
+    #TODO could add option to keep_index by using reset_index and eventually set_index. index names trickery: MultiIndex.names, Index.name. Both can be None. If Index.name can be None in which case it translates to 'index' or if that already exists, it translates to 'level_0'. If MultiIndex.names is None, it translates to level_0,... level_N
+    if isinstance(columns, str):
+        columns = [columns]
+        
     for column in columns:
         expanded = np.repeat(df.values, df[column].apply(len).values, axis=0)
         expanded[:, df.columns.get_loc(column)] = np.concatenate(df[column].tolist())

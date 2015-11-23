@@ -2,6 +2,7 @@ import pandas
 import csv
 from plumbum import local
 from deep_blue_genome.core.expression_matrix import ExpressionMatrix
+from deep_blue_genome.core.util import df_expand_iterable_values
 
 # TODO validation should be part of reading. We at least want to save a log of
 # warnings. TODO input validation error handling + setting stuff as warning or
@@ -16,6 +17,10 @@ Input validation error handling can be configured to either:
 
 - show and/or log an error and attempt to recover
 - throw an exception
+
+Some of the design principles used:
+
+- Don't trust the user, sanitise frantically
 '''
 
 # TODO test promises in robustness for the various file formats
@@ -63,6 +68,7 @@ def read_expression_matrix_file(path):
     '''
     mat = pandas.read_table(path, index_col=0, header=0, engine='python')
     mat.index = mat.index.str.lower()
+    mat.index.name = 'gene'
     return ExpressionMatrix(mat, name=local.path(path).name)
 
 def read_whitespace_separated_2d_array_file(path):
@@ -92,8 +98,7 @@ def read_whitespace_separated_2d_array_file(path):
         lines = f.read().split("[\r\n]+")
         lines = [line.split() for line in lines]
         return lines
-
-# TODO this docstring may be too hard on users 
+ 
 def read_gene_families_file(path):
     '''
     Read a gene families file.
@@ -103,6 +108,20 @@ def read_gene_families_file(path):
     Each row is a gene family: `family_name gene1 gene2 ...`. (A gene may occur
     in multiple gene families).
     
+    Families can also be split across multiple lines::
+    
+        fam1 gene1
+        fam1 gene2
+        fam2 gene5
+        fam1 gene3
+    
+    Example return::
+    
+        family
+        name1  AT5G41040
+        name1  AT5G23190
+        name2  AT3G11430
+    
     Parameters
     ----------
     path : str
@@ -110,18 +129,30 @@ def read_gene_families_file(path):
     
     Returns
     -------
-    { family_name -> {gene : str} }
+    pandas.Series
         Gene families
     '''
     sanitise_plain_text_file(path)
     with open(path, 'r') as f:
         reader = csv.reader(f, delimiter="\t")
-        return {row[0].lower() : set(map(str.lower, row[1:])) for row in reader}
+        df = pandas.DataFrame(([row[0], row[1:]] for row in reader), columns='family gene'.split())
+    df = df_expand_iterable_values(df, ['gene'])
+    df = df.apply(lambda x: x.str.lower())
+    df.drop_duplicates(inplace=True)
+    df.set_index('family', inplace=True)
+    return df.gene
 
 def read_baits_file(path):
     '''
     Read a file of whitespace separated bait gene names.
     
+    Example return::
+    
+        gene
+        0  AT5G41040
+        1  AT5G23190
+        2  AT3G11430
+        
     Parameters
     ----------
     path : str
@@ -129,11 +160,14 @@ def read_baits_file(path):
     
     Returns
     -------
-    list of str
-        List of genes
+    pandas.Series
+        Series of genes
     '''
     with open(path, encoding='utf-8') as f:
-        return f.read().split()
+        baits = pandas.Series(f.read().split(), name='gene')
+        baits.drop_duplicates(inplace=True)
+        baits = baits.str.lower()
+        return baits
 
 
 
