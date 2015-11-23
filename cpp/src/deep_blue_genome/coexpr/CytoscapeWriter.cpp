@@ -41,8 +41,6 @@ namespace COEXPR {
 
 uint64_t Node::next_id = 1;
 
-// TODO fantastic idea: header includes to third party libs used in a project -> use a precompiled header so we have less work on getting the includes right
-
 CytoscapeWriter::CytoscapeWriter(std::string install_dir, const std::vector<Gene*>& baits, const std::vector<OrthologGroupInfo*>& neighbours, OrthologGroupInfos& groups)
 :	install_dir(install_dir), baits(baits), neighbours(neighbours), groups(groups), network_name("network"), bait_orthologies_cached(false)
 {

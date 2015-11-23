@@ -22,11 +22,17 @@ from deep_blue_genome.core.reader.various import read_baits_file, read_expressio
 import sys
 import argparse
 import pandas
-from deep_blue_genome.core.util import print_abbreviated_dict, invert_multidict,\
+from deep_blue_genome.core.util import invert_multidict,\
     keydefaultdict, invert_dict
 from collections import defaultdict, namedtuple
 from deep_blue_genome.core.expression_matrix import ExpressionMatrix
-from _functools import reduce
+from functools import reduce
+from deep_blue_genome.coexpnetviz.node import BaitNode, FamilyNode
+
+# TODO better partition colors
+# - http://stackoverflow.com/a/30881059/1031434
+# - http://stackoverflow.com/a/4382138/1031434
+# - http://phrogz.net/css/distinct-colors.html
 
 '''
 CoExpNetViz
@@ -38,48 +44,7 @@ Terminology used:
 - family node: a node containing targets of the same orthology family
 '''
 
-Network = namedtuple('Network', 'bait_nodes family_nodes edges partitions'.split())
-    
-class Node(object):
-    
-    def __init__(self, name):
-        self._name = name
-        
-    @property
-    def name(self):
-        return self._name
-    
-    def __lt__(self, other):
-        return self.name < other.name
-    
-class BaitNode(Node):
-    
-    def __init__(self, name):
-        super().__init__(name)
-    
-    def __repr__(self):
-        return 'BaitNode({!r})'.format(self.name)
-
-class FamilyNode(Node):
-    
-    def __init__(self, family_name):
-        super().__init__(family_name)
-    
-    def __repr__(self):
-        return 'FamilyNode({!r})'.format(self.name)
-    
-class CorrelationEdge(object):
-    
-    def __init__(self, left, right, correlation):
-        self._left = left
-        self._right = right
-        self._correlation = correlation
-
-class HomologyEdge(object):
-    
-    def __init__(self, left, right):
-        self._left = left
-        self._right = right
+Network = namedtuple('Network', 'name bait_nodes family_nodes homology_edges partitions gene_to_families gene_families'.split())
 
 def coexpnetviz(context, baits, gene_families, expression_matrices):
     '''
@@ -101,7 +66,7 @@ def coexpnetviz(context, baits, gene_families, expression_matrices):
     
     Parameters
     ----------
-    baits : list of gene
+    baits : list-like of str
         genes to which non-bait genes are compared
     gene_families : dict of gene to family
         gene families of the genes in the expression matrices. This may be omitted if all baits are of the same species
@@ -119,16 +84,16 @@ def coexpnetviz(context, baits, gene_families, expression_matrices):
     bait_nodes = pandas.Series({bait: BaitNode(bait) for bait in baits})
     
     # Add singleton families for genes without family
+    # Note: if this is too slow, just don't create them up front as we don't need most of them 
     orphans = reduce(lambda x,y: x.union(y), (exp_mat.data.index for exp_mat in expression_matrices))
     orphans.drop(set.union(*map(set, gene_families.values())), errors='ignore')
     for i, orphan in enumerate(orphans):
-        gene_families['singleton{}'.format(i)] = set(orphan)
+        gene_families['singleton{}'.format(i)] = {orphan}
     
     gene_to_families = invert_multidict(gene_families)
     
     # Create family nodes, correlation edges
     family_nodes = keydefaultdict(lambda name: FamilyNode(name))  # family name -> FamilyNode
-    edges = []
     inverse_partitions = defaultdict(lambda: set())
     for exp_mat in expression_matrices:
         matrix = exp_mat.data
@@ -148,26 +113,34 @@ def coexpnetviz(context, baits, gene_families, expression_matrices):
         for (target, bait_node), correlation in corrs.stack().to_dict().items():
             family_nodes_ = (family_nodes[name] for name in gene_to_families[target])
             for family_node in family_nodes_:
-                edges.append(CorrelationEdge(family_node, bait_node, correlation))
+                family_node.add_correlation(bait_node, correlation, family_gene=target)
                 inverse_partitions[family_node].add(bait_node)
                 
     # Create partitions
     inverse_partitions = {k: frozenset(v) for k,v in inverse_partitions.items()}
-    partitions = invert_dict(inverse_partitions)
+    partitions = pandas.DataFrame.from_dict(invert_dict(inverse_partitions)) #TODO how would have created as dataframe from the start?
+    #TODO should load multi stuff as tables or as dict -> []?  # Got a performance case to think about?
+    # TODO dataframes can have `name`, so maybe we can get rid of ExpressionMatrix class again
                 
     # Add homology edges between baits (some genes in a family node will surely also be in another family node, but we won't show that)
+    data_frames = []
     for i, bait in enumerate(baits):
         if bait not in gene_to_families:
             continue
         genes = set.union(*(gene_families[family_name] for family_name in gene_to_families[bait])) 
-        edges.extend(HomologyEdge(bait_nodes[bait], bait_nodes[bait_]) for bait_ in set(baits[i+1:]) & genes)
+        data_frames.append(pandas.DataFrame([bait_nodes[bait], bait_nodes[bait_]] for bait_ in set(baits[i+1:]) & genes))
+    homology_edges = pandas.concat(data_frames, ignore_index=True)
+    homology_edges.columns = 'left right'.split()
     
     # Return
     return Network(
-        bait_nodes = bait_nodes.tolist(),
-        family_nodes = list(family_nodes.values()),
-        edges=edges,
-        partitions=partitions
+        name='network',
+        bait_nodes=bait_nodes.tolist(),
+        family_nodes=list(family_nodes.values()),
+        homology_edges=homology_edges,
+        partitions=partitions,
+        gene_to_families=gene_to_families,
+        gene_families=gene_families
     )
 
 
@@ -191,35 +164,130 @@ def main_(argv):
     args = parser.parse_args(argv)
 
     # Read files
-    baits = [bait.lower() for bait in read_baits_file(args.baits_file)]
+    baits = list({bait.lower() for bait in read_baits_file(args.baits_file)})
     gene_families = read_gene_families_file(args.gene_families) if args.gene_families else None
     expression_matrices = [read_expression_matrix_file(matrix) for matrix in args.expression_matrices] # TODO should remove non-varying rows in user-submitted exp mats (in any exp mats really, but we can trust our own prepped mats already have this step performed)
     
     # Run alg
     context = None # TODO
-    graph = coexpnetviz(context, baits, gene_families, expression_matrices)
+    network = coexpnetviz(context, baits, gene_families, expression_matrices)
 
     # Write network to cytoscape files
-# /**
-#  * Load baits as distinct list of groups
-#  */
-# std::vector<Gene*> load_baits(Database& database, std::string baits_path) {
-#     vector<Gene*> baits;
-# 
-#     // read file
-#     Baits baits_(baits_path);
-#     for (const auto& gene_name : baits_.get_genes()) {
-#         auto& gene = database.get_gene(gene_name);
-#         baits.emplace_back(&gene);
-#     }
-# 
-#     // get rid of duplicates in input
-#     sort(baits.begin(), baits.end());
-#     unique(baits.begin(), baits.end());
-# 
-#     return baits;
-# }
+    CytoscapeWriter(network).write()
     assert False
+    
+class CytoscapeWriter(object):
+    def __init__(self, network):
+        self._network = network
+        
+    def write_cytoscape(self):
+        self.write_sif()
+        self.write_node_attr()
+        self.write_edge_attr()
+    
+    def write_sif(self):
+        #sif = ?
+        sif.to_csv('{}.sif'.format(self._network.name), sep='\t')
+    
+    def write_node_attr(self):
+        bait_nodes = pandas.DataFrame(
+            [id(node), node.name, node.name, np.nan, 
+                ', '.join(self._networkgene_to_families[node.name])]
+                for node in self._network.bait_nodes,
+            columns='id label bait_gene species families'.split()
+        )
+        bait_nodes['colour'] = '#FFFFFF'
+        bait_nodes['type'] = 'bait node'
+        
+        self._network.partitions
+        
+        family_nodes = pandas.DataFrame(
+            [id(node), ', '.join(node.genes), node.name]
+                for node in self._network.family_nodes,
+            columns='id label family'.split()
+        )
+        family_nodes['colour'] = part color
+        family_nodes['type'] = 'family node'
+        family_nodes['correlating_genes_in_family'] = family_nodes['label']
+        
+        nodes = pandas.concat([bait_nodes, family_nodes], ignore_index=True)
+        nodes = nodes.reindex(columns='id label colour type bait_gene species families'.split())
+        nodes.fillna('')
+        nodes.to_csv('{}.node.attr'.format(self._network.name), sep='\t')
+        
+    def write_edge_attr(self):
+        homology_edges = self._network.homology_edges.copy()
+        homology_edges['type'] = 'hom'
+        correlation_edges = pandas.concat(node.correlation_edges for node in self._network.family_nodes, ignore_index=True)
+        correlation_edges['type'] = 'cor'
+        edges = p.concat([homology_edges, correlation_edges], ignore_index=True)
+        edges = edges.reindex(columns='left type right value'.split())
+        cols = ['left','right']
+        edges[cols] = edges[cols].applymap(id)
+        edges.fillna('')
+        edges.to_csv('{}.edge.attr'.format(self._network.name), sep='\t')
+
+#     
+#     
+#     /**
+#      * Write same node relations as sif, but in more detail
+#      */
+#     void CytoscapeWriter::write_edge_attr() {
+#         ofstream out(network_name + ".edge.attr");
+#         out.exceptions(ofstream::failbit | ofstream::badbit);
+#         out << "edge\tr_value\n";
+#     
+#         // target -> bait correlation
+#         for (auto&& neigh : neighbours) {
+#             if (!neigh->get_bait_correlations().empty()) {
+#                 for (auto& bait_correlation : neigh->get_bait_correlations()) {
+#                     out << target_nodes[neigh].get_cytoscape_id() << " (cor) " << bait_nodes[&bait_correlation.get_bait()].get_cytoscape_id() << "\t" << bait_correlation.get_max_correlation() << "\n";
+#                 }
+#             }
+#         }
+#     
+#         // bait <-> bait orthology
+#         for (auto& p : get_bait_orthology_relations()) {
+#             out << bait_nodes[p.first].get_cytoscape_id() << " (hom) " << bait_nodes[p.second].get_cytoscape_id() << "\tNA\n";
+#         }
+#     }
+#
+#     /**
+#      * Get orthology relations between baits
+#      */
+#     std::vector<BaitBaitOrthRelation>& CytoscapeWriter::get_bait_orthology_relations() {
+#         if (!bait_orthologies_cached) {
+#             // get a set of ortholog groups of the baits
+#             flat_set<const OrthologGroupInfo*> bait_groups;
+#             for (auto bait : baits) {
+#                 boost::insert(bait_groups, groups.get(*bait) | referenced);
+#             }
+#     
+#             // enumerate all possible pairs of baits of the same group
+#             for (auto group : bait_groups) {
+#                 // filter out genes not present in our set of baits
+#                 vector<const Gene*> genes;
+#                 assert(group);
+#                 for (auto gene : group->get().get_genes()) {
+#                     if (contains(baits, gene)) {
+#                         genes.emplace_back(gene);
+#                     }
+#                 }
+#     
+#                 // output all pairs
+#                 for (auto it = genes.begin(); it != genes.end(); it++) {
+#                     for (auto it2 = it+1; it2 != genes.end(); it2++) {
+#                         bait_orthologies.emplace_back(make_pair(*it, *it2));
+#                         bait_orthologies.emplace_back(make_pair(*it2, *it));
+#                     }
+#                 }
+#             }
+#             erase_duplicates(bait_orthologies);
+#             bait_orthologies_cached = true;
+#         }
+#     
+#         return bait_orthologies;
+#     }
 
 # TODO could merging of ortho groups be done badly? Look at DataFileImport
 # TODO no mention of gene variants (unless as a warning to when we encounter a gene variant)

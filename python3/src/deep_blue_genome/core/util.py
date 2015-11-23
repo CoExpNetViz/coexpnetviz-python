@@ -16,6 +16,7 @@
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
 import pandas
+import numpy as np
 from itertools import chain
 from collections import defaultdict
 from pprint import pprint
@@ -92,6 +93,48 @@ def invert_dict(dict_):
 def print_abbreviated_dict(dict_, count=10):
     pprint(dict(list(dict_.items())[:count]))
     
+def df_expand_iterable_values(df, columns):
+    '''
+    Expand repeatably iterable values in given columns along row axis.
+    
+    Column names are maintained, the index is dropped.
+    
+    >>> pandas.DataFrame([[1,[1,2],[1]],[1,[1,2],[3,4,5]],[2,[1],[1,2]]], columns='check a b'.split())
+       check       a          b
+    0      1  [1, 2]        [1]
+    1      1  [1, 2]  [3, 4, 5]
+    2      2     [1]     [1, 2]
+    >>> df_expand_iterable_values(df, ['a', 'b'])
+      check  a  b
+    0     1  1  1
+    1     1  2  1
+    2     1  1  3
+    3     1  1  4
+    4     1  1  5
+    5     1  2  3
+    6     1  2  4
+    7     1  2  5
+    8     2  1  1
+    9     2  1  2
+    
+    Parameters
+    ----------
+    df : pandas.DataFrame
+    columns :
+        Columns to expand. Their values should be repeatably iterable.
+        
+    Returns
+    -------
+    pandas.DataFrame
+        Data frame with values in `columns` split to rows
+    '''
+    #TODO could add option to keep_index by using reset_index and eventually set_index. index names trickery: MultiIndex.names, Index.name. Both can be None. If Index.name can be None in which case it translates to 'index' or if that already exists, it translates to 'level_0'. If MultiIndex.names is None, it translates to level_0,... level_N 
+    for column in columns:
+        expanded = np.repeat(df.values, df[column].apply(len).values, axis=0)
+        expanded[:, df.columns.get_loc(column)] = np.concatenate(df[column].tolist())
+        df = pandas.DataFrame(expanded, columns=df.columns)
+    return df
+    
 class keydefaultdict(defaultdict):
     
     '''
@@ -108,5 +151,8 @@ class keydefaultdict(defaultdict):
             return ret
 
     
-    
+if __name__ == '__main__':
+    df = pandas.DataFrame([[1,[1,2],[1]],[1,[1,2],[3,4,5]],[2,[1],[1,2]]], columns='check a b'.split())
+    print(df)
+    print(df_expand_iterable_values(df, ['a', 'b']))
     
