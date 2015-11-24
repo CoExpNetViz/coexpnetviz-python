@@ -20,6 +20,7 @@ import numpy as np
 from itertools import chain
 from collections import defaultdict
 from pprint import pprint
+import colorsys
 
 def is_sorted(l):
     return all(l[i] <= l[i+1] for i in range(len(l)-1))
@@ -171,6 +172,24 @@ class keydefaultdict(defaultdict):
             ret = self[key] = self.default_factory(key)
             return ret
 
+def get_n_distinct_colours(n):
+    '''
+    Gets n distinct colours based on hue (HSV)
+    
+    It does not take into account human perception of colour differences as YUV
+    might.
+    
+    No returned colour is black, nor white.
+    
+    Source: http://stackoverflow.com/a/876872/1031434
+    
+    Returns
+    -------
+    iterable of (r,g,b)
+        n RGB colours
+    '''
+    hsv_colours = [(x/n, 0.5, 0.5) for x in range(n)]
+    return map(lambda x: colorsys.hsv_to_rgb(*x), hsv_colours)
     
 if __name__ == '__main__':
     df = pandas.DataFrame([[1,[1,2],[1]],[1,[1,2],[3,4,5]],[2,[1],[1,2]]], columns='check a b'.split())

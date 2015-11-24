@@ -21,16 +21,12 @@ import sys
 import argparse
 import pandas as pd
 import numpy as np
-from deep_blue_genome.core.util import series_swap_with_index
+from deep_blue_genome.core.util import series_swap_with_index,\
+    get_n_distinct_colours
 from deep_blue_genome.core.expression_matrix import ExpressionMatrix
 from deep_blue_genome.coexpnetviz.network import Network
 
 # TODO wouldn't it be interesting to show correlation between baits as well?
-
-# TODO better partition colors
-# - http://stackoverflow.com/a/30881059/1031434
-# - http://stackoverflow.com/a/4382138/1031434
-# - http://phrogz.net/css/distinct-colors.html
 
 '''
 CoExpNetViz
@@ -85,7 +81,7 @@ def coexpnetviz(context, baits, gene_families, expression_matrices):
         
         # Correlation matrix
         corrs = ExpressionMatrix(matrix).pearson_r(baits_)
-        corrs.to_csv(exp_mat.name + '.corr_mat.txt', sep='\t')
+        corrs.to_csv(exp_mat.name + '.corr_mat.txt', sep='\t', na_rep=str(np.nan))
         
         # correlations
         corrs.columns = baits_
@@ -141,7 +137,6 @@ def main_(argv):
 
     # Write network to cytoscape files
     CytoscapeWriter(network).write()
-    assert False
     
 # TODO consider one of the formats that allows specifying the network, edges with attributes and nodes with attributes all at once. Perhaps even with a style.
 # e.g. XGMLL from http://wiki.cytoscape.org/Cytoscape_3/UserManual#Cytoscape_3.2BAC8-UserManual.2BAC8-Network_Formats.XGMML_Format
@@ -178,25 +173,26 @@ class CytoscapeWriter(object):
         self._correlations.reset_index(inplace=True)
         self._correlations.rename(columns={'index': 'bait', 'id': 'bait_id'}, inplace=True)
         
+        # bait_families: pd.Series(index=(family : str), columns=[(id : int)])
+        bait_families = self._network.gene_families.to_frame().join(self._bait_nodes, on='gene', how='right')
+        bait_families.drop('gene', axis=1, inplace=True)
+        
         # Write it
-        self.write_sif()
-        self.write_node_attr()
+        self.write_sif(bait_families)
+        self.write_node_attr(bait_families)
         self.write_edge_attr()
     
-    def write_sif(self):
+    def write_sif(self, bait_families):
         # correlation edges (without attribute data)
         correlation_edges = self._correlations.copy()
         correlation_edges['type'] = 'cor'
         correlation_edges = correlation_edges[['family_id', 'type', 'bait_id']]
         
         # homology edges
-        bait_families = self._network.gene_families.to_frame().join(self._bait_nodes, on='gene', how='right')
-        bait_families.drop('gene', axis=1, inplace=True)
         homology_edges = bait_families.join(bait_families, lsuffix='1', rsuffix='2')
         homology_edges = homology_edges[homology_edges['id1'] >  homology_edges['id2']]  # drop self relations
         homology_edges['type'] = 'hom'
         homology_edges = homology_edges.reindex(columns='id1 type id2'.split())
-        del bait_families
         
         # sif
         bait_nodes = self._bait_nodes.to_frame(0)
@@ -204,136 +200,68 @@ class CytoscapeWriter(object):
         homology_edges.columns = range(3)
         
         sif = pd.concat([bait_nodes, correlation_edges, homology_edges], ignore_index=True)
-        sif.to_csv('{}.sif'.format(self._network.name), sep='\t', header=False, index=False, float_format='%i')
-        assert False
+        sif[[0,2]] = sif[[0,2]].applymap(self._format_node_id)
+        sif.to_csv('{}.sif'.format(self._network.name), sep='\t', header=False, index=False)
     
-    def write_node_attr(self):
-        # TODO header in attr files
-        bait_nodes = pd.DataFrame(
-            ([id(node), node.name, node.name, np.nan, 
-                ', '.join(self._networkgene_to_families[node.name])]
-                for node in self._network.bait_nodes),
-            columns='id label bait_gene species families'.split()
-        )
-        bait_nodes['colour'] = '#FFFFFF'
-        bait_nodes['type'] = 'bait node'
+    def write_node_attr(self, bait_families):
+        ###################
+        # bait node attrs
+        bait_node_attrs = self._bait_nodes.reset_index()
+        bait_families = bait_families.reset_index().groupby('id')['family'].agg(lambda x: ', '.join(x.tolist()))
+        bait_families.name = 'families'
+        bait_node_attrs = bait_node_attrs.join(bait_families, on='id')
+        bait_node_attrs.rename(columns={'gene': 'bait_gene'}, inplace=True)
+        bait_node_attrs['label'] = bait_node_attrs['bait_gene']
+        bait_node_attrs['colour'] = '#FFFFFF'
+        bait_node_attrs['type'] = 'bait node'
         
-        self._network.partitions
+        ###################
+        # Family node attrs
         
-        family_nodes = pd.DataFrame(
-            ([id(node), ', '.join(node.genes), node.name]
-                for node in self._network.family_nodes),
-            columns='id label family'.split()
-        )
-#         TODO family_nodes['colour'] = part color
-        family_nodes['type'] = 'family node'
-        family_nodes['correlating_genes_in_family'] = family_nodes['label']
+        # partitions: pd.Series((partition_id : int), index=(family_id : int))
+        partitions = self._correlations.groupby('family_id')['bait_id'].agg(lambda x: hash(frozenset(x.tolist())))
+        partitions.name = 'partition_id'
         
-        nodes = pd.concat([bait_nodes, family_nodes], ignore_index=True)
-        nodes = nodes.reindex(columns='id label colour type bait_gene species families'.split())
-        nodes.fillna('')
-        nodes.to_csv('{}.node_attr.txt'.format(self._network.name), sep='\t')
+        # colours assigned to partitions: pd.Series((colour : str), index=(partition_id : int))
+        colours = partitions.drop_duplicates()
+        colours = pd.Series(get_n_distinct_colours(len(colours)), index=colours) 
+        def to_hex(tup):
+            return ''.join(['#'] + list(map(lambda x: '{:02x}'.format(min(255, round(x*255))), tup)))
+        colours = colours.apply(to_hex)
+        colours.name = 'colour'
+        
+        # family_colours : pd.Series((colour : str), index=(family_id : int))
+        family_colours = partitions.to_frame().join(colours, on='partition_id')['colour']
+        del partitions
+        del colours
+        
+        # Family node attrs
+        family_node_attrs = self._correlations[['family_id', 'family']].set_index('family_id')
+        family_node_attrs['label'] = self._correlations.groupby('family_id')['family_gene'].apply(lambda x: ', '.join(x.tolist()))
+        family_node_attrs['type'] = 'family node'
+        family_node_attrs['correlating_genes_in_family'] = family_node_attrs['label']
+        family_node_attrs = family_node_attrs.join(family_colours)
+        family_node_attrs.index.name = 'id'
+        family_node_attrs.reset_index(inplace=True)
+        
+        #######################
+        # concat
+        nodes = pd.concat([bait_node_attrs, family_node_attrs], ignore_index=True)
+        nodes = nodes.reindex(columns='id label colour type bait_gene species families family correlating_genes_in_family'.split())
+        nodes['id'] = nodes['id'].apply(self._format_node_id)
+        nodes.to_csv('{}.node.attr'.format(self._network.name), sep='\t', index=False)
         
     def write_edge_attr(self):
-        # TODO header in attr files
-        # TODO no hom needed here
-        # TODO () around relations
-        correlation_edges = pd.concat((node.correlation_edges for node in self._network.family_nodes), ignore_index=True)
-        correlation_edges['type'] = 'cor'
-        edges = p.concat([homology_edges, correlation_edges], ignore_index=True)
-        edges = edges.reindex(columns='left type right value'.split())
-        cols = ['left','right']
-        edges[cols] = edges[cols].applymap(id)
-        edges.fillna('')
-        edges.to_csv('{}.edge.attr'.format(self._network.name), sep='\t')
+        correlation_edges = self._correlations[['family_id', 'bait_id']]
+        correlation_edges = correlation_edges.apply(lambda x: '{} (cor) {}'.format(*map(self._format_node_id, x.tolist())), axis=1).to_frame('edge')
+        correlation_edges['r_value'] = self._correlations['correlation']
+        correlation_edges.to_csv('{}.edge.attr'.format(self._network.name), sep='\t', index=False)
         
-        
-        assert False
-        
-        # Create partitions
-        partitions.append((family_node, bait_node))
-        partitions = pd.DataFrame(partitions, columns='family bait'.split())
-        partitions.drop_duplicates(inplace=True)
-        print(partitions.head())
-                    
-        # Add homology edges between baits (some genes in a family node will surely also be in another family node, but we won't show that)
-        #TODO don't need this here, am using it elsewhere, but not here
-        data_frames = []
-        for i, bait in enumerate(baits):
-            if bait not in gene_to_families:
-                continue
-            genes = set.union(*(gene_families[family_name] for family_name in gene_to_families[bait])) 
-            data_frames.append(pd.DataFrame([bait_nodes[bait], bait_nodes[bait_]] for bait_ in set(baits[i+1:]) & genes))
-        homology_edges = pd.concat(data_frames, ignore_index=True)
-        homology_edges.columns = 'left right'.split()
-
-#     
-#     
-#     /**
-#      * Write same node relations as sif, but in more detail
-#      */
-#     void CytoscapeWriter::write_edge_attr() {
-#         ofstream out(network_name + ".edge.attr");
-#         out.exceptions(ofstream::failbit | ofstream::badbit);
-#         out << "edge\tr_value\n";
-#     
-#         // target -> bait correlation
-#         for (auto&& neigh : neighbours) {
-#             if (!neigh->get_bait_correlations().empty()) {
-#                 for (auto& bait_correlation : neigh->get_bait_correlations()) {
-#                     out << target_nodes[neigh].get_cytoscape_id() << " (cor) " << bait_nodes[&bait_correlation.get_bait()].get_cytoscape_id() << "\t" << bait_correlation.get_max_correlation() << "\n";
-#                 }
-#             }
-#         }
-#     
-#         // bait <-> bait orthology
-#         for (auto& p : get_bait_orthology_relations()) {
-#             out << bait_nodes[p.first].get_cytoscape_id() << " (hom) " << bait_nodes[p.second].get_cytoscape_id() << "\tNA\n";
-#         }
-#     }
-#
-#     /**
-#      * Get orthology relations between baits
-#      */
-#     std::vector<BaitBaitOrthRelation>& CytoscapeWriter::get_bait_orthology_relations() {
-#         if (!bait_orthologies_cached) {
-#             // get a set of ortholog groups of the baits
-#             flat_set<const OrthologGroupInfo*> bait_groups;
-#             for (auto bait : baits) {
-#                 boost::insert(bait_groups, groups.get(*bait) | referenced);
-#             }
-#     
-#             // enumerate all possible pairs of baits of the same group
-#             for (auto group : bait_groups) {
-#                 // filter out genes not present in our set of baits
-#                 vector<const Gene*> genes;
-#                 assert(group);
-#                 for (auto gene : group->get().get_genes()) {
-#                     if (contains(baits, gene)) {
-#                         genes.emplace_back(gene);
-#                     }
-#                 }
-#     
-#                 // output all pairs
-#                 for (auto it = genes.begin(); it != genes.end(); it++) {
-#                     for (auto it2 = it+1; it2 != genes.end(); it2++) {
-#                         bait_orthologies.emplace_back(make_pair(*it, *it2));
-#                         bait_orthologies.emplace_back(make_pair(*it2, *it));
-#                     }
-#                 }
-#             }
-#             erase_duplicates(bait_orthologies);
-#             bait_orthologies_cached = true;
-#         }
-#     
-#         return bait_orthologies;
-#     }
-
-# TODO could merging of ortho groups be done badly? Look at DataFileImport
-# TODO no mention of gene variants (unless as a warning to when we encounter a gene variant)
-
-# for morph:
-# TODO a meta-db that tells us what exp mats we have, e.g. search by the species it contains
+    def _format_node_id(self, node_id):
+        if np.isnan(node_id):
+            return ''
+        else:
+            return 'n{}'.format(int(node_id))
 
 if __name__ == '__main__':
     main()
