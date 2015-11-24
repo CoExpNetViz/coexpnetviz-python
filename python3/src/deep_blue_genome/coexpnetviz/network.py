@@ -17,23 +17,20 @@
 
 from collections import namedtuple
 
-Network = namedtuple('Network', 'name bait_nodes family_nodes gene_families'.split())
+Network = namedtuple('Network', 'name baits gene_families correlations'.split())
 '''
 Network (aka a graph) result of CoExpNetViz
 
-#TODO no nodes, just str
 Attributes
 ----------
 name : str
-bait_nodes : pd.Series(BaitNode, index=(bait_name : str))
-    Bait nodes
-family_nodes : pd.Series(FamilyNode, index=(fam_name : str))
-    Family nodes
-correlations : pd.DataFrame(columns=[family : FamilyNode, family_gene : str, bait : BaitNode, correlation : float-like])
-    Sufficient correlations between family and bait nodes. `family_gene` denotes the gene in the family that correlates with the bait.
-partitions : pd.DataFrame(index=(partition_id : int), columns=[family : FamilyNode, bait : BaitNode]) #TODO rm
-    Grouping of family nodes by subset of baits they correlate to.
+baits : pd.Series(bait : str, index=(unique numerical)
+    The baits provided, aka bait nodes.
+correlations : pd.DataFrame(columns=[family : str, family_gene : str, bait : str, correlation : float-like])
+    Sufficient correlations between family and bait nodes. `family_gene` denotes
+    the gene in the family that correlates with the bait. `family` is NaN for
+    genes which did not appear in `gene_families`.
 gene_families
-    Gene families of bait and family nodes. See `read_gene_families_file` for its type
+    Gene families of bait and family nodes. See `coexpnetviz` for its type
 '''
         

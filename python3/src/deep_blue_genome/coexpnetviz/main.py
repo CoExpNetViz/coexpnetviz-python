@@ -15,19 +15,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-# TODO wouldn't it be interesting to show correlation between baits as well?
-
 from deep_blue_genome.core.reader.various import read_baits_file, read_expression_matrix_file,\
     read_gene_families_file
 import sys
 import argparse
 import pandas as pd
 import numpy as np
-from deep_blue_genome.core.util import keydefaultdict, invert_dict
-from collections import defaultdict
+from deep_blue_genome.core.util import series_swap_with_index
 from deep_blue_genome.core.expression_matrix import ExpressionMatrix
-from deep_blue_genome.coexpnetviz.node import BaitNode, FamilyNode
 from deep_blue_genome.coexpnetviz.network import Network
+
+# TODO wouldn't it be interesting to show correlation between baits as well?
 
 # TODO better partition colors
 # - http://stackoverflow.com/a/30881059/1031434
@@ -75,10 +73,6 @@ def coexpnetviz(context, baits, gene_families, expression_matrices):
     
     inverted_gene_families = gene_families.reset_index().set_index('gene')
     
-    # Create bait nodes
-    bait_nodes = baits.apply(BaitNode)
-    bait_nodes.index = baits
-    
     # Correlations
     # Note: for genes not part of any family we assume they are part of some family, just not one of the ones provided. (so some family nodes have None as family)
     correlations = []
@@ -94,7 +88,7 @@ def coexpnetviz(context, baits, gene_families, expression_matrices):
         corrs.to_csv(exp_mat.name + '.corr_mat.txt', sep='\t')
         
         # correlations
-        corrs.columns = bait_nodes[baits_]
+        corrs.columns = baits_
         corrs.drop(baits_, inplace=True)
         corrs = corrs[abs(corrs) > cutoff]
         corrs.dropna(how='all', inplace=True)  # TODO not sure if aids performance
@@ -106,27 +100,14 @@ def coexpnetviz(context, baits, gene_families, expression_matrices):
         correlations.append(corrs)
     
     correlations = pd.concat(correlations)
-    
-    # Family nodes
-    family_nodes = correlations['family'].drop_duplicates()  # not yet family nodes, but it will be
-    family_nodes.dropna(inplace=True)
-    family_nodes.index = family_nodes
-    family_nodes = family_nodes.apply(FamilyNode)
-    family_nodes.name = 'family_node'
-    
-    # correlations (continued)
-    correlations.set_index('family', inplace=True)
-    correlations = correlations.join(family_nodes)
-    correlations.reset_index(drop=True, inplace=True)
-    correlations.rename(columns={'family_node' : 'family'}, inplace=True)
     correlations = correlations.reindex(columns='family family_gene bait correlation'.split())
     
     # Return
     return Network(
         name='network',
-        bait_nodes=bait_nodes.tolist(),
-        family_nodes=list(family_nodes.values()),
-        gene_families=gene_families
+        baits=baits,
+        gene_families=gene_families,
+        correlations=correlations
     )
 
 
@@ -168,31 +149,63 @@ class CytoscapeWriter(object):
     def __init__(self, network):
         self._network = network
         
-    def write_cytoscape(self):
+    def write(self):
+        # assign node ids to baits
+        self._bait_nodes = self._network.baits.copy()
+        self._bait_nodes.index.name = 'id'
+        self._bait_nodes = series_swap_with_index(self._bait_nodes)
+        
+        # assign node ids to family nodes that have a non-nan family
+        next_id = self._bait_nodes.max() + 1
+        family_ids = self._network.correlations['family']
+        family_ids.dropna(inplace=True)
+        family_ids.drop_duplicates(inplace=True)
+        family_ids = family_ids.to_frame()
+        family_ids['family_id'] = range(next_id, next_id+len(family_ids))
+        next_id += len(family_ids)
+        family_ids.set_index('family', inplace=True)
+        self._correlations = self._network.correlations.set_index('family').join(family_ids)
+        self._correlations.reset_index(inplace=True)
+        del family_ids
+        
+        # assign node ids to family nodes with nan family
+        mask = self._correlations['family_id'].isnull()
+        self._correlations.loc[mask, 'family_id'] = range(next_id, next_id + mask.sum())
+        
+        # throw in a bait_id column
+        self._correlations.set_index('bait', inplace=True)
+        self._correlations = self._correlations.join(self._bait_nodes)
+        self._correlations.reset_index(inplace=True)
+        self._correlations.rename(columns={'index': 'bait', 'id': 'bait_id'}, inplace=True)
+        
+        # Write it
         self.write_sif()
         self.write_node_attr()
         self.write_edge_attr()
     
     def write_sif(self):
-        #pd.concat
-        # list all nodes and relations
-        self._network.baits
-        
-        #
-        self._network.targets
-        
         # correlation edges (without attribute data)
-        self._network.correlations.drop('', axis=1)
+        correlation_edges = self._correlations.copy()
+        correlation_edges['type'] = 'cor'
+        correlation_edges = correlation_edges[['family_id', 'type', 'bait_id']]
         
         # homology edges
-        self._network.gene_families[]
-        
-        #sif = ?
-        #multiple lines allowed
-        
-        homology_edges = self._network.homology_edges.copy()
+        bait_families = self._network.gene_families.to_frame().join(self._bait_nodes, on='gene', how='right')
+        bait_families.drop('gene', axis=1, inplace=True)
+        homology_edges = bait_families.join(bait_families, lsuffix='1', rsuffix='2')
+        homology_edges = homology_edges[homology_edges['id1'] >  homology_edges['id2']]  # drop self relations
         homology_edges['type'] = 'hom'
-        sif.to_csv('{}.sif'.format(self._network.name), sep='\t') # TODO no header, no () around relations
+        homology_edges = homology_edges.reindex(columns='id1 type id2'.split())
+        del bait_families
+        
+        # sif
+        bait_nodes = self._bait_nodes.to_frame(0)
+        correlation_edges.columns = range(3)
+        homology_edges.columns = range(3)
+        
+        sif = pd.concat([bait_nodes, correlation_edges, homology_edges], ignore_index=True)
+        sif.to_csv('{}.sif'.format(self._network.name), sep='\t', header=False, index=False, float_format='%i')
+        assert False
     
     def write_node_attr(self):
         # TODO header in attr files

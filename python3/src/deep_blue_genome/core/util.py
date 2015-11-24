@@ -137,6 +137,24 @@ def df_expand_iterable_values(df, columns):
         expanded[:, df.columns.get_loc(column)] = np.concatenate(df[column].tolist())
         df = pandas.DataFrame(expanded, columns=df.columns)
     return df
+
+def series_swap_with_index(series):
+    '''
+    Swap index with values of series
+    
+    Parameters
+    ----------
+    series
+        Series to swap on, must have a name
+    
+    Returns
+    -------
+    pandas.Series
+        Series after swap 
+    '''
+    df = series.reset_index() #TODO alt is to to_frame and then use som dataframe methods
+    df.set_index(series.name, inplace=True)
+    return df[df.columns[0]]
     
 class keydefaultdict(defaultdict):
     
