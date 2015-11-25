@@ -22,7 +22,7 @@ import argparse
 import pandas as pd
 import numpy as np
 from deep_blue_genome.core.util import series_swap_with_index,\
-    get_n_distinct_colours
+    get_distinct_colours
 from deep_blue_genome.core.expression_matrix import ExpressionMatrix
 from deep_blue_genome.coexpnetviz.network import Network
 
@@ -224,7 +224,7 @@ class CytoscapeWriter(object):
         
         # colours assigned to partitions: pd.Series((colour : str), index=(partition_id : int))
         colours = partitions.drop_duplicates()
-        colours = pd.Series(get_n_distinct_colours(len(colours)), index=colours) 
+        colours = pd.Series(get_distinct_colours(len(colours)), index=colours) 
         def to_hex(tup):
             return ''.join(['#'] + list(map(lambda x: '{:02x}'.format(min(255, round(x*255))), tup)))
         colours = colours.apply(to_hex)

@@ -172,7 +172,7 @@ class keydefaultdict(defaultdict):
             ret = self[key] = self.default_factory(key)
             return ret
 
-def get_n_distinct_colours(n):
+def get_distinct_colours(n):
     '''
     Gets n distinct colours based on hue (HSV)
     

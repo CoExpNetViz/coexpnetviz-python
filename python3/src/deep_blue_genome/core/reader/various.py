@@ -1,4 +1,4 @@
-import pandas
+import pandas as pd
 import csv
 from plumbum import local
 from deep_blue_genome.core.expression_matrix import ExpressionMatrix
@@ -27,6 +27,15 @@ Some of the design principles used:
 
 # TODO in the future this may be of interest https://pypi.python.org/pypi/python-string-utils/0.3.0  We could donate our own things to that library eventually...
 
+def canonise_gene(gene):
+    '''
+    Lowercase and strip variant suffix.
+    
+    Suffix stripping may be a bit error-prone but forms a decent alternative
+    when a gene table is unavailable.
+    '''
+    return gene.lower().split('.')[0]
+    
 def sanitise_plain_text_file(file):
     '''
     Sanitise plain text file.
@@ -41,9 +50,8 @@ def sanitise_plain_text_file(file):
         string to sanitise
     '''
     sed = local['sed']
-    sed('-ir', '-e', u's/[\\x0]//g', '-e', 's/[\\r\\n]+/\\n/g', '-e', 's/(\t)+/\t/g', file)
+    sed('-i', '-r', '-e', u's/[\\x0]//g', '-e', 's/[\\r\\n]+/\\n/g', '-e', 's/(\t)+/\t/g', file)
 
-# TODO consider
 def read_expression_matrix_file(path):
     '''
     Read expression matrix file.
@@ -66,8 +74,8 @@ def read_expression_matrix_file(path):
     ExpressionMatrix
         The expression matrix
     '''
-    mat = pandas.read_table(path, index_col=0, header=0, engine='python')
-    mat.index = mat.index.str.lower()
+    mat = pd.read_table(path, index_col=0, header=0, engine='python')
+    mat.index = mat.index.apply(canonise_gene)
     mat.index.name = 'gene'
     return ExpressionMatrix(mat, name=local.path(path).name)
 
@@ -133,13 +141,15 @@ def read_gene_families_file(path):
         Gene families
     '''
     sanitise_plain_text_file(path)
+    # TODO read with pd.read_csv
     with open(path, 'r') as f:
         reader = csv.reader(f, delimiter="\t")
-        df = pandas.DataFrame(([row[0], row[1:]] for row in reader), columns='family gene'.split())
+        df = pd.DataFrame(([row[0], row[1:]] for row in reader), columns='family gene'.split())
     df = df_expand_iterable_values(df, ['gene'])
-    df = df.apply(lambda x: x.str.lower())
-    df.drop_duplicates(inplace=True)
+    df['family'] = df['family'].str.lower()
+    df['gene'] = df['gene'].apply(canonise_gene)
     df.set_index('family', inplace=True)
+    df.drop_duplicates(inplace=True)
     return df.gene
 
 def read_baits_file(path):
@@ -164,11 +174,41 @@ def read_baits_file(path):
         Series of genes
     '''
     with open(path, encoding='utf-8') as f:
-        baits = pandas.Series(f.read().split(), name='gene')
+        baits = pd.Series(f.read().split(), name='gene').apply(canonise_gene)
         baits.drop_duplicates(inplace=True)
-        baits = baits.str.lower()
         return baits
 
+def read_mcl_clustering(path):
+    '''
+    Read MCL clustering outputted by an `--abc` run.
+    
+    No input sanitisation as output is expected to come directly from the MCL
+    algorithm (which is well behaved).
+        
+    Parameters
+    ----------
+    path : str
+        path to file to read
+    
+    Returns
+    -------
+    pandas.Series(index=(cluster_id : int), data=(item : str)
+        Clusters
+    '''
+    df = pd.read_csv(path, names=['item']).applymap(lambda x: x.lower().split())
+    df.index.name = 'cluster_id'
+    df.reset_index(inplace=True)
+    df = df_expand_iterable_values(df, 'item')
+    df.set_index('cluster_id', inplace=True)
+    return df['item']
 
-
-
+def read_mapping(path):
+    '''
+    Read 2-column mapping file
+    
+    Returns
+    -------
+    pandas.DataFrame(columns=[(left : str), (right : str)])
+        Mapping
+    '''
+    return pd.read_table(path, names='left right'.split()).applymap(canonise_gene)
