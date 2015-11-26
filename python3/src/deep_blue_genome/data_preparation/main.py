@@ -20,7 +20,7 @@ from deep_blue_genome.core.reader.various import read_mcl_clustering,\
     read_gene_families_file, read_mapping
 # from deep_blue_genome.data_preparation.genes import load_gene_info
 import pandas as pd
-from deep_blue_genome.core.util import series_swap_with_index
+from deep_blue_genome.core.util import series_invert
 
 '''
 The main tool to prepare data for DBG tools
@@ -43,7 +43,7 @@ def merge_plaza():
     # apply itag -> pgsc gene name mapping (not actually needed for merging, just another plaza prep step)
     pgsc_itag = read_mapping('pgsc_itag_mapping')
     pgsc_itag.columns = ['pgsc','itag']
-    new_rows = pgsc_itag.join(series_swap_with_index(families), on='itag', how='inner')
+    new_rows = pgsc_itag.join(series_invert(families), on='itag', how='inner')
     new_rows.rename(columns={'pgsc': 'gene'}, inplace=True)
     new_rows.set_index('family', inplace=True)
     families = families.append(new_rows['gene'])

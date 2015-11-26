@@ -15,12 +15,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-import pandas
+import pandas as pd
+import math
 import numpy as np
 from itertools import chain
 from collections import defaultdict
 from pprint import pprint
 import colorsys
+from sklearn.utils.extmath import cartesian
+from numpy.linalg import norm
 
 def is_sorted(l):
     return all(l[i] <= l[i+1] for i in range(len(l)-1))
@@ -31,7 +34,7 @@ def fill_na_with_none(df):
     
     These None values will not be treated as 'missing' by DataFrame, as the dtypes will be set to 'object'
     '''
-    df.where(pandas.notnull(df), None, inplace=True)
+    df.where(pd.notnull(df), None, inplace=True)
     
 def flatten(lists):
     '''
@@ -136,12 +139,14 @@ def df_expand_iterable_values(df, columns):
     for column in columns:
         expanded = np.repeat(df.values, df[column].apply(len).values, axis=0)
         expanded[:, df.columns.get_loc(column)] = np.concatenate(df[column].tolist())
-        df = pandas.DataFrame(expanded, columns=df.columns)
+        df = pd.DataFrame(expanded, columns=df.columns)
     return df
 
-def series_swap_with_index(series):
+def series_invert(series):
     '''
     Swap index with values of series
+    
+    When planning to join 2 series, use `pandas.Series.map` instead of swapping.
     
     Parameters
     ----------
@@ -172,7 +177,87 @@ class keydefaultdict(defaultdict):
             ret = self[key] = self.default_factory(key)
             return ret
 
+def spread_points_in_hypercube(point_count, dim_count):
+    '''
+    Approximate a spreading of `n` points in a unit hypercube of given dimension.
+    
+    Euclidean distance is used.
+    
+    Note that the exact solution to this problem is known for only a few `n`.
+    
+    Related: http://stackoverflow.com/a/2723764/1031434
+    
+    Parameters
+    ----------
+    point_count : int-like
+        Number of points to pick
+    dim_count : int-like
+        Number of dimensions of the hypercube
+        
+    Returns
+    -------
+    array-like
+        Points spread approximately optimally in the hypercube. I.e. each point
+        component will lie in the interval [0,1].
+    '''
+    # Current implementation simply puts points in a grid
+    side_count = math.ceil(point_count ** (1/dim_count)) # number of points per side
+    points = np.linspace(0, 1, side_count)
+    points = cartesian([points]*dim_count)
+    return np.random.permutation(points)[:point_count]
+     
+# See https://en.wikipedia.org/wiki/YUV#HDTV_with_BT.601
+_yuv_to_rgb = np.matrix([
+    [1, 0, 1.28033],
+    [1, -0.21482, -0.38059],
+    [1, 2.12798, 0]
+]).T
+
+def yuv_to_rgb(yuv):
+    '''
+    HDTV-Y'UV point to RGB color point
+    
+    Note that not all YUV values between [0,0,0] and [1,1,1] map to valid rgb
+    values (i.e. some fall outside the [0,1] range) (see p30 http://www.compression.ru/download/articles/color_space/ch03.pdf)
+    
+    Parameters
+    ----------
+    yuv : array-like
+        An (n,3) shaped array. YUV point per row.
+    
+    Returns
+    -------
+    array-like
+        RGB point per row.
+    '''
+    return yuv * _yuv_to_rgb
+
 def get_distinct_colours(n):
+    '''
+    Get `n` most distinguishably colours as perceived by human vision.
+    
+    No returned colour is entirely black, nor entirely white.
+    
+    Based on: http://stackoverflow.com/a/30881059/1031434
+    
+    Returns
+    -------
+    iterable of (r,g,b)
+        n RGB colours
+    ''' 
+    points = spread_points_in_hypercube(n+2, 3)
+    lightest = norm(points, axis=1).argmax()
+    darkest = norm(points - np.array([1,1,1]), axis=1).argmax()
+    return np.delete(points, np.array([lightest,darkest]), axis=0)
+    # TODO use CIEDE2000 or the simpler CMC l:c.
+    # https://en.wikipedia.org/wiki/Color_difference
+    # The trick lies in
+    # intersecting a regular space to the part of the color space that maps back
+    # to valid rgb values and hoping you are left with enough points.
+#     # TODO to avoid black or white, scale down the Y component to [0.1, 0.9]
+#     return yuv_to_rgb(points)
+
+def get_distinct_colours_hsv(n):
     '''
     Gets n distinct colours based on hue (HSV)
     
@@ -192,7 +277,7 @@ def get_distinct_colours(n):
     return map(lambda x: colorsys.hsv_to_rgb(*x), hsv_colours)
     
 if __name__ == '__main__':
-    df = pandas.DataFrame([[1,[1,2],[1]],[1,[1,2],[3,4,5]],[2,[1],[1,2]]], columns='check a b'.split())
+    df = pd.DataFrame([[1,[1,2],[1]],[1,[1,2],[3,4,5]],[2,[1],[1,2]]], columns='check a b'.split())
     print(df)
     print(df_expand_iterable_values(df, ['a', 'b']))
     

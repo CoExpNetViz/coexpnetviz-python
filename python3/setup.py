@@ -80,7 +80,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires='matplotlib pandas numexpr bottleneck plumbum inflection sqlalchemy more_itertools memory_profiler psutil'.split(), #TODO mysql-connector
+    install_requires='matplotlib scikit-learn pandas numexpr bottleneck plumbum inflection sqlalchemy more_itertools memory_profiler psutil'.split(), #TODO mysql-connector
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,

@@ -21,7 +21,7 @@ import sys
 import argparse
 import pandas as pd
 import numpy as np
-from deep_blue_genome.core.util import series_swap_with_index,\
+from deep_blue_genome.core.util import series_invert,\
     get_distinct_colours
 from deep_blue_genome.core.expression_matrix import ExpressionMatrix
 from deep_blue_genome.coexpnetviz.network import Network
@@ -67,7 +67,7 @@ def coexpnetviz(context, baits, gene_families, expression_matrices):
     '''
     cutoff = 0.8  # hardcoded cut-off, wooptiTODO
     
-    inverted_gene_families = gene_families.reset_index().set_index('gene')
+    inverted_gene_families = series_invert(gene_families)
     
     # Correlations
     # Note: for genes not part of any family we assume they are part of some family, just not one of the ones provided. (so some family nodes have None as family)
@@ -148,7 +148,7 @@ class CytoscapeWriter(object):
         # assign node ids to baits
         self._bait_nodes = self._network.baits.copy()
         self._bait_nodes.index.name = 'id'
-        self._bait_nodes = series_swap_with_index(self._bait_nodes)
+        self._bait_nodes = series_invert(self._bait_nodes)
         
         # assign node ids to family nodes that have a non-nan family
         next_id = self._bait_nodes.max() + 1
@@ -214,26 +214,27 @@ class CytoscapeWriter(object):
         bait_node_attrs['label'] = bait_node_attrs['bait_gene']
         bait_node_attrs['colour'] = '#FFFFFF'
         bait_node_attrs['type'] = 'bait node'
+        bait_node_attrs['partition_id'] = hash(frozenset())
         
         ###################
         # Family node attrs
         
-        # partitions: pd.Series((partition_id : int), index=(family_id : int))
+        # partitions: pd.Series(index=(family_id : int), data=(partition_id : int))
         partitions = self._correlations.groupby('family_id')['bait_id'].agg(lambda x: hash(frozenset(x.tolist())))
         partitions.name = 'partition_id'
         
-        # colours assigned to partitions: pd.Series((colour : str), index=(partition_id : int))
+        # colours assigned to partitions: pd.Series(index=(partition_id : int), data=(colour : str))
         colours = partitions.drop_duplicates()
-        colours = pd.Series(get_distinct_colours(len(colours)), index=colours) 
-        def to_hex(tup):
-            return ''.join(['#'] + list(map(lambda x: '{:02x}'.format(min(255, round(x*255))), tup)))
-        colours = colours.apply(to_hex)
+        colours = pd.DataFrame(get_distinct_colours(len(colours)), index=colours)
+        def to_hex(x):
+            return '#' + ''.join((x*255).round().apply(lambda y: '{:02x}'.format(int(y))))
+            #return ''.join(['#'] + list(map(lambda x: .format(min(255, round(x*255))), tup)))
+        colours = colours.apply(to_hex, axis=1)
+        colours = colours.reindex(np.random.permutation(colours.index))  # shuffle the colours so distinct colours are less likely to be put next to each other
         colours.name = 'colour'
         
-        # family_colours : pd.Series((colour : str), index=(family_id : int))
-        family_colours = partitions.to_frame().join(colours, on='partition_id')['colour']
-        del partitions
-        del colours
+        # family_colours : pd.Series(index=(family_id : int), data=(colour : str))
+        family_colours = partitions.to_frame().join(colours, on='partition_id')
         
         # Family node attrs
         family_node_attrs = self._correlations[['family_id', 'family']].set_index('family_id')
@@ -247,7 +248,7 @@ class CytoscapeWriter(object):
         #######################
         # concat
         nodes = pd.concat([bait_node_attrs, family_node_attrs], ignore_index=True)
-        nodes = nodes.reindex(columns='id label colour type bait_gene species families family correlating_genes_in_family'.split())
+        nodes = nodes.reindex(columns='id label colour type bait_gene species families family correlating_genes_in_family partition_id'.split())
         nodes['id'] = nodes['id'].apply(self._format_node_id)
         nodes.to_csv('{}.node.attr'.format(self._network.name), sep='\t', index=False)
         
