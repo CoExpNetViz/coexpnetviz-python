@@ -18,6 +18,7 @@
 import pandas as pd
 import numpy as np
 from deep_blue_genome.core.util import series_invert, get_distinct_colours
+from deep_blue_genome.pkg_util import get_data_file
 
 
 # TODO consider one of the formats that allows specifying the network, edges with attributes and nodes with attributes all at once. Perhaps even with a style.
@@ -63,6 +64,10 @@ class CytoscapeWriter(object):
         self.write_sif(bait_families)
         self.write_node_attr(bait_families)
         self.write_edge_attr()
+        
+        # Copy additional files
+        for file in [get_data_file('coexpnetviz/cenv_style.xml'), get_data_file('coexpnetviz/README.txt')]:
+            file.copy('.')
     
     def write_sif(self, bait_families):
         # correlation edges (without attribute data)

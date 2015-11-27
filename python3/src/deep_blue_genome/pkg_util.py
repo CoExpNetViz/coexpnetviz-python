@@ -15,5 +15,22 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
     
-# from Bio import Entrez
-# Entrez.email = 'no-reply@psb.ugent.be'  # TODO perhaps this email address should be user supplied
+import plumbum
+
+_pkg_root = plumbum.local.path(__file__).dirname
+
+def get_data_file(path):
+    '''
+    Get data path to file
+    
+    Parameters
+    ----------
+    path : str
+        path to data file relative to data dir
+    
+    Returns
+    -------
+    plumbum.Path
+        Path to data file
+    '''
+    return _pkg_root / 'data' / path

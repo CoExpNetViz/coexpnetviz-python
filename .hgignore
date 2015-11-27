@@ -5,7 +5,7 @@ syntax: regexp
 \.cproject$
 ^build$
 python3/test
-data
+^data
 .*\.pyc
 __pycache__
 .*\.egg-info
