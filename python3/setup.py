@@ -19,7 +19,7 @@ with open(here + '/src/deep_blue_genome/version.py') as f:
     code = compile(f.read(), here + 'src/deep_blue_genome/version.py', 'exec')
     exec(code)
 
-long_description = pypandoc.convert('readme.md', 'rst')
+long_description = 'TODO' #pypandoc.convert('readme.md', 'rst', 'md')
 
 setup(
     name='deep_blue_genome',
