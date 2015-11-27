@@ -74,7 +74,7 @@ def read_expression_matrix_file(path):
     ExpressionMatrix
         The expression matrix
     '''
-    mat = pd.read_table(path, index_col=0, header=0, engine='python')
+    mat = pd.read_table(path, index_col=0, header=0, engine='python').astype(float)
     mat = mat[mat.index.to_series().notnull()]  # TODO log warnings for dropped rows
     mat.index.name = 'gene'
     mat.index = mat.index.to_series().apply(canonise_gene)

@@ -15,27 +15,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-import pandas
-import numpy as np
+from deep_blue_genome.core.metrics import pearson_r, similarity_matrix
+from sklearn.metrics import mutual_info_score
+from enum import Enum
 
-class ExpressionMatrix(object):
-    
-    def __init__(self, data, name=None):
-        self._name = name
-        self._data = data
-        
-    @property
-    def name(self):
-        return self._name
-    
-    @property
-    def data(self):
-        '''
-        Returns
-        -------
-        pandas.DataFrame
-            Expression data with gene names as row labels and condition (in which it was tested) names as column names
-        '''
-        return self._data
-        
+SimilarityMetric = Enum('SimilarityMetric', 'pearson_r mutual_information')
 
+def call(self, *args, **kwargs):
+    if self == SimilarityMetric.pearson_r:
+        return pearson_r(*args, **kwargs)
+    elif self == SimilarityMetric.mutual_information:
+        return similarity_matrix(*args, metric=mutual_info_score, **kwargs)
+    else:
+        assert False
+SimilarityMetric.__call__ = call
+del call
