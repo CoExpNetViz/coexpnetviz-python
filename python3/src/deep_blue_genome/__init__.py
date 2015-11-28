@@ -23,3 +23,5 @@ def _init():
     from plumbum import local
     if not 'DISPLAY' in local.env:
         matplotlib.use('Agg')  # use this backend when no X server
+        
+_init()
