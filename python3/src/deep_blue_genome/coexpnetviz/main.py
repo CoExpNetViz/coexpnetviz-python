@@ -179,7 +179,7 @@ def main_(argv):
         default=SimilarityMetric.pearson_r.name,
         help='similarity metric to use for gene coexpression'
     )
-    args = parser.parse_args(argv)
+    args = parser.parse_args(argv[1:])
 
     # Read files
     baits = read_baits_file(args.baits_file)
