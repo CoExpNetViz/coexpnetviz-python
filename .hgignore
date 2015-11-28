@@ -4,7 +4,8 @@ syntax: regexp
 \.project$
 \.cproject$
 ^build$
-python3/test
+python3/test/data
+python3/test/last_runs
 ^data
 .*\.pyc
 __pycache__
