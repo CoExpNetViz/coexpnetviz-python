@@ -28,7 +28,7 @@ class CytoscapeWriter(object):
         self._network = network
         
     def write(self):
-        # assign node ids to baits
+        # assign node ids to baits: pd.Series(index=(gene : str), data=(id : int))
         self._bait_nodes = self._network.baits.copy()
         self._bait_nodes.index.name = 'id'
         self._bait_nodes = series_invert(self._bait_nodes)
@@ -56,9 +56,10 @@ class CytoscapeWriter(object):
         self._correlations.reset_index(inplace=True)
         self._correlations.rename(columns={'index': 'bait', 'id': 'bait_id'}, inplace=True)
         
-        # bait_families: pd.Series(index=(family : str), columns=[(id : int)])
-        bait_families = self._network.gene_families.to_frame().join(self._bait_nodes, on='gene', how='right')
-        bait_families.drop('gene', axis=1, inplace=True)
+        # bait_families: pd.Series(index=(family : str), data=(id : int))
+        bait_families = self._network.gene_families.map(self._bait_nodes)
+        bait_families.dropna(inplace=True)
+        bait_families.name = self._bait_nodes.name
         
         # Write it
         self.write_sif(bait_families)
@@ -76,7 +77,8 @@ class CytoscapeWriter(object):
         correlation_edges = correlation_edges[['family_id', 'type', 'bait_id']]
         
         # homology edges
-        homology_edges = bait_families.join(bait_families, lsuffix='1', rsuffix='2')
+        homology_edges = pd.concat([bait_families]*2, axis=1)
+        homology_edges.columns = ['id1', 'id2']
         homology_edges = homology_edges[homology_edges['id1'] >  homology_edges['id2']]  # drop self relations
         homology_edges['type'] = 'hom'
         homology_edges = homology_edges.reindex(columns='id1 type id2'.split())

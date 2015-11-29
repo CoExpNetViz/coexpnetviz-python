@@ -138,7 +138,7 @@ def read_gene_families_file(path):
     
     Returns
     -------
-    pandas.Series
+    pandas.Series(data=(gene : str), index=(family : str))
         Gene families
     '''
     sanitise_plain_text_file(path)

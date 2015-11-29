@@ -25,13 +25,14 @@ def copy_data(destination_dir, prefix, file):
         file.copy(destination_dir)
         return file.name
 
+# TODO all these tests are manual, can't we automate? (md5sums are a start, allows you to autotest without keeping the actual files in repo; still need input file though...)
 class TestCENV(object):
     
     '''
     CoExpNetViz tests
     ''' 
     
-    def run(self, tmpdir, prefix, baits_file, expression_matrices, gene_families_file, similarity_metric=None):    
+    def run(self, tmpdir, prefix, baits_file, expression_matrices, gene_families_file=None, similarity_metric=None, lower_percentile_rank=None, upper_percentile_rank=None):    
         copy_data_ = partial(copy_data, tmpdir, prefix)
         
         # prefix and copy
@@ -44,10 +45,14 @@ class TestCENV(object):
             args.extend(['--gene-families', gene_families_file])
         if similarity_metric:
             args.extend(['--similarity-metric', similarity_metric.name])
+        if lower_percentile_rank:
+            args.extend(['--lower-percentile-rank', lower_percentile_rank])
+        if upper_percentile_rank:
+            args.extend(['--upper-percentile-rank', upper_percentile_rank])
             
         # run test
         with local.cwd(tmpdir):
-            cenv_(['dbg-coexpnetviz'] + args)
+            cenv_(['dbg-coexpnetviz'] + list(map(str, args)))
         
     #TODO 1 species custom
     # TODO check output automatically
@@ -65,6 +70,12 @@ class TestCENV(object):
             gene_families_file='merged_plaza.gene_fams.txt' 
         )
         
+    def test_plaza_1_species_no_genefam(self, tmpdir):
+        self.run(tmpdir, prefix=data_dir / 'plaza_fams',
+            baits_file='baits_one_species',
+            expression_matrices=['arabidopsis_expression_matrix'] 
+        )
+        
     def test_plaza_2_species(self, tmpdir):
         self.run(tmpdir, prefix=data_dir / 'plaza_fams',
             baits_file='baits_two_species',
@@ -72,6 +83,16 @@ class TestCENV(object):
             gene_families_file='merged_plaza.gene_fams.txt',
             #similarity_metric=SimilarityMetric.mutual_information 
         )
+        
+    def test_plaza_2_species_percentiles(self, tmpdir):
+        self.run(tmpdir, prefix=data_dir / 'plaza_fams',
+            baits_file='baits_two_species',
+            expression_matrices=['arabidopsis_expression_matrix', 'apple_expression_matrix'],
+            gene_families_file='merged_plaza.gene_fams.txt',
+            lower_percentile_rank=1,
+            upper_percentile_rank=99,
+        )
+        
         
 class TestDataPrep(object):
     
@@ -110,10 +131,12 @@ def test_spread_points():
         assert len(result[0]) == dims
     
 if __name__ == '__main__':
-    test = 'test_all.py::TestCENV::test_custom_fam_2_species'
-    test = 'test_all.py::TestCENV::test_plaza_1_species'
+#     test = 'test_all.py::TestCENV::test_custom_fam_2_species'
+#     test = 'test_all.py::TestCENV::test_plaza_1_species_no_genefam'
+#     test = 'test_all.py::TestCENV::test_plaza_1_species'
+#     test = 'test_all.py::TestCENV::test_plaza_2_species_percentiles'
     test = 'test_all.py::TestCENV::test_plaza_2_species'
-    #test = 'test_all.py::TestDataPrep::test_run'
+#     test = 'test_all.py::TestDataPrep::test_run'
     pytest.main('--maxfail=1 ' + test)
     
     #cenv_(['--similarity-metric', 'magic'])
