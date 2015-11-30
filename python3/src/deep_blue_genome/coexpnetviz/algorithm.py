@@ -21,7 +21,7 @@ from deep_blue_genome.core.util import series_invert
 from deep_blue_genome.coexpnetviz.network import Network
 import matplotlib.pyplot as plt
 
-def determine_cutoffs(expression_matrix, similarity_metric, percentile_ranks):
+def determine_cutoffs(expression_matrix, correlation_method, percentile_ranks):
     '''
     Get upper and lower correlation cutoffs for coexpnetviz
     
@@ -32,7 +32,7 @@ def determine_cutoffs(expression_matrix, similarity_metric, percentile_ranks):
     Parameters
     ----------
     expression_matrix : Expressionmatrix
-    similarity_metric : SimilarityMetric
+    correlation_method : CorrelationMethod
     
     Returns
     -------
@@ -49,7 +49,7 @@ def determine_cutoffs(expression_matrix, similarity_metric, percentile_ranks):
     data = expression_matrix.data.values
     sample = np.random.choice(len(data), sample_size)
     sample = data[sample]
-    sample = similarity_metric(sample, np.arange(len(sample)))
+    sample = correlation_method(sample, np.arange(len(sample)))
     sample = sample.flatten()
     sample = sample[~np.isnan(sample)]
     
@@ -57,13 +57,13 @@ def determine_cutoffs(expression_matrix, similarity_metric, percentile_ranks):
     plt.clf()
     pd.Series(sample).plot.hist(bins=30)
     plt.title('Correlations between sample of {} genes in exp-mat'.format(sample_size))
-    plt.xlabel(similarity_metric.name)
+    plt.xlabel(correlation_method.name)
     plt.savefig('{}.corr_sample_histogram.png'.format(expression_matrix.name))
 
     # Return result
     return np.percentile(sample, percentile_ranks)
     
-def coexpnetviz(baits, gene_families, expression_matrices, similarity_metric, percentile_ranks):
+def coexpnetviz(baits, gene_families, expression_matrices, correlation_method, percentile_ranks):
     '''
     Derive a CoExpNetViz Network.
     
@@ -83,7 +83,7 @@ def coexpnetviz(baits, gene_families, expression_matrices, similarity_metric, pe
         gene families of the genes in the expression matrices. This may be omitted if all baits are of the same species
     expression_matrices : list-like of ExpressionMatrix
         gene expression matrices containing some or all baits and other genes
-    similarity_metric : SimilarityMetric
+    correlation_method : CorrelationMethod
         
     Returns
     -------
@@ -96,7 +96,7 @@ def coexpnetviz(baits, gene_families, expression_matrices, similarity_metric, pe
     # Note: for genes not part of any family we assume they are part of some family, just not one of the ones provided. (so some family nodes have None as family)
     correlations = []
     for exp_mat in expression_matrices:
-        lower_bound, upper_bound = determine_cutoffs(exp_mat, similarity_metric, percentile_ranks) #TODO bound is right name? cutoff is better name
+        lower_bound, upper_bound = determine_cutoffs(exp_mat, correlation_method, percentile_ranks) #TODO bound is right name? cutoff is better name
         matrix = exp_mat.data
         
         # Baits present in matrix
@@ -104,7 +104,7 @@ def coexpnetviz(baits, gene_families, expression_matrices, similarity_metric, pe
         baits_ = matrix.index[baits_mask]
         
         # Correlation matrix
-        corrs = similarity_metric(matrix.values, np.flatnonzero(baits_mask))
+        corrs = correlation_method(matrix.values, np.flatnonzero(baits_mask))
         corrs = pd.DataFrame(corrs, index=matrix.index, columns=baits_)
         corrs.to_csv(exp_mat.name + '.sim_mat.txt', sep='\t', na_rep=str(np.nan))
         

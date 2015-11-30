@@ -1,7 +1,7 @@
 import pytest
 from plumbum import local
 from functools import partial
-from deep_blue_genome.coexpnetviz.main import main_ as cenv_, SimilarityMetric
+from deep_blue_genome.coexpnetviz.main import main_ as cenv_, CorrelationMethod
 from deep_blue_genome.data_preparation.main import main as data_prep
 from deep_blue_genome.core.util import get_distinct_colours,\
     spread_points_in_hypercube

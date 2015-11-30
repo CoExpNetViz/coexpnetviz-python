@@ -20,7 +20,7 @@ from deep_blue_genome.core.reader.various import read_baits_file, read_expressio
 import sys
 import argparse
 import pandas as pd
-from deep_blue_genome.coexpnetviz.similaritymetric import SimilarityMetric
+from deep_blue_genome.coexpnetviz.correlationmethod import CorrelationMethod
 from deep_blue_genome.coexpnetviz.cytoscapewriter import CytoscapeWriter
 from deep_blue_genome.coexpnetviz.algorithm import coexpnetviz
 
@@ -67,10 +67,10 @@ def main_(argv):
         help='paths to expression matrices to use'
     )
     parser.add_argument(
-        '--similarity-metric', metavar='S',
-        choices=SimilarityMetric.__members__.keys(), #TODO show choices in -h, maybe ConfigArgParse does this? Maybe it's a setting?
-        default=SimilarityMetric.pearson_r.name,
-        help='similarity metric to use for gene coexpression'
+        '--correlation-method', metavar='S',
+        choices=CorrelationMethod.__members__.keys(), #TODO show choices in -h, maybe ConfigArgParse does this? Maybe it's a setting?
+        default=CorrelationMethod.pearson_r.name,
+        help='correlation method to use for gene coexpression'
     )
     parser.add_argument(
         '--lower-percentile-rank', metavar='L',
@@ -94,10 +94,10 @@ def main_(argv):
         gene_families.index.name = 'family'
     
     # Pick metric
-    similarity_metric = SimilarityMetric[args.similarity_metric]
+    correlation_method = CorrelationMethod[args.correlation_method]
     
     # Run alg
-    network = coexpnetviz(baits, gene_families, expression_matrices, similarity_metric, [args.lower_percentile_rank, args.upper_percentile_rank])
+    network = coexpnetviz(baits, gene_families, expression_matrices, correlation_method, [args.lower_percentile_rank, args.upper_percentile_rank])
 
     # Write network to cytoscape files
     CytoscapeWriter(network).write()
