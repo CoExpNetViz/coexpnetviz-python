@@ -11,22 +11,64 @@ from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
 from os import path
-#import pypandoc
+from glob import glob
+import pypandoc
+import plumbum as pb
 
-here = path.abspath(path.dirname(__file__))
-
-with open(here + '/src/deep_blue_genome/version.py') as f:
-    code = compile(f.read(), here + 'src/deep_blue_genome/version.py', 'exec')
-    exec(code)
-
-long_description = 'TODO' #pypandoc.convert('readme.md', 'rst', 'md')
-src_root = 'src'
+# Automated template stuff (TODO extract this into reusable lib to include in our projects) 
+def setup_(**args):
+    here = pb.local.path(__file__).dirname
     
-setup(
+    # read some of args
+    name = args['name']
+    src_root = args['src_root']
+    del args['src_root']
+    
+    # various tidbits
+    pkg_root = src_root / name
+    
+    # version
+    version_file = pkg_root / 'version.py'
+    with version_file.open() as f:
+        code = compile(f.read(), str(version_file), 'exec')
+        locals = {}
+        exec(code, None, locals)
+        __version__ = locals['__version__']
+        
+    # data files
+    data_files = [str(path - pkg_root) for path in map(pb.local.path, glob(pkg_root / 'data/**', recursive=True)) if not path.isdir()]
+    
+    # override
+    relative_src_root = str(src_root - here)
+    args.update(
+        version=__version__,
+        
+        # List packages
+        packages=find_packages(relative_src_root),
+        package_dir={'': relative_src_root}, # tell setup where packages are
+        
+        # List data files
+        package_data={name: data_files},
+    )
+    
+    # setup
+    setup(**args)
+
+here = pb.local.path(__file__).dirname
+    
+# Debug stuff
+# setup_(name='deep_blue_genome', src_root=here / 'src')
+
+# setup
+setup_(
+    # custom attrs
+    src_root = here / 'src',
+    
+    # standard
     name='deep_blue_genome',
+    long_description = pypandoc.convert('readme.md', 'rst'),
+    
     description='Genome analysis platform',
-    long_description=long_description,
-    version=__version__,
     author='VIB/BEG/UGent',
     author_email='tidie@psb.vib-ugent.be',
 
@@ -60,16 +102,13 @@ setup(
     # What does your project relate to?
     keywords='bioinformatics genome-analysis morph coexpnetviz',
  
-    # List packages
-    packages=find_packages(src_root),
-    package_dir={'': src_root}, # tell setup where packages are
- 
     # Required dependencies
-    install_requires=[],#TODO tmp disabled deps 'matplotlib scikit-learn pandas numexpr bottleneck plumbum inflection more_itertools memory_profiler psutil numpy'.split(), #Not essential yet sqlalchemy. TODO mysql-connector
+    setup_requires='pypandoc plumbum'.split(), # required to run setup.py
+    install_requires='matplotlib scikit-learn pandas numexpr bottleneck plumbum inflection more_itertools memory_profiler psutil numpy'.split(), #Not essential yet sqlalchemy. TODO mysql-connector
  
     # Optional dependencies
     extras_require={
-        'dev': 'twine pypandoc '.split(),
+        'dev': 'twine'.split(),
         'test': ['pytest'],
     },
  
