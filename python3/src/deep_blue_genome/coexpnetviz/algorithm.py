@@ -96,7 +96,7 @@ def coexpnetviz(baits, gene_families, expression_matrices, correlation_method, p
     # Note: for genes not part of any family we assume they are part of some family, just not one of the ones provided. (so some family nodes have None as family)
     correlations = []
     for exp_mat in expression_matrices:
-        lower_bound, upper_bound = determine_cutoffs(exp_mat, correlation_method, percentile_ranks) #TODO bound is right name? cutoff is better name
+        lower_cutoff, upper_cutoff = determine_cutoffs(exp_mat, correlation_method, percentile_ranks)
         matrix = exp_mat.data
         
         # Baits present in matrix
@@ -111,7 +111,7 @@ def coexpnetviz(baits, gene_families, expression_matrices, correlation_method, p
         # correlations
         corrs.columns = baits_
         corrs.drop(baits_, inplace=True)
-        corrs = corrs[(corrs > lower_bound) & (corrs < upper_bound)]
+        corrs = corrs[(corrs < lower_cutoff) | (corrs > upper_cutoff)]
         corrs.dropna(how='all', inplace=True)  # TODO not sure if aids performance
         corrs = corrs.join(inverted_gene_families)
         corrs.index.name = 'family_gene'
