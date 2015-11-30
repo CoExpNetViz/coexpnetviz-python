@@ -9,7 +9,6 @@ https://github.com/pypa/sampleproject
 from setuptools import setup, find_packages  # Always prefer setuptools over distutils
 from codecs import open  # To use a consistent encoding
 from os import path
-from glob import glob
 import pypandoc
 import plumbum as pb
 
@@ -34,7 +33,7 @@ def setup_(**args):
         __version__ = locals['__version__']
         
     # data files
-    data_files = [str(path - pkg_root) for path in map(pb.local.path, glob(pkg_root / 'data/**', recursive=True)) if not path.isdir()]
+    data_files = [str(path - pkg_root) for path in (pkg_root / 'data').walk(filter=lambda x: not x.isdir())]
     
     # override
     relative_src_root = str(src_root - here)
@@ -55,7 +54,7 @@ def setup_(**args):
 here = pb.local.path(__file__).dirname
     
 # Debug stuff
-# setup_(name='deep_blue_genome', src_root=here / 'src')
+setup_(name='deep_blue_genome', src_root=here / 'src')
 
 # setup
 setup_(
@@ -102,7 +101,7 @@ setup_(
  
     # Required dependencies
     setup_requires='pypandoc plumbum'.split(), # required to run setup.py
-    install_requires='matplotlib scikit-learn pandas numexpr bottleneck plumbum inflection more_itertools memory_profiler psutil numpy'.split(), #Not essential yet sqlalchemy. TODO mysql-connector
+    install_requires='numpy matplotlib scipy scikit-learn pandas numexpr bottleneck plumbum inflection more_itertools memory_profiler psutil'.split(), #Not essential yet: sqlalchemy. TODO mysql-connector
  
     # Optional dependencies
     extras_require={
