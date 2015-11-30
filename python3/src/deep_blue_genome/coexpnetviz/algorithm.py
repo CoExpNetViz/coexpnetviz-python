@@ -1,0 +1,132 @@
+# Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# 
+# This file is part of Deep Blue Genome.
+# 
+# Deep Blue Genome is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# Deep Blue Genome is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public License
+# along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
+
+import pandas as pd
+import numpy as np
+from deep_blue_genome.core.util import series_invert
+from deep_blue_genome.coexpnetviz.network import Network
+import matplotlib.pyplot as plt
+
+def determine_cutoffs(expression_matrix, similarity_metric, percentile_ranks):
+    '''
+    Get upper and lower correlation cutoffs for coexpnetviz
+    
+    Takes the 5th and 95th percentile of a sample similarity matrix of
+    `expression_matrix`, returning these as the lower and upper cut-off
+    respectively.
+    
+    Parameters
+    ----------
+    expression_matrix : Expressionmatrix
+    similarity_metric : SimilarityMetric
+    
+    Returns
+    -------
+    (lower, upper)
+        Cut-offs
+    '''
+    # TODO we took a sample of the population of correlations, so take into
+    # account statistics when drawing conclusions from it... In fact, that's how
+    # we should determine our sample size, probably.
+    #
+    # Before that, take a step back and compare some form of significance vs using a percentile of a sample as cutoff
+    
+    sample_size = 800
+    data = expression_matrix.data.values
+    sample = np.random.choice(len(data), sample_size)
+    sample = data[sample]
+    sample = similarity_metric(sample, np.arange(len(sample)))
+    sample = sample.flatten()
+    sample = sample[~np.isnan(sample)]
+    
+    # Also save a histogram
+    plt.clf()
+    pd.Series(sample).plot.hist(bins=30)
+    plt.title('Correlations between sample of {} genes in exp-mat'.format(sample_size))
+    plt.xlabel(similarity_metric.name)
+    plt.savefig('{}.corr_sample_histogram.png'.format(expression_matrix.name))
+
+    # Return result
+    return np.percentile(sample, percentile_ranks)
+    
+def coexpnetviz(baits, gene_families, expression_matrices, similarity_metric, percentile_ranks):
+    '''
+    Derive a CoExpNetViz Network.
+    
+    Bait node iff bait (even when no fam node correlates to it)
+    
+    Family nodes only contain the genes of the family that actually correlate to
+    a bait. Families that don't correlate with any bait are omitted from the
+    output.
+    
+    Partitions are the grouping of fam nodes by the subset of baits they correlate to.
+    
+    Parameters
+    ----------
+    baits : see `read_baits_file`'s return value
+        genes to which non-bait genes are compared
+    gene_families : see `read_gene_families_file`'s return value
+        gene families of the genes in the expression matrices. This may be omitted if all baits are of the same species
+    expression_matrices : list-like of ExpressionMatrix
+        gene expression matrices containing some or all baits and other genes
+    similarity_metric : SimilarityMetric
+        
+    Returns
+    -------
+    Network
+        A network/graph of typed nodes, edges and partitions 
+    '''
+    inverted_gene_families = series_invert(gene_families)
+    
+    # Correlations
+    # Note: for genes not part of any family we assume they are part of some family, just not one of the ones provided. (so some family nodes have None as family)
+    correlations = []
+    for exp_mat in expression_matrices:
+        lower_bound, upper_bound = determine_cutoffs(exp_mat, similarity_metric, percentile_ranks) #TODO bound is right name? cutoff is better name
+        matrix = exp_mat.data
+        
+        # Baits present in matrix
+        baits_mask = matrix.index.isin(baits)
+        baits_ = matrix.index[baits_mask]
+        
+        # Correlation matrix
+        corrs = similarity_metric(matrix.values, np.flatnonzero(baits_mask))
+        corrs = pd.DataFrame(corrs, index=matrix.index, columns=baits_)
+        corrs.to_csv(exp_mat.name + '.sim_mat.txt', sep='\t', na_rep=str(np.nan))
+        
+        # correlations
+        corrs.columns = baits_
+        corrs.drop(baits_, inplace=True)
+        corrs = corrs[(corrs > lower_bound) & (corrs < upper_bound)]
+        corrs.dropna(how='all', inplace=True)  # TODO not sure if aids performance
+        corrs = corrs.join(inverted_gene_families)
+        corrs.index.name = 'family_gene'
+        corrs.reset_index(inplace=True)
+        corrs = pd.melt(corrs, id_vars=['family_gene', 'family'], var_name='bait', value_name='correlation')
+        corrs.dropna(subset=['correlation'], inplace=True)
+        correlations.append(corrs)
+    
+    correlations = pd.concat(correlations)
+    correlations = correlations.reindex(columns='family family_gene bait correlation'.split())
+    
+    # Return
+    return Network(
+        name='network',
+        baits=baits,
+        gene_families=gene_families,
+        correlations=correlations
+    )

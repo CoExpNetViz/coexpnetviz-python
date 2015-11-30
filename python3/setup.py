@@ -65,7 +65,7 @@ setup(
     package_dir={'': src_root}, # tell setup where packages are
  
     # Required dependencies
-    install_requires=[],#TODO tmp disabled deps 'matplotlib scikit-learn pandas numexpr bottleneck plumbum inflection sqlalchemy more_itertools memory_profiler psutil'.split(), #TODO mysql-connector
+    install_requires=[],#TODO tmp disabled deps 'matplotlib scikit-learn pandas numexpr bottleneck plumbum inflection more_itertools memory_profiler psutil numpy'.split(), #Not essential yet sqlalchemy. TODO mysql-connector
  
     # Optional dependencies
     extras_require={
