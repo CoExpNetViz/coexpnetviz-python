@@ -83,7 +83,7 @@ class CytoscapeWriter(object):
         self.write_edge_attr()
         
         # Copy additional files
-        for file in [get_data_file('coexpnetviz/cenv_style.xml'), get_data_file('coexpnetviz/README.txt')]:
+        for file in [get_data_file('coexpnetviz/coexpnetviz_style.xml'), get_data_file('coexpnetviz/README.txt')]:
             file.copy('.')
     
     def write_sif(self, bait_families):
