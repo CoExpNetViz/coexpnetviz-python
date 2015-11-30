@@ -64,7 +64,7 @@ def main_(argv):
     )
     parser.add_argument(
         '-e', '--expression-matrices', metavar='M', required=True, nargs='+',
-        help='path to expression matrix to use'
+        help='paths to expression matrices to use'
     )
     parser.add_argument(
         '--similarity-metric', metavar='S',
