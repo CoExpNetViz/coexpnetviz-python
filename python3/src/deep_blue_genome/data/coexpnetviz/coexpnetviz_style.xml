@@ -101,7 +101,7 @@
             <visualProperty name="EDGE_STROKE_UNSELECTED_PAINT" default="#FFFFCC">
                 <continuousMapping attributeType="float" attributeName="max_correlation">
                     <continuousMappingPoint lesserValue="#000000" greaterValue="#D80D07" equalValue="#D80D07" attrValue="-1.0"/>
-                    <continuousMappingPoint lesserValue="#FFFFFF" greaterValue="#FFFFFF" equalValue="#FFFFFF" attrValue="0.0"/>
+                    <continuousMappingPoint lesserValue="#000000" greaterValue="#000000" equalValue="#000000" attrValue="0.0"/>
                     <continuousMappingPoint lesserValue="#1C7905" greaterValue="#FFFFFF" equalValue="#1C7905" attrValue="1.0"/>
                 </continuousMapping>
             </visualProperty>
