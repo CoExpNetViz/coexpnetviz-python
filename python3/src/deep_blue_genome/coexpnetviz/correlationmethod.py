@@ -19,14 +19,14 @@ from deep_blue_genome.core.metrics import pearson_r, similarity_matrix
 from sklearn.metrics import mutual_info_score
 from enum import Enum
 
-SimilarityMetric = Enum('SimilarityMetric', 'pearson_r mutual_information')
+CorrelationMethod = Enum('CorrelationMethod', 'pearson_r mutual_information')
 
 def call(self, *args, **kwargs):
-    if self == SimilarityMetric.pearson_r:
+    if self == CorrelationMethod.pearson_r:
         return pearson_r(*args, **kwargs)
-    elif self == SimilarityMetric.mutual_information:
+    elif self == CorrelationMethod.mutual_information:
         return similarity_matrix(*args, metric=mutual_info_score, **kwargs)
     else:
         assert False
-SimilarityMetric.__call__ = call
+CorrelationMethod.__call__ = call
 del call
