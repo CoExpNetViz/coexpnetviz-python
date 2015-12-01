@@ -15,9 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-import pandas as pd
 import numpy as np
-from scipy.constants.constants import metric_ton
 
 # TODO correlation between e.g. [1,1] and [2,2] is NaN with pearson, which kind of makes sense because... how could you possibly tell? Is it 1, -1, something in between?
     
@@ -54,6 +52,31 @@ def pearson_r(data, subset):
     sum_sq = np.sqrt(sum_sq)
     correlations = sum_cross / np.outer(sum_sq, sum_sq[subset]);
     return correlations
+
+# def mutual_information(data, subset, metric):
+#     '''
+#     TODO
+#     '''
+#     # A more vectorised version of https://github.com/scikit-learn/scikit-learn/blob/c957249/sklearn/metrics/cluster/supervised.py#L507
+#     if contingency is None:
+#         labels_true, labels_pred = check_clusterings(labels_true, labels_pred)
+#         contingency = contingency_matrix(labels_true, labels_pred)
+#     contingency = np.array(contingency, dtype='float')
+#     contingency_sum = np.sum(contingency)
+#     pi = np.sum(contingency, axis=1)
+#     pj = np.sum(contingency, axis=0)
+#     outer = np.outer(pi, pj)
+#     nnz = contingency != 0.0
+#     # normalized contingency
+#     contingency_nm = contingency[nnz]
+#     log_contingency_nm = np.log(contingency_nm)
+#     contingency_nm /= contingency_sum
+#     # log(a / b) should be calculated as log(a) - log(b) for
+#     # possible loss of precision
+#     log_outer = -np.log(outer[nnz]) + log(pi.sum()) + log(pj.sum())
+#     mi = (contingency_nm * (log_contingency_nm - log(contingency_sum))
+#           + contingency_nm * log_outer)
+#     return mi.sum()
 
 def similarity_matrix(data, subset, metric):
     '''

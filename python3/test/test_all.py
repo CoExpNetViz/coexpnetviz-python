@@ -63,6 +63,13 @@ class TestCENV(object):
             gene_families_file='gene_families' 
         )
         
+    def test_missing_bait(self, tmpdir):
+        self.run(tmpdir, prefix=data_dir / 'custom_fams',
+            baits_file='baits_missing',
+            expression_matrices=['caros_expression_matrix', 'itag_expression_matrix'],
+            gene_families_file='gene_families' 
+        )
+        
     def test_plaza_1_species(self, tmpdir):
         self.run(tmpdir, prefix=data_dir / 'plaza_fams',
             baits_file='baits_one_species',
@@ -135,7 +142,8 @@ if __name__ == '__main__':
 #     test = 'test_all.py::TestCENV::test_plaza_1_species_no_genefam'
 #     test = 'test_all.py::TestCENV::test_plaza_1_species'
 #     test = 'test_all.py::TestCENV::test_plaza_2_species_percentiles'
-    test = 'test_all.py::TestCENV::test_plaza_2_species'
+#     test = 'test_all.py::TestCENV::test_plaza_2_species'
+    test = 'test_all.py::TestCENV::test_missing_bait'
 #     test = 'test_all.py::TestDataPrep::test_run'
     pytest.main('--maxfail=1 ' + test)
     

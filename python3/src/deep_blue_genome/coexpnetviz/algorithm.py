@@ -95,6 +95,7 @@ def coexpnetviz(baits, gene_families, expression_matrices, correlation_method, p
     # Correlations
     # Note: for genes not part of any family we assume they are part of some family, just not one of the ones provided. (so some family nodes have None as family)
     correlations = []
+    baits_present = pd.Index([])
     for exp_mat in expression_matrices:
         lower_cutoff, upper_cutoff = determine_cutoffs(exp_mat, correlation_method, percentile_ranks)
         matrix = exp_mat.data
@@ -102,6 +103,7 @@ def coexpnetviz(baits, gene_families, expression_matrices, correlation_method, p
         # Baits present in matrix
         baits_mask = matrix.index.isin(baits)
         baits_ = matrix.index[baits_mask]
+        baits_present = baits_present.union(baits_)
         
         # Correlation matrix
         corrs = correlation_method(matrix.values, np.flatnonzero(baits_mask))
@@ -123,10 +125,16 @@ def coexpnetviz(baits, gene_families, expression_matrices, correlation_method, p
     correlations = pd.concat(correlations)
     correlations = correlations.reindex(columns='family family_gene bait correlation'.split())
     
+    # All baits
+    baits_missing = pd.Index(baits).difference(baits_present)
+    print("Warning: baits missing: " + ' '.join(baits_missing.tolist())) # TODO logger instead
+    
     # Return
+    baits_present = pd.Series(baits_present, name=baits.name)
+    baits_present.index.name = baits.index.name
     return Network(
         name='network',
-        baits=baits,
+        baits=baits_present,
         gene_families=gene_families,
         correlations=correlations
     )
