@@ -15,7 +15,28 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-# Versions should comply with PEP440.
-# https://www.python.org/dev/peps/pep-0440/
-# Starting from version 2.0.0.dev1, we abide by these rules: https://python-packaging-user-guide.readthedocs.org/en/latest/distributing/#semantic-versioning-preferred
-__version__ = '2.0.0.dev2'
+import pandas as pd
+import numpy as np
+    
+def morph(baits, top_k):
+    '''
+    TODO
+    
+    TODO
+    
+    Parameters
+    ----------
+    baits : see `read_baits_file`'s return value
+        genes to which non-bait genes are compared
+    top_k : int
+        K best candidate genes to output in ranking
+        
+    Returns
+    -------
+    TODO
+        TODO
+    '''
+    # fetch list of relevant clusterings and expression matricess from DB
+    # Main alg stuff
+    
+    

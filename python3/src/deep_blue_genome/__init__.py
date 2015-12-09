@@ -18,10 +18,13 @@
 # from Bio import Entrez
 # Entrez.email = 'no-reply@psb.ugent.be'  # TODO perhaps this email address should be user supplied
 
+import plumbum as pb
+
+__root__ = pb.local.path(__file__).dirname
+
 def _init():
     import matplotlib
-    from plumbum import local
-    if not 'DISPLAY' in local.env:
+    if not 'DISPLAY' in pb.local.env:
         matplotlib.use('Agg')  # use this backend when no X server
         
 _init()

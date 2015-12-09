@@ -2,6 +2,7 @@ import pytest
 from plumbum import local
 from functools import partial
 from deep_blue_genome.coexpnetviz.main import main_ as cenv_, CorrelationMethod
+from deep_blue_genome.morph.main import main_ as morph_
 from deep_blue_genome.data_preparation.main import main as data_prep
 from deep_blue_genome.core.util import get_distinct_colours,\
     spread_points_in_hypercube
@@ -136,19 +137,63 @@ def test_spread_points():
         print(result)
         assert len(result) == n
         assert len(result[0]) == dims
+
+class TestMORPH(object):
     
+    '''
+    CoExpNetViz tests
+    ''' 
+    
+    def run(self, tmpdir, prefix, baits_file, top_k=None):    
+        copy_data_ = partial(copy_data, tmpdir, prefix)
+        
+        # prefix and copy
+        baits_file = copy_data_(baits_file)
+        
+        # args
+        args = ['--baits-file', baits_file]
+        if top_k:
+            args.extend(['--top-k', str(top_k)])
+            
+        # run test
+        with local.cwd(tmpdir):
+            morph_(['dbg-morph'] + list(map(str, args)))
+           
+    # TODO Tests:
+    # - Are the correct clusterings an matrices selected? Think of min amount of baits that need to be present. Simply don't mention those that did not qualify. If none qualify, do mention that, duh.
+    # - Sanity check on output: AUSR in valid range? Scores in valid range (not NaN)?
+    # - Compare to an old MORPH run: run with your stuff, take selected list and feed it as a job to old MORPH, then you can compare outputs. 
+    def test_tmp(self, tmpdir):
+        '''
+        No matrices or clusterings are matched
+        '''
+        self.run(tmpdir, prefix=data_dir / 'plaza_fams',
+            baits_file='baits_two_species',
+        )
+         
+#     def test_no_match(self, tmpdir):
+#         '''
+#         No matrices or clusterings are matched
+#         '''
+#         self.run(tmpdir, prefix=data_dir / 'plaza_fams',
+#             baits_file='baits_two_species',
+#         )
+            
 if __name__ == '__main__':
 #     test = 'test_all.py::TestCENV::test_custom_fam_2_species'
 #     test = 'test_all.py::TestCENV::test_plaza_1_species_no_genefam'
 #     test = 'test_all.py::TestCENV::test_plaza_1_species'
 #     test = 'test_all.py::TestCENV::test_plaza_2_species_percentiles'
 #     test = 'test_all.py::TestCENV::test_plaza_2_species'
-    test = 'test_all.py::TestCENV::test_missing_bait'
+#     test = 'test_all.py::TestCENV::test_missing_bait'
+    test = 'test_all.py::TestMORPH::test_tmp'
 #     test = 'test_all.py::TestDataPrep::test_run'
-    pytest.main('--maxfail=1 ' + test)
+#     pytest.main('--maxfail=1 ' + test)
+    
     
     #cenv_(['--similarity-metric', 'magic'])
-    #cenv_(['-h'])
+    #cenv_(['cenv','-h'])
+    morph_(['morph', '-h'])
     
     #manual_test_distinct_colors()
     

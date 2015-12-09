@@ -14,10 +14,8 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
-    
-import plumbum
 
-_pkg_root = plumbum.local.path(__file__).dirname
+from deep_blue_genome import __root__
 
 def get_data_file(path):
     '''
@@ -33,4 +31,4 @@ def get_data_file(path):
     plumbum.Path
         Path to data file
     '''
-    return _pkg_root / 'data' / path
+    return __root__ / 'data' / path

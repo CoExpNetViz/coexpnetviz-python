@@ -101,7 +101,7 @@ setup_(
  
     # Required dependencies
     setup_requires='pypandoc plumbum'.split(), # required to run setup.py
-    install_requires='numpy matplotlib scipy scikit-learn pandas numexpr bottleneck plumbum inflection more_itertools memory_profiler psutil'.split(), #Not essential yet: sqlalchemy. TODO mysql-connector
+    install_requires='numpy matplotlib scipy scikit-learn pandas numexpr bottleneck plumbum inflection more_itertools memory_profiler psutil sqlalchemy configargparse pyxdg'.split(), #Not essential yet: TODO mysql-connector
  
     # Optional dependencies
     extras_require={

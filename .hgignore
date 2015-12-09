@@ -6,6 +6,7 @@ syntax: regexp
 ^build$
 python3/test/data
 python3/test/last_runs
+python3/venv
 ^data
 .*\.pyc
 __pycache__
