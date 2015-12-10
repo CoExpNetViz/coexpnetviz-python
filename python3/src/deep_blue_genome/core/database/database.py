@@ -18,9 +18,12 @@
 from deep_blue_genome.core.exceptions import GeneNotFoundException
 from deep_blue_genome.core.database.dbentity import DBEntity
 from deep_blue_genome.core.database.gene import GeneName, Gene
-from sqlalchemy import create_engine, func
+from sqlalchemy import create_engine, func, MetaData, Table
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
+
+# DBMSInfo = namedtuple('DBMSInfo', 'max_bind_parameters'.split())
+# sqlite_innodb_info = DBMSInfo(max_bind_parameters=100)
 
 class Database(object):
     
@@ -32,31 +35,67 @@ class Database(object):
     Use bulk methods for large amounts or performance will suffer.
     '''
     
-    def __init__(self):
+    def __init__(self, host, user, password, name):
+        '''
+        Create instance connected to MySQL
+        
+        Parameters
+        ----------
+        host : str
+            dns or ip of the DB host
+        user : str
+            username to log in with
+        password : str
+            password to log in with
+        name : str
+            name of database
+        '''
         # TODO debug only: rm db
         from plumbum import local
         db = local.path('main.db')
         if db.exists():
             db.delete()
             
-        engine = create_engine('sqlite:///main.db', echo=True)
-        #TODO Probably something that data prep tool should do?
-        DBEntity.metadata.create_all(engine)
+        self._engine = create_engine('mysql+pymysql://{}:{}@{}/{}'.format(user, password, host, name), echo=True)
+        self._create()
         
         Session = sessionmaker()
-        self._session = Session(bind=engine)
-        self.session = self._session
-        '''
-        Get SQLAlchemy database session.
-        
-        May only be used for rare bulk operations (as it trades off encapsulation)
-        '''
-        
-        self._max_bind_parameters = 100  # in a sql (sqlite3 limitation)
+        self._session = Session(bind=self._engine)
         
     def commit(self):
         self._session.commit()
         
+    def _create(self):
+        '''
+        Create missing tables.
+        '''
+        DBEntity.metadata.create_all(self._engine)
+        
+    def recreate(self):
+        '''
+        Recreate everything: tables, ...
+        
+        This is a very destructive operation that clears everything (including
+        the data) from the database. Use with care.
+        '''
+        # Drop tables
+        metadata = MetaData(bind=self._engine)
+        for row in self._session.execute('show tables'):
+            Table(row[0], metadata, autoload=True, autoload_with=self._engine)
+        metadata.drop_all()
+        
+        # Create everything
+        self._create()
+        
+    @property
+    def session(self):
+        '''
+        Underlying SQLAlchemy database session.
+        
+        Use this only when you have to; e.g. when doing bulk operations. Otherwise use this class' interface.
+        '''
+        return self._session
+    
     def get_gene_by_name(self, name):
         '''
         Get gene by name (including synonyms, ignoring case)
@@ -64,7 +103,7 @@ class Database(object):
         Returns
         -------
         Gene
-            Found gene
+            The gene found
             
         Raises
         ------

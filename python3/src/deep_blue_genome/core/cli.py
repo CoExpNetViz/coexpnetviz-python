@@ -18,23 +18,37 @@
 import configargparse
 from xdg.BaseDirectory import xdg_config_dirs
 from deep_blue_genome import __root__
+from deep_blue_genome.core.database.database import Database
 
 def ArgumentParser(**kwargs):
     config_name = 'deep_blue_genome.conf'
-    config_file_paths = [__root__ / config_name, '/etc/' + config_name] + [x + "/" + config_name for x in reversed(xdg_config_dirs)] # default config locations
-    print(config_file_paths)
+    config_file_paths = [__root__ / config_name, '/etc/' + config_name] + [x + "/" + config_name for x in reversed(xdg_config_dirs)]  # default config locations
     parser = configargparse.ArgumentParser(default_config_files=config_file_paths, **kwargs)
     parser.add_argument(
         '--database-host', required=True,
-        help='host running the database to connect to. Provide its DNS or IP.'
+        help='Host running the database to connect to. Provide its DNS or IP.'
     )
     parser.add_argument(
         '--database-user', required=True,
-        help='user name to authenticate with'
+        help='User name to authenticate with.'
     )
     parser.add_argument(
         '--database-password', required=True,
-        help='password corresponding to user to authenticate with'
+        help='Password corresponding to user to authenticate with.'
+    )
+    parser.add_argument(
+        '--database-name', required=True,
+        help='Name to use for SQL database on given host.'
     )
     return parser
 
+def load_database(args):
+    '''
+    Load DBG database
+    
+    Parameters
+    ----------
+    args
+        Args as returned by `ArgumentParser.parse_args`
+    '''
+    return Database(args.database_host, args.database_user, args.database_password, args.database_name)

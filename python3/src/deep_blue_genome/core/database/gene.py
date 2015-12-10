@@ -16,22 +16,13 @@
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
 from deep_blue_genome.core.database.dbentity import DBEntity
-from sqlalchemy import Column, Integer, String, ForeignKey, ForeignKeyConstraint, Table
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.schema import PrimaryKeyConstraint
-    
-_gene_canonical_name_table = Table('gene_canonical_name', DBEntity.metadata,
-    Column('gene_id', Integer, nullable=False),
-    Column('name_id', Integer, nullable=False),
-    PrimaryKeyConstraint('gene_id', 'name_id'),
-    ForeignKeyConstraint(['gene_id', 'name_id'],['gene_name.gene_id', 'gene_name.id'])
-)
-'''1-to-1 association of canonical name to gene via secondary table to avoid cyclic dependency trouble'''
     
 class GeneName(DBEntity):
     
     id =  Column(Integer, primary_key=True)
-    name = Column(String, unique=True, nullable=False)
+    name = Column(String(250), unique=True, nullable=False)
     gene_id =  Column(Integer, ForeignKey('gene.id'), nullable=False)
     
     gene = relationship('Gene', backref='names')
@@ -47,13 +38,11 @@ class Gene(DBEntity):
     '''
     
     id =  Column(Integer, primary_key=True)
-    ncbi_id = Column(Integer, unique=True) 
-    description = Column(String)
+    description = Column(String(1000))
+    canonical_name_id =  Column(Integer, ForeignKey('gene_name.id'), nullable=True)
     
-    name = relationship('GeneName', uselist=False, secondary=_gene_canonical_name_table, 
-                primaryjoin= id == _gene_canonical_name_table.c.gene_id,
-                secondaryjoin= GeneName.id == _gene_canonical_name_table.c.name_id)
-    # names = GeneName backref
+    canonical_name = relationship('GeneName')  # The preferred name to assign to this gene
+    # names = GeneName backref, all names
     
     def __repr__(self):
         return '<Gene(id={!r}, name={!r})>'.format(self.id, self.name)       

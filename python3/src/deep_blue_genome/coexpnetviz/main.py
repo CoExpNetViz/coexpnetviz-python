@@ -56,31 +56,31 @@ def main_(argv):
     parser = argparse.ArgumentParser(description='Comparative Co-Expression Network Construction and Visualization (CoExpNetViz): Command line interface')
     parser.add_argument(
         '--baits-file', metavar='B', required=True,
-        help='path to file listing the bait genes to use'
+        help='Path to file listing the bait genes to use.'
     )
     parser.add_argument(
         '--gene-families', metavar='F',
-        help='path to file with gene families to use. If omitted, Plaza is used'
+        help='Path to file with gene families to use.'
     )
     parser.add_argument(
         '-e', '--expression-matrices', metavar='M', required=True, nargs='+',
-        help='paths to expression matrices to use'
+        help='Paths to expression matrices to use.'
     )
     parser.add_argument(
         '--correlation-method', metavar='S',
         choices=CorrelationMethod.__members__.keys(), #TODO show choices in -h, maybe ConfigArgParse does this? Maybe it's a setting?
         default=CorrelationMethod.pearson_r.name,
-        help='correlation method to use for gene coexpression'
+        help='Correlation method to use for gene coexpression.'
     )
     parser.add_argument(
         '--lower-percentile-rank', metavar='L',
         default=5, type=percentile_rank_type,
-        help='which percentile rank to use to determine the lower cut-off. For each expression matrix, a sample of genes is drawn and the correlations between them is calculated. From this sample distribution of correlations, the L-th percentile is used as a cut-off to determine whether 2 genes in the matrix are co-expressed or not.'
+        help='Which percentile rank to use to determine the lower cut-off. For each expression matrix, a sample of genes is drawn and the correlations between them is calculated. From this sample distribution of correlations, the L-th percentile is used as a cut-off to determine whether 2 genes in the matrix are co-expressed or not.'
     )
     parser.add_argument(
         '--upper-percentile-rank', metavar='U',
         default=95, type=percentile_rank_type,
-        help='which percentile rank to use to determine the upper cut-off. See --lower-percentile-rank for details.'
+        help='Which percentile rank to use to determine the upper cut-off. See --lower-percentile-rank for details.'
     )
     args = parser.parse_args(argv[1:])
 

@@ -186,16 +186,16 @@ if __name__ == '__main__':
 #     test = 'test_all.py::TestCENV::test_plaza_2_species_percentiles'
 #     test = 'test_all.py::TestCENV::test_plaza_2_species'
 #     test = 'test_all.py::TestCENV::test_missing_bait'
-    test = 'test_all.py::TestMORPH::test_tmp'
-#     test = 'test_all.py::TestDataPrep::test_run'
-#     pytest.main('--maxfail=1 ' + test)
+#     test = 'test_all.py::TestMORPH::test_tmp'
+    test = 'test_all.py::TestDataPrep::test_run'
+    pytest.main('--maxfail=1 ' + test)
     
     
-    #cenv_(['--similarity-metric', 'magic'])
-    #cenv_(['cenv','-h'])
-    morph_(['morph', '-h'])
+#     cenv_(['--similarity-metric', 'magic'])
+#     cenv_(['cenv','-h'])
+#     morph_(['morph', '-h'])
     
-    #manual_test_distinct_colors()
+#     manual_test_distinct_colors()
     
     
     

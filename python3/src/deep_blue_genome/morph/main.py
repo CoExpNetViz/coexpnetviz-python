@@ -40,11 +40,11 @@ def main_(argv):
     parser = ArgumentParser(description='MOdule guided Ranking of candidate PatHway genes (MORPH).')
     parser.add_argument(
         '--baits-file', metavar='B', required=True, nargs='+',
-        help='path to file listing the bait genes to use'
+        help='Path to file listing the bait genes to use.'
     )
     parser.add_argument(
         '--top-k', metavar='K', default=100, type=TopK,
-        help='K best candidate genes to output in ranking'
+        help='K best candidate genes to output in ranking.'
     )
     args = parser.parse_args(argv[1:])
 
