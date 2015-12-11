@@ -103,7 +103,7 @@ setup_(
     setup_requires='pypandoc plumbum'.split(), # required to run setup.py
     install_requires=(
         'numpy matplotlib scipy scikit-learn pandas numexpr bottleneck' +
-        'plumbum inflection more_itertools memory_profiler psutil configargparse pyxdg' +
+        'plumbum inflection more_itertools memory_profiler psutil pyxdg' +
         'sqlalchemy pymysql'
         
     ).split(),

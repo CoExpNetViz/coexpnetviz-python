@@ -35,7 +35,7 @@ def main():
     main_(sys.argv)
     
 def main_(argv):
-    parser = ArgumentParser(description='Prepare data, as used by PSB.')
+    parser = ArgumentParser('data-prep', 'Create and or update database.', cache_required=True)
     args = parser.parse_args(argv[1:])
     database = load_database(args)
     database.recreate()

@@ -3,7 +3,7 @@ from plumbum import local
 from functools import partial
 from deep_blue_genome.coexpnetviz.main import main_ as cenv_, CorrelationMethod
 from deep_blue_genome.morph.main import main_ as morph_
-from deep_blue_genome.data_preparation.main import main as data_prep
+from deep_blue_genome.data_preparation.main import main_ as data_prep_
 from deep_blue_genome.core.util import get_distinct_colours,\
     spread_points_in_hypercube
 import pandas as pd
@@ -117,7 +117,7 @@ class TestDataPrep(object):
         # run test
         with local.cwd(tmpdir):
             #['dbg-data-prep'] + 
-            data_prep()
+            data_prep_()
         
     def test_run(self, tmpdir):
         self.run(tmpdir, prefix=data_dir / 'data_preparation',
@@ -191,9 +191,9 @@ if __name__ == '__main__':
     pytest.main('--maxfail=1 ' + test)
     
     
-#     cenv_(['--similarity-metric', 'magic'])
-#     cenv_(['cenv','-h'])
-#     morph_(['morph', '-h'])
+#     cenv_(['dbg-cenv','-h'])
+#     morph_(['dbg-morph', '-h'])
+    data_prep_(['dbg-data-prep', '-h'])
     
 #     manual_test_distinct_colors()
     
