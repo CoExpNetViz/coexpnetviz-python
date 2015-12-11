@@ -15,15 +15,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
+'''
+CLI support classes
+'''
+
 import argparse
-from xdg.BaseDirectory import xdg_config_dirs
-from deep_blue_genome import __root__
-from configparser import ConfigParser, ExtendedInterpolation
-import plumbum as pb
 import pypandoc
 from deep_blue_genome.core.database.database import Database
 
-def create_custom_formatter_class():
+def _create_custom_formatter_class():
     
     '''
     Create a custom formatter class
@@ -105,6 +105,7 @@ def create_custom_formatter_class():
         
     return CustomFormatter
 
+
 class ArgumentParser(argparse.ArgumentParser):
     
     '''
@@ -116,83 +117,13 @@ class ArgumentParser(argparse.ArgumentParser):
     Currently works as a drop in replacement.
     '''
     
-    def __init__(self, name, description, cache_required=False):
-        # config files
-        default_config_file = __root__ / 'deep_blue_genome.defaults.conf'
-        config_name = 'deep_blue_genome.conf'
-        user_config_paths = [__root__ / config_name, pb.local.path('/etc') / config_name] + [pb.local.path(x) / config_name for x in reversed(xdg_config_dirs)]
-        
-        # read configs
-        def option_transform(name):
-            return name.replace('-', '_').replace(' ', '_').lower()
-        config_parser = ConfigParser(
-            inline_comment_prefixes=('#', ';'), 
-            empty_lines_in_values=False, 
-            default_section='default', 
-            interpolation=ExtendedInterpolation()
-        )
-        config_parser.optionxform = option_transform
-        config_parser.read_file(open(default_config_file))
-        config_parser.read(user_config_paths)  # read in given order
-        
-        # merge default and interface's section
-        self._config = config_parser[name] if name in config_parser else config_parser['default']
-        self._config = {k:v for k,v in self._config.items() if v != ''}
-        
-        # CLI epilog
-        config_paths_list = '\n'.join('{}. {!s}'.format(i, path) for i, path in enumerate(user_config_paths, 1))
-        epilog = '''
-            The above defaults reflect your current configuration. These defaults can be changed in
-            configuration files. The defaults, along with an explanation of the configuration format,
-            can be viewed at {}. Deep Blue Genome looks for configuration files in the following order:
-            
-            {}
-            
-            Any configuration file can override settings of the previous file in the ordering. Some 
-            configuration file locations can be changed using the XDG standard (http://standards.freedesktop.org/basedir-spec/basedir-spec-0.6.html).
-        '''.format(default_config_file, config_paths_list)
-        epilog = '\n'.join(line.lstrip() for line in epilog.splitlines())
-        
-        # CLI parser
-        self._CustomFormatter = create_custom_formatter_class()
+    def __init__(self, *args, **kwargs):
+        self._CustomFormatter = _create_custom_formatter_class()
         super().__init__(
-            description=description,
-            epilog=epilog,
-            formatter_class=self._CustomFormatter
+            *args,
+            formatter_class=self._CustomFormatter,
+            **kwargs
         )
-        
-        # Add arguments common to all DBG CLI
-        self.add_argument(
-            '--database-host', required=True,
-            help='Host running the database to connect to. Provide its DNS or IP.'
-        )
-        self.add_argument(
-            '--database-user', required=True,
-            help='User name to authenticate with.'
-        )
-        self.add_argument(
-            '--database-password', required=True, is_password=True,
-            help='Password corresponding to user to authenticate with.'
-        )
-        self.add_argument(
-            '--database-name', required=True,
-            help='Name to use for SQL database on given host.'
-        )
-        self.add_argument(
-            '--tmp-dir', required=True,
-            help='Directory to place temporary directories in. This directory can safely be cleared after the run.'
-        )
-        self.add_argument(
-            '--cache-dir', required=True,
-            help='Directory to place cached data. This directory can safely be cleared after the run, but subsequent runs could be faster if you do not'
-        )
-        self.add_argument(
-            '--output-dir', required=True,
-            help='Directory to place output in, if any.'
-        )
-        
-        # Apply config as defaults
-        self.set_defaults(**self._config)
         
     def add_argument(self, *args, **kwargs):
         '''

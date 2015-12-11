@@ -1,15 +1,16 @@
 import pytest
 from plumbum import local
 from functools import partial
-from deep_blue_genome.coexpnetviz.main import main_ as cenv_, CorrelationMethod
-from deep_blue_genome.morph.main import main_ as morph_
-from deep_blue_genome.data_preparation.main import main_ as data_prep_
+from deep_blue_genome.main import main
 from deep_blue_genome.core.util import get_distinct_colours,\
     spread_points_in_hypercube
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+
+# TODO split files: per interface, various for the rest
+# TODO Base test class for exercising the CLI through the main func with args specified in python
 
 data_dir = local.path('data')
 
@@ -53,7 +54,7 @@ class TestCENV(object):
             
         # run test
         with local.cwd(tmpdir):
-            cenv_(['dbg-coexpnetviz'] + list(map(str, args)))
+            main(['dbg-coexpnetviz'] + list(map(str, args)))
         
     #TODO 1 species custom
     # TODO check output automatically
@@ -101,7 +102,6 @@ class TestCENV(object):
             upper_percentile_rank=99,
         )
         
-        
 class TestDataPrep(object):
     
     '''
@@ -117,26 +117,12 @@ class TestDataPrep(object):
         # run test
         with local.cwd(tmpdir):
             #['dbg-data-prep'] + 
-            data_prep_()
+            main(['dbg', 'prepare'])
         
     def test_run(self, tmpdir):
         self.run(tmpdir, prefix=data_dir / 'data_preparation',
             files='pgsc_itag_mapping plaza/dicot_families plaza/family_clusters plaza/monocot_families'.split(), 
         )
-
-def manual_test_distinct_colors():
-    n=50
-    colors = list(get_distinct_colours(n))
-    print(colors)
-    pd.Series([1]*n).plot.pie(colors=colors)
-    plt.show()
-    
-def test_spread_points():
-    for n, dims in [(4,2), (9,3), (8,2), (5,3)]:
-        result = list(spread_points_in_hypercube(n, dims))
-        print(result)
-        assert len(result) == n
-        assert len(result[0]) == dims
 
 class TestMORPH(object):
     
@@ -157,7 +143,7 @@ class TestMORPH(object):
             
         # run test
         with local.cwd(tmpdir):
-            morph_(['dbg-morph'] + list(map(str, args)))
+            main(['dbg-morph'] + list(map(str, args)))
            
     # TODO Tests:
     # - Are the correct clusterings an matrices selected? Think of min amount of baits that need to be present. Simply don't mention those that did not qualify. If none qualify, do mention that, duh.
@@ -178,6 +164,20 @@ class TestMORPH(object):
 #         self.run(tmpdir, prefix=data_dir / 'plaza_fams',
 #             baits_file='baits_two_species',
 #         )
+
+def manual_test_distinct_colors():
+    n=50
+    colors = list(get_distinct_colours(n))
+    print(colors)
+    pd.Series([1]*n).plot.pie(colors=colors)
+    plt.show()
+    
+def test_spread_points():
+    for n, dims in [(4,2), (9,3), (8,2), (5,3)]:
+        result = list(spread_points_in_hypercube(n, dims))
+        print(result)
+        assert len(result) == n
+        assert len(result[0]) == dims
             
 if __name__ == '__main__':
 #     test = 'test_all.py::TestCENV::test_custom_fam_2_species'
@@ -193,7 +193,8 @@ if __name__ == '__main__':
     
 #     cenv_(['dbg-cenv','-h'])
 #     morph_(['dbg-morph', '-h'])
-    data_prep_(['dbg-data-prep', '-h'])
+    main(['dbg', '-h'])
+#     main(['dbg', 'prepare', '-h'])
     
 #     manual_test_distinct_colors()
     

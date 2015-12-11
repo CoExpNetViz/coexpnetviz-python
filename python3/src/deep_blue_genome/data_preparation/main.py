@@ -30,13 +30,7 @@ def load_rice_genes(database):
     Load MSU and RAP gene names
     '''
     
-
-def main():
-    main_(sys.argv)
-    
-def main_(argv):
-    parser = ArgumentParser('data-prep', 'Create and or update database.', cache_required=True)
-    args = parser.parse_args(argv[1:])
+def data_prep(args):
     database = load_database(args)
     database.recreate()
 #     load_gene_info(database)
@@ -49,7 +43,5 @@ def main_(argv):
 # parts of it should be locked. This would happen in a daily or weekly nightly
 # batch.
 # ... we need to design the required locking (e.g. prep in a separate file, then swap files and in the meantime prevent writes to the previous one or something. Or simply have downtime.)
-if __name__ == '__main__':
-    main()
     
     
