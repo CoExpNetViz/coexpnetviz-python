@@ -14,17 +14,21 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
-    
-# from Bio import Entrez
-# Entrez.email = 'no-reply@psb.ugent.be'  # TODO perhaps this email address should be user supplied
 
-import plumbum as pb
-
-__root__ = pb.local.path(__file__).dirname
+from deep_blue_genome.version import __version__
 
 def _init():
+    import plumbum as pb
     import matplotlib
+    
+    # from Bio import Entrez
+    # Entrez.email = 'no-reply@psb.ugent.be'  # TODO perhaps this email address should be user supplied
+    
+    # init matplotlib
     if not 'DISPLAY' in pb.local.env:
         matplotlib.use('Agg')  # use this backend when no X server
+    
+    # find __root__
+    return pb.local.path(__file__).dirname
         
-_init()
+__root__ = _init()

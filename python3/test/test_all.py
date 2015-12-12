@@ -179,6 +179,13 @@ def test_spread_points():
         assert len(result) == n
         assert len(result[0]) == dims
             
+def manual_test_cli():
+    # Note: in some cases you may want: http://click.pocoo.org/6/api/#click.testing.CliRunner
+#     main(['wrong'])
+#     main(['--help'])
+#     main(['prepare', '--help'])
+    main('prepare'.split())
+
 if __name__ == '__main__':
 #     test = 'test_all.py::TestCENV::test_custom_fam_2_species'
 #     test = 'test_all.py::TestCENV::test_plaza_1_species_no_genefam'
@@ -189,13 +196,8 @@ if __name__ == '__main__':
 #     test = 'test_all.py::TestMORPH::test_tmp'
     test = 'test_all.py::TestDataPrep::test_run'
     pytest.main('--maxfail=1 ' + test)
-    
-    
-#     cenv_(['dbg-cenv','-h'])
-#     morph_(['dbg-morph', '-h'])
-    main(['dbg', '-h'])
-#     main(['dbg', 'prepare', '-h'])
-    
+
+#     manual_test_cli()    
 #     manual_test_distinct_colors()
     
     

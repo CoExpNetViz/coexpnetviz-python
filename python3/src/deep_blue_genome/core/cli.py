@@ -17,160 +17,59 @@
 
 '''
 CLI support classes
+
+Provides:
+
+- more options for click
+- options specific to DBG
 '''
 
-import argparse
-import pypandoc
+from functools import partial
+import click
+from deep_blue_genome import __version__
+from deep_blue_genome.core.util import compose, dict_subset
 from deep_blue_genome.core.database.database import Database
 
-def _create_custom_formatter_class():
-    
+
+option = partial(click.option, show_default=True, required=True)
+'''Like click.option, but by default show_default=True, required=True'''
+
+def password_option(*args, **kwargs):
     '''
-    Create a custom formatter class
-    
-    Returns
-    -------
-    class
-        Custom argparse.HelpFormatter
+    Like click.option, but by default prompt=True, hide_input=True, show_default=False, required=True.
     '''
-    
-    class CustomFormatter(argparse.HelpFormatter):
-    
-        '''
-        Custom formatter for argparse help and usage message.
-        
-        " (default: value)" will be included in the help message of each attribute.
-        You can mark attributes as a password attribute so that their default attribute
-        is displayed as '*'*8. Extra info about an attribute can be specified using the
-        staticmethod `set_attribute_metadata`, e.g. whether it's a password attribute. 
-        
-        Description and epilog are expected to use markdown syntax. Markdown line
-        wrapping will be applied.
-        
-        HelpFormatter is not public API of argparse, so this may break in future releases.
-        But with Python virtual environments we can stick to versions known to work.
-        '''
-        
-        # 'reference' of HelpFormatter: https://hg.python.org/cpython/file/3.4/Lib/argparse.py
-        # Some of this code based on Anthon van der Neut's work here: https://bitbucket.org/ruamel/std.argparse/src/cd5e8c944c5793fa9fa16c3af0080ea31f2c6710/__init__.py?at=default&fileviewer=file-view-default
-        
-        
-        ##################
-        # Overrides
-        
-        def add_text(self, text):
-            # Custom line wrap, see _format_markdown
-            if text is not argparse.SUPPRESS and text is not None:
-                self._add_item(self._format_markdown, [text])
-            
-        def _get_help_string(self, action):
-            # Add ' (default: value)' to attr help message 
-            help = action.help
-            if '%(default)' not in action.help and action.default is not argparse.SUPPRESS:
-                defaulting_nargs = [argparse.OPTIONAL, argparse.ZERO_OR_MORE]
-                if action.default is not None and (action.option_strings or action.nargs in defaulting_nargs):
-                    help += ' (default: %(default)s)'
-            return help
-    
-        def _expand_help(self, action):
-            # Mask passwords
-            if action.dest in CustomFormatter._password_attributes:
-                params = dict(vars(action), prog=self._prog)
-                if params.get('default') is not None:
-                    params['default'] = '*' * 8
-                return self._get_help_string(action) % params
-            else:
-                return super()._expand_help(action)
-        
-        
-        #################
-        # New methods
-        
-        _password_attributes = set()
-        
-        def _format_markdown(self, text):
-            # Fill text properly (no filling of a list, indented blocks, ...)
-            return pypandoc.convert(text, 'md', 'md').replace('\\', '')  # hack: pypandoc happens to wrap lines when converting from markdown to markdown.
-        
-        @staticmethod
-        def set_argument_metadata(action, is_password):
-            '''
-            action : str
-                the variable name corresponding to the attribute as found on the `parse_args` return
-            '''
-            if is_password:
-                CustomFormatter._password_attributes.add(action)
-            else:
-                CustomFormatter._password_attributes.discard(action)
-        
-    return CustomFormatter
+    kwargs_ = dict(prompt=True, hide_input=True, show_default=False)
+    kwargs_.update(kwargs)
+    return option(*args, **kwargs_)
 
 
-class ArgumentParser(argparse.ArgumentParser):
-    
-    '''
-    argparse.ArgumentParser combined with defaults from config files.
-    
-    Also formats help better, though that aspect may break in future versions
-    (if breaking changes occur in argparse).
-    
-    Currently works as a drop in replacement.
-    '''
-    
-    def __init__(self, *args, **kwargs):
-        self._CustomFormatter = _create_custom_formatter_class()
-        super().__init__(
-            *args,
-            formatter_class=self._CustomFormatter,
-            **kwargs
-        )
-        
-    def add_argument(self, *args, **kwargs):
-        '''
-        Like `argparse.add_argument`, except...
-        
-        New parameters
-        --------------
-        is_password : bool (default=False)
-            Whether the attribute expects password values. If so, its default value (if any) will be masked by ``'*'*8``.
-        
-        Changed parameters
-        ------------------
-        required : bool
-            In addition to regular behaviour, required=True will be ignored if the configuration specifies a default value.
-        '''
-        # Derive dest (based on https://hg.python.org/cpython/file/3.4/Lib/argparse.py)
-        if 'dest' in kwargs:
-            dest = kwargs.pop('dest')
-        else:
-            long_options = [arg for arg in args if arg.startswith('--')]
-            short_options = [arg for arg in args if not arg.startswith('--')]  # Short options or positional arg
-            if long_options:
-                dest = long_options[0]
-            else:
-                dest = short_options[0]
-            dest = dest.lstrip('-').replace('-', '_')
-        kwargs['dest'] = dest
-        
-        # Set required=False if there's a default value
-        if any(map(lambda x: self.get_default(dest) is not None, args)):
-            kwargs['required'] = False
-            
-        # Handle other custom kwargs
-        self._CustomFormatter.set_argument_metadata(dest, is_password=kwargs.pop('is_password', False))
-        
-        # Add argument
-        arg = super().add_argument(*args, **kwargs)
+tmp_dir_option = partial(option, '--tmp-dir', help='Directory to place temporary files in. Temporary files created by DBG are removed at the end of a run.')
+output_dir_option = partial(option, '--output-dir', help='Directory to place the output in.')
+cache_dir_option = partial(option, '--cache-dir', help='Directory to place cached data. Cached data is not essential, but may speed up subsequent runs.')
 
-def load_database(args):
+def database_options():
     '''
-    Load DBG database
+    Database configuration options
+    '''
+    return compose(
+        option('--database-host', help='Host running the database to connect to. Provide its DNS or IP.'),
+        option('--database-user', help='User name to authenticate with.'),
+        password_option('--database-password', help='Password corresponding to user to authenticate with.'),
+        option('--database-name', help='Name to use for SQL database on given host.'),
+    )
+
+def load_database(kwargs):
+    '''
+    Load database from CLI kwargs
     
     Parameters
     ----------
-    args
-        Args as returned by `ArgumentParser.parse_args`
+    kwargs
+        Keyword args as given by click to a command
     '''
-    return Database(args.database_host, args.database_user, args.database_password, args.database_name)
+    return Database(**dict_subset('database_host database_user database_password database_name'.split()))
 
+
+version_option = partial(click.version_option, version=__version__)
+'''Version option with DBG version'''
 

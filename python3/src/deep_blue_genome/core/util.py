@@ -24,6 +24,7 @@ from pprint import pprint
 import colorsys
 from sklearn.utils.extmath import cartesian
 from numpy.linalg import norm
+from functools import reduce
 
 def is_sorted(l):
     return all(l[i] <= l[i+1] for i in range(len(l)-1))
@@ -276,6 +277,41 @@ def get_distinct_colours_hsv(n):
     hsv_colours = [(x/n, 0.5, 0.5) for x in range(n)]
     return map(lambda x: colorsys.hsv_to_rgb(*x), hsv_colours)
     
+##############
+# util.functools
+def compose(*functions):
+    '''
+    Compose functions
+    
+    E.g. compose(f1, f2) returns f1 o f2, i.e. lambda x: f1(f2(x))
+    
+    Parameters
+    ----------
+    functions : list-like of (function : func(x) -> y)
+    '''
+    apply = lambda x, y: y(x) 
+    return lambda x: reduce(apply, functions, x)
+
+def dict_subset(dict_, keys, fragile=True):
+    '''
+    Get subset of dict as dict
+    
+    When keys are missing, KeyError is raised.
+    
+    Parameters
+    ----------
+    dict_ : dict
+        Dict to take subset from
+    keys : iterable of str
+        Keys to include in subset
+    fragile : bool
+        If True, raise on missing key, else omits missing keys from subset.
+    ''' 
+    if fragile:
+        return {k : dict_[k] for k in keys}
+    else:
+        return {k : dict_[k] for k in keys if k in dict_}
+
 if __name__ == '__main__':
     df = pd.DataFrame([[1,[1,2],[1]],[1,[1,2],[3,4,5]],[2,[1],[1,2]]], columns='check a b'.split())
     print(df)

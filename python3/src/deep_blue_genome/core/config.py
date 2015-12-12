@@ -34,3 +34,10 @@ class Config(object):
     
 config = Config()
 del Config
+
+from xdg.BaseDirectory import xdg_config_dirs
+from configparser import ConfigParser, ExtendedInterpolation
+import plumbum as pb
+from deep_blue_genome import __root__
+
+
