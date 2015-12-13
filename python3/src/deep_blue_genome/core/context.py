@@ -15,19 +15,105 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-class Context(object):
-    
-    '''
-    Deep Blue Genome context
-    
-    Bundles together a genes database, ... This way you don't have to pass them
-    separately into functions that use them.
-    '''
-    
-    def __init__(self):
-        # For now we hardcode, in the future we can allow users to specify their own genes class, ...
-        self._genes = Genes()
+'''
+Mixins to build a Context class (or 'Application' class if you prefer)
+
+To create a context class: e.g. class MyContext(Context, Mixin1, Mixin2, ...): pass
+'''
+
+from deep_blue_genome.core.util import dict_subset, compose, flatten
+from deep_blue_genome.core.database.database import Database
+from deep_blue_genome.core import cli
+import click
+import plumbum as pb
         
+def cli_options(class_):
+    '''
+    Get click CLI options of the built context class 
+    '''
+    options = flatten([cls._cli_options for cls in class_.__mro__[1:] if hasattr(cls, '_cli_options')])
+    return compose(*options)
+
+class DatabaseMixin(object):
+    
+    '''
+    Database access
+    '''
+    
+    _cli_options = [
+        cli.option('--database-host', help='Host running the database to connect to. Provide its DNS or IP.'),
+        cli.option('--database-user', help='User name to authenticate with.'),
+        cli.password_option('--database-password', help='Password corresponding to user to authenticate with.'),
+        cli.option('--database-name', help='Name to use for SQL database on given host.'),
+    ]
+    
+    def __init__(self, database_host, database_user, database_password, database_name, **kwargs):
+        self._database = Database(host=database_host, user=database_user, password=database_password, name=database_name)
+    
     @property
-    def genes(self):
-        return self._genes
+    def database(self):
+        return self._database
+        
+class CacheMixin(object):
+    
+    '''
+    File cache support
+    '''
+    
+    _cli_options = [
+        cli.option(
+            '--cache-dir',
+            type=click.Path(file_okay=False, writable=True, exists=True, resolve_path=True),
+            help='Directory to place cached data. Cached data is not essential, but may speed up subsequent runs.'
+        )
+    ]
+    
+    def __init__(self, cache_dir, **kwargs):
+        self._cache_dir = pb.local.path(cache_dir)
+    
+    @property
+    def cache_dir(self):
+        return self._cache_dir
+    
+class TemporaryFilesMixin(object):
+    
+    '''
+    Temporary file support
+    '''
+    
+    _cli_options = [
+        cli.option(
+            '--tmp-dir',
+            type=click.Path(file_okay=False, writable=True, exists=True, resolve_path=True),
+            help='Directory to place temporary files in. Temporary files created by DBG are removed at the end of a run.'
+        )
+    ]
+    
+    def __init__(self, tmp_dir, **kwargs):
+        self._tmp_dir = pb.local.path(tmp_dir)
+    
+    @property
+    def tmp_dir(self):
+        return self._tmp_dir
+    
+class OutputMixin(object):
+    
+    '''
+    Output file storage support
+    '''
+    
+    _cli_options = [
+        cli.option(
+            '--output-dir',
+            type=click.Path(file_okay=False, writable=True, exists=True, resolve_path=True),
+            help='Directory to place the output in.'
+        )
+    ]
+    
+    def __init__(self, output_dir, **kwargs):
+        self._output_dir = pb.local.path(output_dir)
+    
+    @property
+    def output_dir(self):
+        return self._output_dir
+    

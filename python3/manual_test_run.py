@@ -7,8 +7,8 @@ def manual_test_cli():
     # Note: in some cases you may want: http://click.pocoo.org/6/api/#click.testing.CliRunner
 #     main(['wrong'])
 #     main(['--help'])
-#     main(['prepare', '--help'])
-    main('prepare'.split())
+    main(['prepare', '--help'])
+#     main('prepare'.split())
 
 #     manual_test_cli()    
 #     manual_test_distinct_colors()

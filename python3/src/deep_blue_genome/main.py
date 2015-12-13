@@ -76,7 +76,6 @@ def main(args):
         if name in config:
             defaults[name].update(config[name])
         defaults[name] = {k:v for k,v in defaults[name].items() if v} # Note that values are always strings
-    print(defaults)
     
     # Read CLI with defaults applied
     args = [args] if args else []

@@ -1,9 +1,8 @@
 import plumbum as pb
 from deep_blue_genome.main import main
 from deep_blue_genome.core.util import flatten_deep
-from deep_blue_genome import __root__
 
-data_dir = __root__ / '../../test/data' # TODO not a good way of finding test data
+data_dir = pb.local.path('test/data')
 
 class CLITester(object):
 

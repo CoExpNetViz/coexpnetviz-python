@@ -15,12 +15,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-from deep_blue_genome.core.database.database import Database
 # from deep_blue_genome.data_preparation.genes import load_gene_info
 import pandas as pd
-from deep_blue_genome.core.cli import load_database
 from deep_blue_genome.core import cli
 import click
+import deep_blue_genome.core.context as ctx
 
 '''
 The main tool to prepare data for DBG tools
@@ -31,15 +30,21 @@ def load_rice_genes(database):
     Load MSU and RAP gene names
     '''
     
+class Context(ctx.DatabaseMixin, ctx.CacheMixin, ctx.TemporaryFilesMixin, ctx.OutputMixin):
+    pass
+
 @click.command()
-@cli.database_options()
-@cli.tmp_dir_option()
-@cli.output_dir_option()
-@cli.cache_dir_option()
+@ctx.cli_options(Context)
 def prepare(**kwargs):
     '''Create and/or update database.'''
-    print('prepare')
-    print(kwargs)
+    context = Context(**kwargs)
+    # dict_subset('output_dir cache_dir tmp_dir')
+    # TODO a context with... (note that other DBG tools may want some of this contextness too, but not all parts of it; it need be pluggable in code):
+    # - the database
+    # - something for grabbing tmpdirs from. Could be a partial of plumbum with correct root dir
+    # - cache dir location? Yes, but not intended to be used directly. We have a downloader or something that uses a subdir of the cache instead.
+    # - output_dir. A no brainer
+    
 #     database = load_database(args)
 #     database.recreate()
 #     load_gene_info(database)
