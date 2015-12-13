@@ -37,16 +37,34 @@ def fill_na_with_none(df):
     '''
     df.where(pd.notnull(df), None, inplace=True)
     
-def flatten(lists):
+def flatten(list_):
     '''
-    Flatten shallow list
+    Flatten one level of a regularly nested list
     
     Parameters
     ----------
-    list-like of list-like
-        Shallow list
+    list_ : list-like of list-like
     '''
-    return list(chain(*lists))
+    return list(chain(*list_))
+
+def flatten_deep(list_):
+    '''
+    Flatten list deeply
+    
+    Irregularly nested lists are flattened as well:
+    
+    >>> flatten_deep([5, [1,2], 6, [7,[8]]])
+    [5,1,2,6,7,8]
+    
+    Parameters
+    ----------
+    list_ : list or any
+        If list, it is flattened, otherwise it's returned as is
+    '''
+    if isinstance(list_, list):
+        return list(map(flatten_deep, list_))
+    else:
+        return list_
 
 def remove_duplicates(items):
     '''

@@ -116,8 +116,7 @@ setup_(
     # Auto generate entry points
     entry_points={
         'console_scripts': [
-            'dbg-dataprep = deep_blue_genome.data_preparation.main:main',
-            'dbg-coexpnetviz = deep_blue_genome.coexpnetviz.main:main',
+            'dbg = deep_blue_genome.main:main',
         ],
     },
 )

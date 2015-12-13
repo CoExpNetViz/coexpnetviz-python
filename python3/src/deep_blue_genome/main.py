@@ -33,10 +33,11 @@ def group():
     
     Pick a command from the commands listed below. To get help on a command, use `dbg COMMAND --help`.
     '''
-    
+
+# add DBG commands
 group.add_command(prepare)
 
-def main(*args):
+def main(args):
     config = Configuration(__root__, 'deep_blue_genome')
     
     # Format configuration files help section
@@ -78,5 +79,6 @@ def main(*args):
     print(defaults)
     
     # Read CLI with defaults applied
+    args = [args] if args else []
     group(*args, default_map=defaults, help_option_names=['-h', '--help'])
 
