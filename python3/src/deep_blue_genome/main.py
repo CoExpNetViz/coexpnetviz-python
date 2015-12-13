@@ -14,6 +14,7 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
+from click.testing import CliRunner
 
 '''
 Deep Blue Genome entry point
@@ -37,7 +38,7 @@ def group():
 # add DBG commands
 group.add_command(prepare)
 
-def main(args):
+def main(args=None, test=False):
     config = Configuration(__root__, 'deep_blue_genome')
     
     # Format configuration files help section
@@ -78,6 +79,9 @@ def main(args):
         defaults[name] = {k:v for k,v in defaults[name].items() if v} # Note that values are always strings
     
     # Read CLI with defaults applied
-    args = [args] if args else []
-    group(*args, default_map=defaults, help_option_names=['-h', '--help'])
-
+    kwargs = dict(default_map=defaults, help_option_names=['-h', '--help'])
+    if test:
+        test_runner = CliRunner()
+        return test_runner.invoke(group, args, catch_exceptions=False, **kwargs)
+    else:
+        group(*args, **kwargs)
