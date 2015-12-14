@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-class GeneNotFoundException(Exception):
-    
-    def __init__(self, gene_name, ex=None):
-        super().__init__(self, "Could not find gene with name '{}'. Cause: {}".format(gene_name, ex))
+'''
+Various constants
+'''
+
+URL_MAX_LENGTH = 2000  # http://stackoverflow.com/a/417184/1031434
+PATH_MAX_LENGTH = 256  # currently set to win32 limit: http://stackoverflow.com/a/1880453/1031434

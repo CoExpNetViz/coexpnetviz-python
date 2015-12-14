@@ -30,7 +30,7 @@ def load_rice_genes(database):
     Load MSU and RAP gene names
     '''
     
-class Context(ctx.DatabaseMixin, ctx.CacheMixin, ctx.TemporaryFilesMixin, ctx.OutputMixin):
+class Context(ctx.CacheMixin, ctx.DatabaseMixin, ctx.TemporaryFilesMixin, ctx.OutputMixin):
     pass
 
 @click.command()
@@ -38,19 +38,18 @@ class Context(ctx.DatabaseMixin, ctx.CacheMixin, ctx.TemporaryFilesMixin, ctx.Ou
 def prepare(**kwargs):
     '''Create and/or update database.'''
     context = Context(**kwargs)
-    # dict_subset('output_dir cache_dir tmp_dir')
+    assert False
+    
     # TODO a context with... (note that other DBG tools may want some of this contextness too, but not all parts of it; it need be pluggable in code):
     # - the database
     # - something for grabbing tmpdirs from. Could be a partial of plumbum with correct root dir
     # - cache dir location? Yes, but not intended to be used directly. We have a downloader or something that uses a subdir of the cache instead.
     # - output_dir. A no brainer
-    
 #     database = load_database(args)
 #     database.recreate()
 #     load_gene_info(database)
 #     load_rice_genes(database)
 #     merge_plaza()
-#     assert False
     
 
 # TODO We need to commit every now and then to put stuff on disk, but at least

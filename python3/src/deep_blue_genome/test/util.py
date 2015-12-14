@@ -53,6 +53,10 @@ class CLITester(object):
         args = self._args + list(args) + flatten_deep([['--' + k.replace('_', '-'), v] for k,v in kwargs])
         args = list(map(str, args))
         with pb.local.cwd(self._tmp_dir):
-            main(args, test=True)
+            try:
+                main(args)
+            except SystemExit as ex:
+                if ex.code != 0:
+                    raise
             
             

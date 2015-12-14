@@ -104,7 +104,7 @@ setup_(
     install_requires=(
         'numpy matplotlib scipy scikit-learn pandas numexpr bottleneck '
         'plumbum inflection more_itertools memory_profiler psutil pyxdg ' #TODO do we use more_itertools?
-        'sqlalchemy pymysql '
+        'requests sqlalchemy pymysql '
     ).split(),
  
     # Optional dependencies

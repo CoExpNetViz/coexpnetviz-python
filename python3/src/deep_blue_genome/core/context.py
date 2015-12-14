@@ -21,11 +21,13 @@ Mixins to build a Context class (or 'Application' class if you prefer)
 To create a context class: e.g. class MyContext(Context, Mixin1, Mixin2, ...): pass
 '''
 
-from deep_blue_genome.core.util import dict_subset, compose, flatten
+from deep_blue_genome.core.util import compose, flatten
 from deep_blue_genome.core.database.database import Database
 from deep_blue_genome.core import cli
+from deep_blue_genome.core.cache import Cache
 import click
 import plumbum as pb
+import tempfile
         
 def cli_options(class_):
     '''
@@ -54,10 +56,12 @@ class DatabaseMixin(object):
     def database(self):
         return self._database
         
-class CacheMixin(object):
+class CacheMixin(DatabaseMixin):
     
     '''
-    File cache support
+    File cache support.
+    
+    Also throws DatabaseMixin in the mix.
     '''
     
     _cli_options = [
@@ -69,11 +73,12 @@ class CacheMixin(object):
     ]
     
     def __init__(self, cache_dir, **kwargs):
-        self._cache_dir = pb.local.path(cache_dir)
+        super().__init__(**kwargs)
+        self._cache = Cache(self.database, pb.local.path(cache_dir))
     
     @property
-    def cache_dir(self):
-        return self._cache_dir
+    def cache(self):
+        return self._cache
     
 class TemporaryFilesMixin(object):
     
@@ -90,11 +95,7 @@ class TemporaryFilesMixin(object):
     ]
     
     def __init__(self, tmp_dir, **kwargs):
-        self._tmp_dir = pb.local.path(tmp_dir)
-    
-    @property
-    def tmp_dir(self):
-        return self._tmp_dir
+        tempfile.tempdir = str(pb.local.path(tmp_dir))
     
 class OutputMixin(object):
     

@@ -86,5 +86,48 @@ def bug():
     result = engine.execute(test_table.select()).first()
     assert result[1] == 123, result
 
-bug()
-
+def mro_hell():
+    class A(object):
+        def __init__(self):
+            super().__init__()
+            print('A')
+            
+    class B(object):
+        def __init__(self):
+            super().__init__()
+            print('B')
+            
+    class AB(A, B):
+        def __init__(self):
+            super().__init__()
+            print('AB(A,B)')
+            
+    class C(B):
+        def __init__(self):
+            super().__init__()
+            print('C(B)')
+            
+    class AB_C(AB, C):
+        def __init__(self):
+            super().__init__()
+            print('AB_C(AB, C)')
+            
+    class ABC(A, C, B):
+        def __init__(self):
+            super().__init__()
+            print('ABC(A, C, B)')
+            
+    A()
+    print('-'*20)
+    B()
+    print('-'*20)
+    AB()
+    print('-'*20)
+    C()
+    print('-'*20)
+    AB_C()
+    print('-'*20)
+    ABC()
+              
+# bug()
+mro_hell()

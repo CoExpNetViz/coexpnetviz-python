@@ -25,6 +25,10 @@ import colorsys
 from sklearn.utils.extmath import cartesian
 from numpy.linalg import norm
 from functools import reduce
+import requests
+import re
+from urllib.parse import urlparse
+import plumbum as pb
 
 def is_sorted(l):
     return all(l[i] <= l[i+1] for i in range(len(l)-1))
@@ -319,9 +323,9 @@ def dict_subset(dict_, keys, fragile=True):
     Parameters
     ----------
     dict_ : dict
-        Dict to take subset from
+        Dict to take subset from.
     keys : iterable of str
-        Keys to include in subset
+        Keys to include in subset.
     fragile : bool
         If True, raise on missing key, else omits missing keys from subset.
     ''' 
@@ -329,6 +333,35 @@ def dict_subset(dict_, keys, fragile=True):
         return {k : dict_[k] for k in keys}
     else:
         return {k : dict_[k] for k in keys if k in dict_}
+    
+# Based on http://stackoverflow.com/a/16696317/1031434
+def download_file(url, dest_dir):
+    '''
+    Download `url` resource content to `dest_dir`
+    
+    Parameters
+    ----------
+    url : str
+    dest_dir : plumbum.Path
+        Directory to save download in.
+    
+    Returns
+    -------
+    plumbum.Path
+        Path to which file was downloaded. The filename suggested by the server
+        is used if provided, else the last part of the url path is used (without
+        query and fragment parts).
+    '''
+    response = requests.get(url, stream=True)
+    file_name = re.sub(r'.*;filename=(.*)', r'\1', response.headers['content-disposition'])
+    if not file_name:
+        file_name = pb.local.path(urlparse(url).path).name
+    dest = dest_dir / file_name
+    with open(dest, 'wb') as f:
+        for chunk in response.iter_content(chunk_size=1024): 
+            if chunk: # filter out keep-alive new chunks
+                f.write(chunk)
+    return dest
 
 if __name__ == '__main__':
     df = pd.DataFrame([[1,[1,2],[1]],[1,[1,2],[3,4,5]],[2,[1],[1,2]]], columns='check a b'.split())
