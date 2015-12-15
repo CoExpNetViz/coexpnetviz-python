@@ -18,8 +18,9 @@
 
 from urllib.parse import urlparse
 from deep_blue_genome.core.util import download_file
-import datetime
 from deep_blue_genome.core.database.entities import CachedFile
+from datetime import datetime
+import plumbum as pb
 
 class Cache(object):
     
@@ -28,6 +29,9 @@ class Cache(object):
     
     Supports multiple instances across threads and processes to the same
     `cache_dir` as long as they all use the same database.
+    
+    Cache integrity is maintained across crashes, though some unused data may
+    become present in the cache.
     '''
     
     def __init__(self, database, cache_dir):
@@ -56,7 +60,7 @@ class Cache(object):
         else:
             record = self._get_cached_file(url)
             if record:
-                return record.expired
+                return not record.expired
             else:
                 return False
         
@@ -102,14 +106,14 @@ class Cache(object):
         
         # Make sure we have a record and find the next_dir to download to
         if record:
-            record = CachedFile(id=self._database.get_next_id(CachedFile), source_url=url)
-            next_dir = self._root_dir / '{}.0'.format(record.id)
-            self._session.add(record)
-        else:
             old_dir = pb.local.path(record.path).dirname
             next_version = int(old_dir.suffix[1:]) + 1
             next_dir = old_dir.with_suffix('.{}'.format(next_version))
-        print(next_dir)
+        else:
+            old_dir = None
+            record = CachedFile(id=self._database.get_next_id(CachedFile), source_url=url)
+            next_dir = self._root_dir / '{}.0'.format(record.id)
+            self._session.add(record)
         
         # Download and update record on success
         try:

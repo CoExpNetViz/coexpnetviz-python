@@ -22,3 +22,4 @@ scikit-learn==0.17
 six==1.10.0
 SQLAlchemy==1.0.9
 wheel==0.26.0
+git+git://github.com/spulec/freezegun.git@a20f222daa940448f1353f0c642dbd715abe0ce0

@@ -128,6 +128,12 @@ def mro_hell():
     AB_C()
     print('-'*20)
     ABC()
-              
+       
+def mocking_time():
+    import .playground_child
+    import datetime
+    
+           
 # bug()
-mro_hell()
+# mro_hell()
+mocking_time()

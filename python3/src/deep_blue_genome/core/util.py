@@ -353,9 +353,17 @@ def download_file(url, dest_dir):
         query and fragment parts).
     '''
     response = requests.get(url, stream=True)
-    file_name = re.sub(r'.*;filename=(.*)', r'\1', response.headers['content-disposition'])
+    
+    # derive file_name
+    file_name = None
+    if 'content-disposition' in response.headers:
+        match = re.match(r'filename=(.+)', response.headers['content-disposition'])
+        if match:
+            file_name = match.groups(0)
     if not file_name:
         file_name = pb.local.path(urlparse(url).path).name
+    
+    # download  
     dest = dest_dir / file_name
     with open(dest, 'wb') as f:
         for chunk in response.iter_content(chunk_size=1024): 

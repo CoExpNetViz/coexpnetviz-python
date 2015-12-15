@@ -37,7 +37,7 @@ def group():
 # add DBG commands
 group.add_command(prepare)
 
-def main(args=None):
+def load_config():
     config = Configuration(__root__, 'deep_blue_genome')
     
     # Format configuration files help section
@@ -76,6 +76,11 @@ def main(args=None):
         if name in config:
             defaults[name].update(config[name])
         defaults[name] = {k:v for k,v in defaults[name].items() if v} # Note that values are always strings
+        
+    return defaults
+        
+def main(args=None):
+    defaults = load_config()
     
     # Read CLI with defaults applied
     group(args, default_map=defaults, help_option_names=['-h', '--help'])

@@ -4,7 +4,6 @@ syntax: regexp
 \.project$
 \.cproject$
 ^build$
-python3/test/data
 python3/test/last_runs
 python3/venv
 python3/src/deep_blue_genome/deep_blue_genome.conf

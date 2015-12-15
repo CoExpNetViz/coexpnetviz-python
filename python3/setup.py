@@ -104,13 +104,13 @@ setup_(
     install_requires=(
         'numpy matplotlib scipy scikit-learn pandas numexpr bottleneck '
         'plumbum inflection more_itertools memory_profiler psutil pyxdg ' #TODO do we use more_itertools?
-        'requests sqlalchemy pymysql '
+        'freeze_gun frozendict requests sqlalchemy pymysql '  # once a version>3.5.0 is out, do freeze_gun>3.5.0
     ).split(),
  
     # Optional dependencies
     extras_require={
-        'dev': 'twine'.split(),
-        'test': ['pytest'],
+        'dev': [], #'twine'.split(),
+        'test': 'pytest freezegun'.split(),
     },
  
     # Auto generate entry points

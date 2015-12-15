@@ -50,7 +50,7 @@ class Database(object):
         name : str
             name of database
         ''' 
-        self._engine = create_engine('mysql+pymysql://{}:{}@{}/{}'.format(user, password, host, name), echo=True)
+        self._engine = create_engine('mysql+pymysql://{}:{}@{}/{}'.format(user, password, host, name))
         self._create()
         
         self._Session = sessionmaker()

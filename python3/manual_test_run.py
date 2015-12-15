@@ -14,16 +14,7 @@ def manual_test_cli():
 #     manual_test_distinct_colors()
 
 if __name__ == '__main__':
-#     test = 'test_all.py::TestCENV::test_custom_fam_2_species'
-#     test = 'test_all.py::TestCENV::test_plaza_1_species_no_genefam'
-#     test = 'test_all.py::TestCENV::test_plaza_1_species'
-#     test = 'test_all.py::TestCENV::test_plaza_2_species_percentiles'
-#     test = 'test_all.py::TestCENV::test_plaza_2_species'
-#     test = 'test_all.py::TestCENV::test_missing_bait'
-#     test = 'test_all.py::TestMORPH::test_tmp'
-#     test = 'test_prepare.py::TestPrepare::test_run'
-    test = 'test_prepare.py'
-    pytest.main('--maxfail=1 ' + 'src/deep_blue_genome/test/' + test)
+    pytest.main('--maxfail=1 -m current')
 
 #     manual_test_cli()    
 #     manual_test_distinct_colors()

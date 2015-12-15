@@ -1,9 +1,15 @@
 import plumbum as pb
-from deep_blue_genome.main import main
+from frozendict import frozendict
+from deep_blue_genome.main import main, load_config
 from deep_blue_genome.core.util import flatten_deep
 
 data_dir = pb.local.path('test/data')
 
+config = frozendict(load_config())
+
+def get_data_file(relative_path):
+    return data_dir / relative_path
+    
 class CLITester(object):
 
     def __init__(self, args):
