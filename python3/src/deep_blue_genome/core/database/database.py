@@ -17,15 +17,12 @@
 
 from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.orm import sessionmaker
-from deep_blue_genome.core.database.entities import LastId, DBEntity
-
-class GeneNotFoundException(Exception):
-    def __init__(self, gene_name, ex=None):
-        super().__init__(self, "Could not find gene with name '{}'. Cause: {}".format(gene_name, ex))
-        
-class NotFoundException(Exception):
-    def __init__(self, name, ex=None):
-        super().__init__(self, "Could not find {}. Cause: {}".format(name, ex))
+from sqlalchemy.orm.exc import NoResultFound
+from deep_blue_genome.core.database.entities import LastId, DBEntity, Gene, GeneName
+from deep_blue_genome.util.debug import log_sql
+from deep_blue_genome.core.exceptions import TaskFailedException,\
+    GeneNotFoundException
+from deep_blue_genome.core.exception_handling import UnknownGeneHandling
         
 class Database(object):
     
@@ -35,12 +32,13 @@ class Database(object):
     Note: Use bulk methods for large amounts or performance will suffer.
     '''
     
-    def __init__(self, host, user, password, name):
+    def __init__(self, context, host, user, password, name):
         '''
         Create instance connected to MySQL
         
         Parameters
         ----------
+        context : ConfigurationMixin
         host : str
             dns or ip of the DB host
         user : str
@@ -50,6 +48,8 @@ class Database(object):
         name : str
             name of database
         ''' 
+        self._context = context
+        
         self._engine = create_engine('mysql+pymysql://{}:{}@{}/{}'.format(user, password, host, name))
         self._create()
         
@@ -62,6 +62,10 @@ class Database(object):
         next id for a table
         '''
         
+    def dispose(self):
+        self._Session.close_all()
+        self._engine.dispose()
+        
     def commit(self):
         self._session.commit()
         
@@ -72,7 +76,7 @@ class Database(object):
         DBEntity.metadata.create_all(self._engine)
         
     @property
-    def _table_names(self):
+    def _table_names(self): # TODO engine.table_names
         '''list of table names'''
         return [row[0] for row in self._session.execute('show tables')]
         
@@ -109,30 +113,13 @@ class Database(object):
         Application global SQLAlchemy database session.
         '''
         return self._session
-    
-#     def get_gene_by_name(self, name):
-#         '''
-#         Get gene by name (including synonyms, ignoring case)
-#         
-#         Returns
-#         -------
-#         Gene
-#             The gene found
-#             
-#         Raises
-#         ------
-#         GeneNotFoundError
-#         '''
-#         try:
-#             return self._session.query(Gene).\
-#                         join(GeneName, Gene.name).\
-#                         filter(func.lower(GeneName.name) == func.lower(name)).\ #TODO lower is slow, also, use ()
-#                         one()
-#         except NoResultFound as ex:
-#             raise GeneNotFoundException(name, ex)
 
     def get_next_id(self, table):
         '''
+        Get id to use for next insert in table
+        
+        Parameters
+        ----------
         table : Table or ORM entity
         '''
         if hasattr(table, '__tablename__'):
@@ -143,4 +130,55 @@ class Database(object):
         record.last_id += 1
         self._last_id_session.commit()
         return record.last_id
+    
+    def get_gene_by_name(self, name):
+        '''
+        Get gene by name (including synonyms, ignoring case).
         
+        If Gene is not found and unknown_gene handling is configured to 'add', a
+        gene will be added with the given name as canonical name. If the
+        handling is set to 'fail', this event will raise a TaskFailedException.
+        If the handling is set to 'ignore', GeneNotFoundException is raised.
+        
+        Parameters
+        ----------
+        name : str
+            One of the Gene's names
+            
+        Returns
+        -------
+        Gene
+            The found/added gene
+             
+        Raises
+        ------
+        GeneNotFoundException
+            If gene not found and unknown_gene handling is set to 'ignore'.
+        TaskFailedException
+        '''
+        try:
+            with log_sql():
+                return (self._session
+                    .query(Gene)
+                    .join(GeneName, Gene.id == GeneName.gene_id)
+                    .filter(GeneName.name == name)
+                    .one()
+                )
+        except NoResultFound as ex:
+            unknown_gene_handling = self._context.configuration['exception_handling']['unknown_gene']
+            if unknown_gene_handling == UnknownGeneHandling.add:
+                with log_sql():
+                    gene_name = GeneName(id=self.get_next_id(GeneName), name=name)
+                    gene = Gene(id=self.get_next_id(Gene), names=[gene_name], canonical_name=gene_name)
+                    self._session.add(gene)
+                    self._session.commit()
+                return gene
+            else:
+                ex = GeneNotFoundException(name, ex)
+                if unknown_gene_handling == UnknownGeneHandling.ignore:
+                    raise ex
+                elif unknown_gene_handling == UnknownGeneHandling.fail:
+                    raise TaskFailedException(cause=ex)
+                else:
+                    assert False
+                    

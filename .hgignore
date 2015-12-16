@@ -6,7 +6,8 @@ syntax: regexp
 ^build$
 python3/test/last_runs
 python3/venv
-python3/src/deep_blue_genome/deep_blue_genome.conf
+python3/src/deep_blue_genome/main.conf
+python3/src/deep_blue_genome/cli.conf
 ^data
 .*\.pyc
 __pycache__

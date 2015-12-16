@@ -38,23 +38,27 @@ def group():
 group.add_command(prepare)
 
 def load_config():
-    config = Configuration(__root__, 'deep_blue_genome')
+    cli_config = Configuration(__root__, 'deep_blue_genome', 'cli')
+    main_config = Configuration(__root__, 'deep_blue_genome', 'main')
     
     # Format configuration files help section
-    config_paths_list = '\n'.join('{}. {!s}'.format(i, path) for i, path in enumerate(config.config_files, 1))
+    config_paths_list = '\n'.join('{}. {!s}'.format(i, path) for i, path in enumerate(cli_config.config_dirs, 1))
     configuration_help = '''
     Configuration files:
     
         The above defaults reflect your current configuration. These defaults can be changed in
-        configuration files. The defaults, along with an explanation of the configuration format,
-        can be viewed at {}. Deep Blue Genome looks for configuration files in the following order:
+        a cli.conf configuration file. The defaults, along with an explanation of the configuration format,
+        can be viewed at {}. Deep Blue Genome looks for configuration files in the following directories:
         
         \b
         {}
         
         Any configuration file can override settings of the previous file in the ordering. Some 
         configuration file locations can be changed using the XDG standard (http://standards.freedesktop.org/basedir-spec/basedir-spec-0.6.html).
-    '''.format(config.defaults_file, config_paths_list)
+        
+        Using main.conf, you can configure more advanced options such as how exceptional cases should be handled.
+        For the defaults and documentation on the available options, see {}.
+    '''.format(cli_config.defaults_file, config_paths_list, main_config.defaults_file)
     configuration_help = '\n'.join(line.lstrip() for line in configuration_help.splitlines()) #TODO click has replacement func?
     
     # Add common help sections to each command
@@ -66,21 +70,22 @@ def load_config():
         command.epilog = epilog
     
     # Read configuration
-    config = config.read()
+    cli_config = cli_config.read()
+    main_config = main_config.read()
     
     # Convert config to a defaultmap.
     # Merge default section into the section of each sub command
     defaults = {}
     for name in group.commands:
-        defaults[name] = dict(config['default'])
-        if name in config:
-            defaults[name].update(config[name])
+        defaults[name] = dict(cli_config['default'])
+        if name in cli_config:
+            defaults[name].update(cli_config[name])
         defaults[name] = {k:v for k,v in defaults[name].items() if v} # Note that values are always strings
         
-    return defaults
+    return defaults, main_config
         
 def main(args=None):
-    defaults = load_config()
+    defaults, main_config = load_config()
     
     # Read CLI with defaults applied
-    group(args, default_map=defaults, help_option_names=['-h', '--help'])
+    group(args, default_map=defaults, help_option_names=['-h', '--help'], obj=main_config)

@@ -14,6 +14,7 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
+from deep_blue_genome.core.exception_handling import UnknownGeneHandling
 
 '''
 Mixins to build a Context class (or 'Application' class if you prefer)
@@ -36,7 +37,25 @@ def cli_options(class_):
     options = flatten([cls._cli_options for cls in class_.__mro__[1:] if hasattr(cls, '_cli_options')])
     return compose(*options)
 
-class DatabaseMixin(object):
+
+class ConfigurationMixin(object):
+    
+    '''
+    Support for a main application configuration.
+    
+    Expects a dict-like format of an ini file
+    '''
+    
+    def __init__(self, main_config, **kwargs):
+        self._config = {k : dict(v) for k,v in main_config.items()}
+        self._config['exception_handling']['unknown_gene'] = UnknownGeneHandling[self._config['exception_handling']['unknown_gene']]
+        
+    @property
+    def configuration(self):
+        return self._config
+        
+        
+class DatabaseMixin(ConfigurationMixin):
     
     '''
     Database access
@@ -50,11 +69,13 @@ class DatabaseMixin(object):
     ]
     
     def __init__(self, database_host, database_user, database_password, database_name, **kwargs):
-        self._database = Database(host=database_host, user=database_user, password=database_password, name=database_name)
+        super().__init__(**kwargs)
+        self._database = Database(self, host=database_host, user=database_user, password=database_password, name=database_name)
     
     @property
     def database(self):
         return self._database
+        
         
 class CacheMixin(DatabaseMixin):
     
@@ -80,6 +101,7 @@ class CacheMixin(DatabaseMixin):
     def cache(self):
         return self._cache
     
+    
 class TemporaryFilesMixin(object):
     
     '''
@@ -96,6 +118,7 @@ class TemporaryFilesMixin(object):
     
     def __init__(self, tmp_dir, **kwargs):
         tempfile.tempdir = str(pb.local.path(tmp_dir))
+    
     
 class OutputMixin(object):
     

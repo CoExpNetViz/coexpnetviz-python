@@ -21,7 +21,18 @@ Debug utilities
 
 import os
 import psutil
+from contextlib import contextmanager
+import logging
 
 def print_mem():
     process = psutil.Process(os.getpid())
     print('{}MB memory usage'.format(int(process.memory_info().rss / 2**20)))
+    
+@contextmanager
+def log_sql():
+    logger = logging.getLogger('sqlalchemy.engine')
+    original = logger.level
+    logger.setLevel(logging.INFO)
+    yield
+    logger.setLevel(original)
+    

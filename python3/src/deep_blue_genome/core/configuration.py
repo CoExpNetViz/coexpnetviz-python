@@ -21,6 +21,7 @@ from xdg.BaseDirectory import xdg_config_dirs
 from configparser import ConfigParser, ExtendedInterpolation
 import plumbum as pb
 
+# TODO perhaps redesign a bit? Like a Configurations(pkg_root, program_name).get(name) -> Configuration.defaults_file or .read() -> actual conf
 class Configuration(object):
     
     '''
@@ -29,7 +30,7 @@ class Configuration(object):
     Gathers defaults and configuration from package root, /etc and XDG directories.
     ''' 
     
-    def __init__(self, pkg_root, program_name):
+    def __init__(self, pkg_root, program_name, name):
         '''
         Parameters
         ----------
@@ -37,13 +38,15 @@ class Configuration(object):
             Package root directory as installed on the system. The defaults file is expected to be found in this directory.
         program_name : str
             Program name, configuration file names are derived from this.
+        name : str
+            Name of config file to read (without suffix)
         '''
+        self._pkg_root = pkg_root
         program_name = program_name.replace(' ', '_').replace('-', '_')
-        
-        # Config file locations
-        self._defaults_file = pkg_root / '{}.defaults.conf'.format(program_name)
-        config_name = '{}.conf'.format(program_name)
-        self._config_files = [pkg_root / config_name, pb.local.path('/etc') / config_name] + [pb.local.path(x) / config_name for x in reversed(xdg_config_dirs)]
+        self._defaults_file = self._pkg_root / '{}.defaults.conf'.format(name)
+        self._config_name = '{}.conf'.format(name)
+        self._config_dirs = [pb.local.path('/etc')] + [pb.local.path(x) for x in reversed(xdg_config_dirs)]
+        self._config_dirs = [pkg_root] + [x / program_name for x in self._config_dirs]
     
     def read(self):
         '''
@@ -53,18 +56,20 @@ class Configuration(object):
         
         Values are always strings. Empty strings are allowed.
         '''
-        # Read config files
         def option_transform(name):
             return name.replace('-', '_').replace(' ', '_').lower()
+        
         config_parser = ConfigParser(
             inline_comment_prefixes=('#', ';'), 
             empty_lines_in_values=False, 
             default_section='default', 
             interpolation=ExtendedInterpolation()
         )
+        
         config_parser.optionxform = option_transform
         config_parser.read_file(open(self._defaults_file))
-        config_parser.read(self._config_files)  # reads in given order
+        config_files = [x / self._config_name for x in self._config_dirs]
+        config_parser.read(config_files)  # reads in given order
         
         return config_parser
     
@@ -80,13 +85,13 @@ class Configuration(object):
         return self._defaults_file
     
     @property
-    def config_files(self):
+    def config_dirs(self):
         '''
-        Paths to look for config files.
+        Directories to look for config files in.
         
         Returns
         -------
-        list-like of plumbum.Path
+        list of plumbum.Path
         '''
-        return self._config_files
+        return self._config_dirs
 

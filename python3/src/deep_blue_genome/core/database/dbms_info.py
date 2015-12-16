@@ -28,9 +28,13 @@ DBMSInfo = namedtuple('DBMSInfo', 'name version max_index_key_length max_index_k
 
 # https://dev.mysql.com/doc/refman/5.5/en/innodb-restrictions.html
 mysql_innodb = DBMSInfo(
-    name='mysql-innodb',
-    version='5.7',
+    name='mysql-innodb', # TODO we use mariadb
+    version='5.7.7',
     # max length (inclusive) of a key used in any index
-    max_index_key_length = 765,  # in bytes
-    max_index_key_length_char=765 // 3, # in utf characters  http://dev.mysql.com/doc/refman/5.7/en/create-index.html and http://stackoverflow.com/a/16474039/1031434 
+    max_index_key_length = 750, # Until we configure the DB correctly 
+    max_index_key_length_char=255,
+#     max_index_key_length = 3072,  # in bytes, assuming innodb_large_prefix=ON, which is the default starting from 5.7.7  http://dev.mysql.com/doc/refman/5.7/en/innodb-parameters.html#sysvar_innodb_large_prefix 
+#     max_index_key_length_char=3072 // 3, # in utf characters, which is the default charset by default  http://dev.mysql.com/doc/refman/5.7/en/create-index.html and http://stackoverflow.com/a/16474039/1031434 
 )
+
+current_db = mysql_innodb

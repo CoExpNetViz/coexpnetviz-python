@@ -1,13 +1,12 @@
-from deep_blue_genome.test.util import CLITester
+from deep_blue_genome.test.util import CLITester, cache_dir
 import plumbum as pb
- 
-cli = CLITester('prepare --output-dir dist --cache-dir cache --tmp-dir tmp'.split())
-prefix = 'data_preparation'
+import pytest
+
+cli = CLITester('prepare --output-dir dist --cache-dir {} --tmp-dir tmp'.format(cache_dir).split())
 
 def init_tmp(tmpdir):
     pb.local.path(tmpdir)
     tmpdir.mkdir('dist')
-    tmpdir.mkdir('cache')
     tmpdir.mkdir('tmp')
         
 class TestPrepare(object):
@@ -16,8 +15,8 @@ class TestPrepare(object):
     Database prepare tests
     ''' 
         
+#     @pytest.mark.current
     def test_run(self, tmpdir):
         init_tmp(tmpdir)
         cli.tmpdir = tmpdir
         cli.run()
-        print('hi')

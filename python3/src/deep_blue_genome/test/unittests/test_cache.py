@@ -5,7 +5,7 @@ Test Cache
 
 import pytest
 import deep_blue_genome.core.context as ctx
-from deep_blue_genome.test.util import config, get_data_file
+from deep_blue_genome.test.util import get_config, get_data_file
 from datetime import timedelta, datetime
 import plumbum as pb
 from freezegun import freeze_time
@@ -31,18 +31,7 @@ def create_context(tmp_dir):
     context.database.recreate()  # start from clean database
     return context
     
-# TODO
-# need database:
-#    need load_config -> make it accessible in some central location. But append _test to the database_name
-# need a context to set tmp_dir and stuff
-# need just a fresh (not shared with other tests this time) cache_dir this time
-# TODO design white tests
-def assert_same_file(actual, expected):
-    assert actual.name == expected.name
-    assert actual.read() == expected.read()
-    
-@pytest.mark.current
-def test_run(tmpdir):
+def test_cache(tmpdir):
     tmpdir = pb.local.path(tmpdir)
     copying_url = 'https://raw.githubusercontent.com/torvalds/linux/9f9499ae8e6415cefc4fe0a96ad0e27864353c89/COPYING'
     copying_local = get_data_file('unittests/cache/COPYING')

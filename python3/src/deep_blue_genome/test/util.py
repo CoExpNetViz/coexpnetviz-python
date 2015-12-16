@@ -1,14 +1,28 @@
 import plumbum as pb
-from frozendict import frozendict
 from deep_blue_genome.main import main, load_config
 from deep_blue_genome.core.util import flatten_deep
+from copy import deepcopy
 
+cache_dir = pb.local.path('test/cache')  # cache across runs
 data_dir = pb.local.path('test/data')
 
-config = frozendict(load_config())
+_config, _main_config = load_config()  # TODO maybe we could have a programatically put together conf instead of one read from the system, which is less isolated
 
+def get_config(section, tmp_dir):
+    config = deepcopy(_config[section])
+    config.update(
+#         main_config=deepcopy(_main_config),  #TODO can't deepcopy
+        tmp_dir=tmp_dir,
+        database_name=config['database_name'] + '_test',
+    )
+    return config
+    
 def get_data_file(relative_path):
     return data_dir / relative_path
+
+def assert_same_file(actual, expected):
+    assert actual.name == expected.name
+    assert actual.read() == expected.read()
     
 class CLITester(object):
 

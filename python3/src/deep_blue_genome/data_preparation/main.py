@@ -17,7 +17,6 @@
 
 # from deep_blue_genome.data_preparation.genes import load_gene_info
 import pandas as pd
-from deep_blue_genome.core import cli
 import click
 import deep_blue_genome.core.context as ctx
 
@@ -34,18 +33,16 @@ class Context(ctx.CacheMixin, ctx.DatabaseMixin, ctx.TemporaryFilesMixin, ctx.Ou
     pass
 
 @click.command()
-@ctx.cli_options(Context)
-def prepare(**kwargs):
+@ctx.cli_options(Context) #TODO we still have version on this? Add to cli_options if not
+@click.pass_obj
+def prepare(main_config, **kwargs):
     '''Create and/or update database.'''
+    kwargs['main_config'] = main_config
     context = Context(**kwargs)
     assert False
     
     # TODO a context with... (note that other DBG tools may want some of this contextness too, but not all parts of it; it need be pluggable in code):
-    # - the database
-    # - something for grabbing tmpdirs from. Could be a partial of plumbum with correct root dir
-    # - cache dir location? Yes, but not intended to be used directly. We have a downloader or something that uses a subdir of the cache instead.
     # - output_dir. A no brainer
-#     database = load_database(args)
 #     database.recreate()
 #     load_gene_info(database)
 #     load_rice_genes(database)

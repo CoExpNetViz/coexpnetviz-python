@@ -27,6 +27,8 @@ from sqlalchemy.orm import relationship
 from deep_blue_genome.util.constants import URL_MAX_LENGTH, PATH_MAX_LENGTH
 from datetime import datetime
 
+# Note: we rely on the fact that mysql innodb's default collation is case-insensitive and the charset is utf8
+
 
 class DBEntity(object):
     @declared_attr
@@ -67,32 +69,32 @@ class CachedFile(DBEntity):
         return self.expires_at <= datetime.now()
     
     
-# class GeneName(DBEntity): #TODO unused
-#     
-#     id =  Column(Integer, primary_key=True, autoincrement=False)
-#     name = Column(String(250), unique=True, nullable=False)
-#     gene_id =  Column(Integer, ForeignKey('gene.id'), nullable=False)
-#     
-#     gene = relationship('Gene', backref='names')
-#     
-#     def __repr__(self):
-#         return '<GeneName(id={!r}, name={!r})>'.format(self.id, self.name)
-# 
-# 
-# class Gene(DBEntity): #TODO unused
-#     
-#     '''
-#     name: Canonical name
-#     names: Canonical name and synonymous names (unordered)
-#     '''
-#     
-#     id =  Column(Integer, primary_key=True, autoincrement=False)
-#     description = Column(String(1000))
-#     canonical_name_id =  Column(Integer, ForeignKey('gene_name.id'), nullable=True)
-#     
-#     canonical_name = relationship('GeneName')  # The preferred name to assign to this gene
-#     # names = GeneName backref, all names
-#     
-#     def __repr__(self):
-#         return '<Gene(id={!r}, name={!r})>'.format(self.id, self.name)    
+class GeneName(DBEntity):
+     
+    id =  Column(Integer, primary_key=True, autoincrement=False)
+    name = Column(String(250), unique=True, nullable=False)
+    gene_id =  Column(Integer, ForeignKey('gene.id'), nullable=False)
+     
+    gene = relationship('Gene', backref='names', foreign_keys=[gene_id])
+     
+    def __repr__(self):
+        return '<GeneName(id={!r}, name={!r})>'.format(self.id, self.name)
+ 
+ 
+class Gene(DBEntity):
+     
+    '''
+    name: Canonical name
+    names: Canonical name and synonymous names (unordered)
+    '''
+     
+    id =  Column(Integer, primary_key=True, autoincrement=False)
+    description = Column(String(1000), nullable=True)
+    canonical_name_id =  Column(Integer, ForeignKey('gene_name.id'), nullable=True)
+     
+    canonical_name = relationship('GeneName', foreign_keys=[canonical_name_id], post_update=True)  # The preferred name to assign to this gene
+    # names = GeneName backref, all names
+     
+    def __repr__(self):
+        return '<Gene(id={!r}, canonical_name={!r})>'.format(self.id, self.canonical_name)    
     
