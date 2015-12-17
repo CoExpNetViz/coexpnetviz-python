@@ -116,7 +116,8 @@ class Database(object):
         # Init next ids for tables
         with self.scoped_session() as session:
             for name in self._table_names:
-                session.add(LastId(table_name=name, last_id=0))
+                if name != 'last_id':
+                    session.add(LastId(table_name=name, last_id=0))
         
     def create_session(self):
         '''
