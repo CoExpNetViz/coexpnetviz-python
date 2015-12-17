@@ -24,12 +24,13 @@ Limits of particular DBMS
 
 from collections import namedtuple
 
-DBMSInfo = namedtuple('DBMSInfo', 'name version max_index_key_length max_index_key_length_char'.split())
+DBMSInfo = namedtuple('DBMSInfo', 'name version max_index_key_length max_index_key_length_char max_sql_parameters'.split())
 
 # https://dev.mysql.com/doc/refman/5.5/en/innodb-restrictions.html
 mysql_innodb = DBMSInfo(
     name='mysql-innodb', # TODO we use mariadb
     version='5.7.7',
+    max_sql_parameters=65535,  # http://stackoverflow.com/a/6582902/1031434
     # max length (inclusive) of a key used in any index
     max_index_key_length = 750, # Until we configure the DB correctly 
     max_index_key_length_char=255,

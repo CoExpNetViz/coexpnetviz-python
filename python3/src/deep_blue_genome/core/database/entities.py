@@ -22,7 +22,7 @@ Database entities (i.e. tables)
 from deep_blue_genome.core.database.dbms_info import mysql_innodb
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from inflection import underscore
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from deep_blue_genome.util.constants import URL_MAX_LENGTH, PATH_MAX_LENGTH
 from datetime import datetime
@@ -97,4 +97,41 @@ class Gene(DBEntity):
      
     def __repr__(self):
         return '<Gene(id={!r}, canonical_name={!r})>'.format(self.id, self.canonical_name)    
+    
+    
+GeneExpressionMatrixTable = Table('gene_expression_matrix', DBEntity.metadata,
+    Column('gene_id', Integer, ForeignKey('gene.id')),
+    Column('expression_matrix_id', Integer, ForeignKey('expression_matrix.id'))
+)
+
+
+class ExpressionMatrix(DBEntity):
+     
+    id =  Column(Integer, primary_key=True, autoincrement=False)
+    path = Column(String(PATH_MAX_LENGTH), nullable=False)
+     
+    genes = relationship("Gene", secondary=GeneExpressionMatrixTable)  # Genes whose expression was measured in the expression matrix
+     
+    def __repr__(self):
+        return '<ExpressionMatrix(id={!r}, path={!r})>'.format(self.id, self.path)
+    
+
+
+GeneClusteringTable = Table('gene_clustering', DBEntity.metadata,
+    Column('gene_id', Integer, ForeignKey('gene.id')),
+    Column('clustering_id', Integer, ForeignKey('clustering.id'))
+)
+
+
+class Clustering(DBEntity):
+     
+    id =  Column(Integer, primary_key=True, autoincrement=False)
+    path = Column(String(PATH_MAX_LENGTH), nullable=False)
+     
+    genes = relationship("Gene", secondary=GeneClusteringTable)  # Genes mentioned in the clustering
+     
+    def __repr__(self):
+        return '<Clustering(id={!r}, path={!r})>'.format(self.id, self.path)
+    
+    
     

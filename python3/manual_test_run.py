@@ -14,7 +14,9 @@ def manual_test_cli():
 #     manual_test_distinct_colors()
 
 if __name__ == '__main__':
-    pytest.main('--maxfail=1 -m current')
+    args = '--maxfail=1 -m current'
+    args += ' --capture=no'
+    pytest.main(args)
 
 #     manual_test_cli()    
 #     manual_test_distinct_colors()

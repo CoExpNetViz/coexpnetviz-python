@@ -66,7 +66,7 @@ def read_expression_matrix_file(path):
     
     Parameters
     ----------
-    path : str
+    path : plumbum.Path
         path to expression matrix file to read
     
     Returns
@@ -78,9 +78,53 @@ def read_expression_matrix_file(path):
     mat = mat[mat.index.to_series().notnull()]  # TODO log warnings for dropped rows
     mat.index.name = 'gene'
     mat.index = mat.index.to_series().apply(canonise_gene)
-    return ExpressionMatrix(mat, name=local.path(path).name)
+    return ExpressionMatrix(mat, name=path.name)
 
-def read_whitespace_separated_2d_array_file(path):
+def read_clustering_file(path):
+    '''
+    Read generic clustering.
+    
+    Expected format: csv format with tabs as separator (instead of ',').
+    
+    Each row is a cluster: `cluster_name item1 item2 ...`. (An item may occur
+    in multiple clusters).
+    
+    Clusters can also be split across multiple lines::
+    
+        cluster1 item1
+        cluster1 item2
+        cluster2 item5
+        cluster1 item3
+    
+    Example return::
+    
+        cluster_id
+        cluster1  AT5G41040
+        cluster1  AT5G23190
+        cluster2  AT3G11430
+    
+    Parameters
+    ----------
+    path : str
+        path to clustering file to read
+    
+    Returns
+    -------
+    pandas.Series(data=str, index=(cluster_id : str))
+        Clustering
+    '''
+    sanitise_plain_text_file(path)
+    with open(path, 'r') as f:
+        reader = csv.reader(f, delimiter="\t")
+        df = pd.DataFrame(([row[0], row[1:]] for row in reader), columns='cluster_id item'.split())
+    df = df_expand_iterable_values(df, ['item'])
+    df['cluster_id'] = df['cluster_id'].str.lower()
+    df['item'] = df['item']
+    df.set_index('cluster_id', inplace=True)
+    df.drop_duplicates(inplace=True)
+    return df.item
+
+def read_whitespace_separated_2d_array_file(path): #TODO unused?
     '''
     Read whitespace separated 2d array file.
     
@@ -141,8 +185,8 @@ def read_gene_families_file(path):
     pandas.Series(data=(gene : str), index=(family : str))
         Gene families
     '''
+    # TODO a gene_fam file is actually a clustering file with some different names set for the column and index
     sanitise_plain_text_file(path)
-    # TODO read with pd.read_csv
     with open(path, 'r') as f:
         reader = csv.reader(f, delimiter="\t")
         df = pd.DataFrame(([row[0], row[1:]] for row in reader), columns='family gene'.split())

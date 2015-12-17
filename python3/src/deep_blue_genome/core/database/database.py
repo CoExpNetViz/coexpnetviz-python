@@ -23,6 +23,10 @@ from deep_blue_genome.util.debug import log_sql
 from deep_blue_genome.core.exceptions import TaskFailedException,\
     GeneNotFoundException
 from deep_blue_genome.core.exception_handling import UnknownGeneHandling
+from contextlib import contextmanager
+import logging
+
+_logger = logging.getLogger('deep_blue_genome.core.database.database')
         
 class Database(object):
     
@@ -30,9 +34,11 @@ class Database(object):
     RDBMS support
     
     Note: Use bulk methods for large amounts or performance will suffer.
+    
+    None of Database's methods commit `session`.
     '''
     
-    def __init__(self, context, host, user, password, name):
+    def __init__(self, context, host, user, password, name): # TODO whether or not to add a session id other than "We are global, NULL, session"
         '''
         Create instance connected to MySQL
         
@@ -53,18 +59,29 @@ class Database(object):
         self._engine = create_engine('mysql+pymysql://{}:{}@{}/{}'.format(user, password, host, name))
         self._create()
         
-        self._Session = sessionmaker()
+        self._Session = sessionmaker(bind=self._engine)
         self._session = self.create_session()
-        self._last_id_session = self.create_session()
-        '''
-        Session for incrementing an id in NextId table; wouldn't want an entire
-        transaction to rollback due to a simple race conflict on getting the
-        next id for a table
-        '''
         
     def dispose(self):
         self._Session.close_all()
         self._engine.dispose()
+        
+    @contextmanager
+    def scoped_session(self):
+        '''
+        Create a session context manager
+        
+        Commits on exit unless exception was raised; always closes.
+        '''
+        session = self.create_session()
+        try:
+            yield session
+            session.commit()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
         
     def commit(self):
         self._session.commit()
@@ -97,13 +114,15 @@ class Database(object):
         self._create()
         
         # Init next ids for tables
-        for name in self._table_names:
-            self._last_id_session.add(LastId(table_name=name, last_id=0))
-        self._last_id_session.commit()
+        with self.scoped_session() as session:
+            for name in self._table_names:
+                session.add(LastId(table_name=name, last_id=0))
         
     def create_session(self):
         '''
         Create new session of database
+        
+        Consider using `self.scoped_session` instead.
         '''
         return self._Session(bind=self._engine)
     
@@ -116,22 +135,39 @@ class Database(object):
 
     def get_next_id(self, table):
         '''
-        Get id to use for next insert in table
+        Analog to `get_next_ids`, except return value is an int.
+        '''
+        return next(self.get_next_ids(table, 1))
+    
+    def get_next_ids(self, table, count):
+        '''
+        Get id to use for next insert in table.
+        
+        This immediately commits (in a separate session) to database.
         
         Parameters
         ----------
         table : Table or ORM entity
+        count : int
+            How many ids to reserve
+        
+        Returns
+        -------
+        iterable of int
+            The next free ids.
         '''
-        if hasattr(table, '__tablename__'):
-            name = table.__tablename__
-        else:
-            name = table.name
-        record = self._last_id_session.query(LastId).filter_by(table_name=name).one()
-        record.last_id += 1
-        self._last_id_session.commit()
-        return record.last_id
+        with self.scoped_session() as session:
+            if hasattr(table, '__tablename__'):
+                name = table.__tablename__
+            else:
+                name = table.name
+            #TODO could we bring it down to 1 round trip? update followed by select. Should we? We need profiling for DB operations
+            record = session.query(LastId).filter_by(table_name=name).one()
+            start = record.last_id+1
+            record.last_id += count
+            return iter(range(start, record.last_id+1))
     
-    def get_gene_by_name(self, name):
+    def get_gene_by_name(self, name, session=None):
         '''
         Get gene by name (including synonyms, ignoring case).
         
@@ -156,22 +192,21 @@ class Database(object):
             If gene not found and unknown_gene handling is set to 'ignore'.
         TaskFailedException
         '''
+        if not session:
+            session = self.session
         try:
-            with log_sql():
-                return (self._session
-                    .query(Gene)
-                    .join(GeneName, Gene.id == GeneName.gene_id)
-                    .filter(GeneName.name == name)
-                    .one()
-                )
+            return (session
+                .query(Gene)
+                .join(GeneName, Gene.id == GeneName.gene_id)
+                .filter(GeneName.name == name)
+                .one()
+            )
         except NoResultFound as ex:
             unknown_gene_handling = self._context.configuration['exception_handling']['unknown_gene']
             if unknown_gene_handling == UnknownGeneHandling.add:
-                with log_sql():
-                    gene_name = GeneName(id=self.get_next_id(GeneName), name=name)
-                    gene = Gene(id=self.get_next_id(Gene), names=[gene_name], canonical_name=gene_name)
-                    self._session.add(gene)
-                    self._session.commit()
+                gene_name = GeneName(id=self.get_next_id(GeneName), name=name)
+                gene = Gene(id=self.get_next_id(Gene), names=[gene_name], canonical_name=gene_name)
+                session.add(gene)
                 return gene
             else:
                 ex = GeneNotFoundException(name, ex)
@@ -182,3 +217,81 @@ class Database(object):
                 else:
                     assert False
                     
+    def get_genes_by_name(self, names, session=None):
+        '''
+        Get genes by name (including synonyms, ignoring case).
+        
+        Faster than `get_gene_by_name` unless you need only look up a single gene.
+        
+        If a gene is not found and unknown_gene handling is configured to 'add', a
+        gene will be added with the given name as canonical name. If the
+        handling is set to 'fail', this event will raise a TaskFailedException.
+        If the handling is set to 'ignore', it will be returned in the missing list.
+        
+        Parameters
+        ----------
+        names : iterable of str
+            Names of genes to fetch. If the same gene is mentioned more than
+            once, it may be present in the return more than once (this includes
+            synonyms).
+        session
+            Session to use. Uses `self.session` if None.
+            
+        Returns
+        -------
+        (genes : list of Gene, missing : list of str)
+            Returns the genes (including added genes if handling is 'add'), and
+            names of genes not found (if handling is 'ignore').
+             
+        Raises
+        ------
+        TaskFailedException
+            If a gene was not found and handling is set to 'fail' 
+        '''
+        _logger.debug('get_genes_by_name')
+        names = set(names)
+        if not session:
+            session = self.session
+        
+        # Select unknown gene names
+        names_present = list(
+            session
+            .query(GeneName)
+            .filter(GeneName.name.in_(names))
+        )
+        missing = names - {r.name for r in names_present}
+        
+        # Get present genes
+        if names_present:
+            _logger.debug('Getting {} present genes'.format(len(names_present)))
+            genes = list(
+                session
+                .query(Gene)
+                .filter(Gene.id.in_([name.gene_id for name in names_present]))
+            )
+        else:
+            genes = []
+        
+        # Handle unknown genes
+        if missing:
+            _logger.warn('Encountered {} unknown genes'.format(len(missing)))
+            unknown_gene_handling = self._context.configuration['exception_handling']['unknown_gene']
+            if unknown_gene_handling == UnknownGeneHandling.add:
+                _logger.debug('Adding unknown genes')
+                next_gene_name_ids = self.get_next_ids(GeneName, len(missing))
+                next_gene_ids = self.get_next_ids(Gene, len(missing))
+                for name in missing:
+                    gene_name = GeneName(id=next(next_gene_name_ids), name=name)
+                    gene = Gene(id=next(next_gene_ids), names=[gene_name], canonical_name=gene_name)
+                    session.add(gene)
+                    genes.append(gene)
+                missing = []
+            elif unknown_gene_handling == UnknownGeneHandling.ignore:
+                pass  # ignore
+            elif unknown_gene_handling == UnknownGeneHandling.fail:
+                raise TaskFailedException(cause=GeneNotFoundException(missing[0]))
+            else:
+                assert False
+            
+        return genes, missing
+            

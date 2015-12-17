@@ -14,36 +14,26 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
+from deep_blue_genome.core.util import flatten
 
 '''
-Debug utilities
+Plumbum additions, basically
 '''
 
-import os
-import psutil
-from contextlib import contextmanager
-import logging
+def path_to_list(path):
+    '''
+    If dir, path.list(), else path
+    '''
+    return path.list() if path.isdir() else [path]
 
-def print_mem():
-    process = psutil.Process(os.getpid())
-    print('{}MB memory usage'.format(int(process.memory_info().rss / 2**20)))
+def flatten_paths(paths):
+    '''
+    Flatten 1 level of irregular list of paths
     
-@contextmanager
-def log_sql():
-    logger = logging.getLogger('sqlalchemy.engine')
-    original = logger.level
-    logger.setLevel(logging.INFO)
-    try:
-        yield
-    finally:
-        logger.setLevel(original)
-
-# setup logging for testing  TODO don't want this on module load
-# also log everything to stdout
-import sys
-ch = logging.StreamHandler(sys.stdout)
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-logging.getLogger().root.addHandler(ch)
-
+    Analog to flattening irregular lists where a directory is a list.
+    
+    Parameters
+    ----------
+    paths : iterable of plumbum.Path
+    '''
+    return flatten(list(map(path_to_list, paths)))
