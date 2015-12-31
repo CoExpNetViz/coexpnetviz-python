@@ -137,3 +137,13 @@ def mocking_time():
 # bug()
 # mro_hell()
 mocking_time()
+
+        # couldn't help it TODO rm
+#         m1 = read_expression_matrix('')
+#         m2 = read_expression_matrix('')
+#         orths = read_gene_families_file('').groupby(index)
+#         def f(mat, orths):
+#             corrs = corr(mat)
+#             [avg(diag(corrs[orths_,orths_])) for orths_ in orths]
+#         avgs1 = f(m1, orths)
+#         avgs2 = f(m2, orths)

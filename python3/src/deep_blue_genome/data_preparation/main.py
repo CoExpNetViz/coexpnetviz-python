@@ -20,10 +20,19 @@ import pandas as pd
 import click
 import deep_blue_genome.core.context as ctx
 from deep_blue_genome.core.reader.various import read_expression_matrix_file,\
-    read_clustering_file
-from deep_blue_genome.core.database.entities import ExpressionMatrix, Clustering
+    read_clustering_file, read_gene_mapping_file
+from deep_blue_genome.core.database.entities import ExpressionMatrix, Clustering,\
+    GeneMapping
 import plumbum as pb
 from deep_blue_genome.util.file_system import flatten_paths
+import textwrap
+from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
+from deep_blue_genome.util.pandas import df_has_null, series_has_duplicates
+import logging
+from deep_blue_genome.core.exceptions import TaskFailedException
+from deep_blue_genome.util.exceptions import log_exception_msg
+
+_logger = logging.getLogger('deep_blue_genome.prepare')
 
 '''
 The main tool to prepare data for DBG tools
@@ -43,47 +52,59 @@ class Context(ctx.CacheMixin, ctx.DatabaseMixin, ctx.TemporaryFilesMixin, ctx.Ou
 # /www/group/biocomp/extra/morph/PGSC/gene_descriptions
 # /www/group/biocomp/extra/morph/TOMATO/gene_descriptions
 # /www/group/biocomp/extra/morph/rice/annotations
-# /www/group/biocomp/extra/morph/rice/msu_to_rap.mapping
 # /www/group/biocomp/extra/morph/catharanthus_roseus/functional_annotations'''
-
-clusterings = '''
-/www/group/biocomp/extra/morph/ARABIDOBSIS/cluster_solution
-/www/group/biocomp/extra/morph/ITAG/cluster_solution
-/www/group/biocomp/extra/morph/PGSC/cluster_solution
-/www/group/biocomp/extra/morph/TOMATO/cluster_solution
-/www/group/biocomp/extra/morph/rice/clusterings
-/www/group/biocomp/extra/morph/catharanthus_roseus/clusterings'''.splitlines()[1:]
-clusterings = [p.replace('/www/group/biocomp/extra/morph', '/mnt/data/doc/work/prod_data') for p in clusterings]
-
-expression_matrices = '''
-/www/group/biocomp/extra/morph/ARABIDOBSIS/data_sets
-/www/group/biocomp/extra/morph/ITAG/data_sets
-/www/group/biocomp/extra/morph/PGSC/data_sets
-/www/group/biocomp/extra/morph/TOMATO/data_sets
-/www/group/biocomp/extra/morph/rice/data_sets
-/www/group/biocomp/extra/morph/catharanthus_roseus/expression_matrices'''.splitlines()[1:]
-expression_matrices = [p.replace('/www/group/biocomp/extra/morph', '/mnt/data/doc/work/prod_data') for p in expression_matrices]
 
 def add_expression_matrix(context, path):
     db = context.database
     with db.scoped_session() as session:
-        print('Adding expression matrix: {}'.format(path))
-        exp_mat = read_expression_matrix_file(path)  # TODO could speed up by only loading index (=gene names)
-        genes = exp_mat.data.index
-        genes, missing = db.get_genes_by_name(genes, session)
+        _logger.info('Adding expression matrix: {}'.format(path))
+        # Read file
+        exp_mat = read_expression_matrix_file(path)  # XXX could speed up by only loading index (=gene names)
+        
+        # Get genes from database
+        genes = pd.DataFrame(exp_mat.data.index)
+        genes = db.get_genes_by_name(genes, session)
+        
+        # Validate
+        if series_has_duplicates(genes):
+            raise TaskFailedException('Expression matrix has multiple gene expression rows for some gene')
+        
+        # Insert in database
+        genes = genes['gene'].tolist()
         exp_mat = ExpressionMatrix(id=db.get_next_id(ExpressionMatrix), path=path, genes=genes)
-        # TODO write back without the rows with missing genes
         session.add(exp_mat)
-            
+        
+        # TODO write back without the rows with missing genes, that's what 'ignore' is about
+           
+# TODO think about thorough validation for each input here and in file reading and don't forget to make quick todo notes on new input in the future
+# TODO the funcs here will be reusable and should be thrown in somewhere else, something in core. We used to call it DataImporter, we won't now
 def add_clustering(context, path):
     db = context.database
     with db.scoped_session() as session:
-        print('Adding clustering: {}'.format(path))
-        clustering = read_clustering_file(path)  # TODO could speed up by only loading index (=gene names)
-        genes, missing = db.get_genes_by_name(clustering, session)
-        clustering = Clustering(id=db.get_next_id(Clustering), path=path, genes=genes)
-        # TODO if truly data prep, you'd write back the clustering without the missing genes. You'd probably write it back with the gene ids instead actually, maybe. In that case we probably might as well put it in the database...
+        _logger.info('Adding clustering: {}'.format(path))
+        clustering = read_clustering_file(path, named=True)  # XXX could speed up by only loading index (=gene names)
+        genes = db.get_genes_by_name(clustering[['item']], session)
+        clustering = Clustering(id=db.get_next_id(Clustering), path=path, genes=genes['item'].tolist())
+        # TODO write back without the rows with missing genes, that's what 'ignore' is about
+        # if truly data prep, you'd write back the clustering without the missing genes. You'd probably write it back with the gene ids instead actually, maybe. In that case we probably might as well put it in the database...
         session.add(clustering)
+        
+def add_gene_mapping(context, path):
+    db = context.database
+    with db.scoped_session() as session:
+        # Read file
+        _logger.info('Adding gene mapping from: {}'.format(path))
+        mapping = read_gene_mapping_file(path)
+        
+        # Get genes from database
+        mapping = db.get_genes_by_name(mapping, session)
+        assert not df_has_null(mapping)  # TODO if unknowngenehandler = ignore, override it in call with fail; instead of asserting
+        
+        # Insert mappings
+        mapping = mapping.applymap(lambda x: x.id)
+        mapping.columns = ['left_id', 'right_id']
+        mapping.drop_duplicates(inplace=True)
+        session.bulk_insert_mappings(GeneMapping, mapping.to_dict('records'))
     
 @click.command()
 @ctx.cli_options(Context) #TODO we still have version on this? Add to cli_options if not
@@ -94,14 +115,52 @@ def prepare(main_config, **kwargs):
     context = Context(**kwargs)
     context.database.recreate()
     
-    for exp_mat in flatten_paths(map(pb.local.path, expression_matrices)):
-        add_expression_matrix(context, exp_mat)
-    for clustering in flatten_paths(map(pb.local.path, clusterings)):
-        add_clustering(context, clustering)
+    def to_paths(listing):
+        paths = (p.strip() for p in listing.splitlines())
+        paths = [p.replace('/www/group/biocomp/extra/morph', '/mnt/data/doc/work/prod_data') for p in paths if p]
+        paths = flatten_paths(map(pb.local.path, paths))
+        return paths
     
-    # TODO a context with... (note that other DBG tools may want some of this contextness too, but not all parts of it; it need be pluggable in code):
-    # - output_dir. A no brainer
-#     database.recreate()
+    gene_mappings = to_paths('''
+        /www/group/biocomp/extra/morph/rice/msu_to_rap.mapping
+    ''')
+    
+    expression_matrices = to_paths('''
+        /www/group/biocomp/extra/morph/ARABIDOBSIS/data_sets
+        /www/group/biocomp/extra/morph/ITAG/data_sets
+        /www/group/biocomp/extra/morph/PGSC/data_sets
+        /www/group/biocomp/extra/morph/TOMATO/data_sets
+        /www/group/biocomp/extra/morph/rice/data_sets
+        /www/group/biocomp/extra/morph/catharanthus_roseus/expression_matrices
+    ''')
+    
+    clusterings = to_paths('''
+        /www/group/biocomp/extra/morph/ARABIDOBSIS/cluster_solution
+        /www/group/biocomp/extra/morph/ITAG/cluster_solution
+        /www/group/biocomp/extra/morph/PGSC/cluster_solution
+        /www/group/biocomp/extra/morph/TOMATO/cluster_solution
+        /www/group/biocomp/extra/morph/rice/clusterings
+        /www/group/biocomp/extra/morph/catharanthus_roseus/clusterings
+    ''')
+    
+    for path in gene_mappings:
+        with log_exception_msg(_logger, TaskFailedException):
+            add_gene_mapping(context, path)
+         
+    for exp_mat in expression_matrices:
+        with log_exception_msg(_logger, TaskFailedException):
+            print(exp_mat)
+            add_expression_matrix(context, exp_mat)
+        
+    for clustering in clusterings:
+        with log_exception_msg(_logger, TaskFailedException):
+            add_clustering(context, clustering)
+        
+    
+    # TODO output_dir context
+    # TODO dist to output_dir
+    
+    # XXX old stuff:
 #     load_gene_info(database)
 #     load_rice_genes(database)
 #     merge_plaza()

@@ -2,6 +2,10 @@ import plumbum as pb
 from deep_blue_genome.main import main, load_config
 from deep_blue_genome.core.util import flatten_deep
 from copy import deepcopy
+import cProfile
+import pstats
+import io
+import pytest
 
 cache_dir = pb.local.path('test/cache')  # cache across runs
 data_dir = pb.local.path('test/data')
@@ -24,6 +28,16 @@ def assert_same_file(actual, expected):
     assert actual.name == expected.name
     assert actual.read() == expected.read()
     
+def profile(f):
+    profile = cProfile.Profile()
+    profile.enable()
+    f()
+    profile.disable()
+    s = io.StringIO()
+    ps = pstats.Stats(profile, stream=s).sort_stats('cumulative')
+    ps.print_stats(20)
+    print(s.getvalue())
+
 class CLITester(object):
 
     def __init__(self, args):

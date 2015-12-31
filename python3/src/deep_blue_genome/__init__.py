@@ -20,6 +20,7 @@ from deep_blue_genome.version import __version__
 def _init():
     import plumbum as pb
     import matplotlib
+    from deep_blue_genome.util.database import patch_pymysql
     
     # from Bio import Entrez
     # Entrez.email = 'no-reply@psb.ugent.be'  # TODO perhaps this email address should be user supplied
@@ -29,6 +30,25 @@ def _init():
         matplotlib.use('Agg')  # use this backend when no X server
     
     # find __root__
-    return pb.local.path(__file__).dirname
+    global __root__
+    __root__ = pb.local.path(__file__).dirname
+    
+    # various
+    patch_pymysql()
+    
+    # setup logging for testing
+    # also log everything to stdout
+    # XXX logging.basicConfig is easier to set things up
+    import sys
+    import logging
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logging.getLogger().root.addHandler(ch)
+    logging.getLogger('deep_blue_genome').setLevel(logging.INFO)
+    logging.getLogger('deep_blue_genome').setLevel(logging.DEBUG)
+    logging.getLogger('deep_blue_genome.core.Database').setLevel(logging.INFO)
+    
         
-__root__ = _init()
+_init()

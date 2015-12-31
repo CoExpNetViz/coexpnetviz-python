@@ -16,26 +16,14 @@
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
-Debug utilities
+Database util
 '''
 
-import os
-import psutil
-from contextlib import contextmanager
-import logging
+import numpy as np
+import pymysql
 
-def print_mem():
-    process = psutil.Process(os.getpid())
-    print('{}MB memory usage'.format(int(process.memory_info().rss / 2**20)))
-    
-@contextmanager
-def log_sql():
-    logger = logging.getLogger('sqlalchemy.engine')
-    original = logger.level
-    logger.setLevel(logging.INFO)
-    try:
-        yield
-    finally:
-        logger.setLevel(original)
-
-
+def patch_pymysql():
+    '''
+    Patch pymysql with e.g. knowledge about other int-like types 
+    '''
+    pymysql.converters.encoders[np.int64] = pymysql.converters.encoders[int]

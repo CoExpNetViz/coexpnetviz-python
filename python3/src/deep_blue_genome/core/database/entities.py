@@ -68,10 +68,10 @@ class CachedFile(DBEntity):
     def expired(self):
         return self.expires_at <= datetime.now()
     
-    
+        
 class GeneName(DBEntity):
      
-    id =  Column(Integer, primary_key=True, autoincrement=False)
+    id =  Column(Integer, primary_key=True)
     name = Column(String(250), unique=True, nullable=False)
     gene_id =  Column(Integer, ForeignKey('gene.id'), nullable=False)
      
@@ -79,7 +79,18 @@ class GeneName(DBEntity):
      
     def __repr__(self):
         return '<GeneName(id={!r}, name={!r})>'.format(self.id, self.name)
- 
+
+
+class GeneNameQueryItem(DBEntity):
+    
+    '''Temporary data for get_genes_by_name query'''
+    
+    query_id =  Column(Integer, primary_key=True, autoincrement=True)
+    row =  Column(Integer, primary_key=True)
+    column =  Column(Integer, primary_key=True)
+    name = Column(String(250), nullable=False)
+    
+
  
 class Gene(DBEntity):
      
@@ -88,7 +99,7 @@ class Gene(DBEntity):
     names: Canonical name and synonymous names (unordered)
     '''
      
-    id =  Column(Integer, primary_key=True, autoincrement=False)
+    id =  Column(Integer, primary_key=True)
     description = Column(String(1000), nullable=True)
     canonical_name_id =  Column(Integer, ForeignKey('gene_name.id'), nullable=True)
      
@@ -96,7 +107,10 @@ class Gene(DBEntity):
     # names = GeneName backref, all names
      
     def __repr__(self):
-        return '<Gene(id={!r}, canonical_name={!r})>'.format(self.id, self.canonical_name)    
+        return '<Gene(id={!r}, canonical_name={!r})>'.format(self.id, self.canonical_name)
+    
+    def __lt__(self, other):
+        return self.id < other.id
     
     
 GeneExpressionMatrixTable = Table('gene_expression_matrix', DBEntity.metadata,
@@ -134,4 +148,21 @@ class Clustering(DBEntity):
         return '<Clustering(id={!r}, path={!r})>'.format(self.id, self.path)
     
     
+class GeneMapping(DBEntity):
+    
+    '''
+    Maps genes from one set (called the left-hand set) to the other (right-hand).
+    
+    A gene may appear on either side (left or right), not both. More formally,
+    set(left_ids) and set(right_ids) must be disjoint.
+    '''
+     
+    left_id =  Column(Integer, ForeignKey('gene.id'), primary_key=True, autoincrement=False)
+    right_id =  Column(Integer, ForeignKey('gene.id'), primary_key=True, autoincrement=False)
+     
+    left = relationship('Gene', foreign_keys=[left_id])
+    right = relationship('Gene', foreign_keys=[right_id])
+     
+    def __repr__(self):
+        return '<GeneMapping(left_id={!r}, right_id={!r})>'.format(self.left_id, self.right_id)
     

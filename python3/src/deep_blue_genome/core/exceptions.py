@@ -28,10 +28,7 @@ class TaskFailedException(Exception):
     To give an idea of the scope of these 'tasks', we give a few examples: a
     MORPH run; importing a gene expression matrix.
     '''
-    
-    def __init__(self, cause=None):
-        super().__init__(self, "Task failed.\nCause: {}".format(cause))
         
-class GeneNotFoundException(Exception):
-    def __init__(self, gene_name, cause=None):
-        super().__init__(self, "Could not find gene with name '{}'.\nCause: {}".format(gene_name, cause))
+        
+        
+        

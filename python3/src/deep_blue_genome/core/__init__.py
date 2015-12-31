@@ -1,2 +1,2 @@
-from .config import config
-from .exceptions import GeneNotFoundException, TaskFailedException
+from deep_blue_genome.todo import config
+from .exceptions import TaskFailedException

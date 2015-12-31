@@ -1,4 +1,7 @@
 #!/bin/sh
+
+# Create python virtual environment to develop in
+
 set -e
 
 rm -rf venv

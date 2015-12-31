@@ -22,4 +22,4 @@ Configuration options for handling some exceptions
 from enum import Enum
 
 # see example config file for an explanation of these
-UnknownGeneHandling = Enum('UnknownGeneHandling', 'add ignore fail')
+UnknownGeneHandler = Enum('UnknownGeneHandler', 'add ignore fail')  #TODO any way to perhaps deduplicate documenting efforts? E.g. docstrings here and generate defaults.conf from the docstrings. Same goes for cli.defaults.conf. 

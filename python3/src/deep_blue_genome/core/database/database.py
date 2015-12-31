@@ -15,18 +15,22 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
+import sqlalchemy as sa
 from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.exc import NoResultFound
-from deep_blue_genome.core.database.entities import LastId, DBEntity, Gene, GeneName
-from deep_blue_genome.util.debug import log_sql
-from deep_blue_genome.core.exceptions import TaskFailedException,\
-    GeneNotFoundException
-from deep_blue_genome.core.exception_handling import UnknownGeneHandling
+import sqlalchemy.sql as sql
+from deep_blue_genome.core.database.entities import LastId, DBEntity, Gene, GeneName,\
+    GeneNameQueryItem
+from deep_blue_genome.core.exceptions import TaskFailedException
+from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
 from contextlib import contextmanager
 import logging
+import pandas as pd
+import numpy as np
+from more_itertools.more import chunked
+from deep_blue_genome.util.pandas import df_has_null, df_count_null
 
-_logger = logging.getLogger('deep_blue_genome.core.database.database')
+_logger = logging.getLogger('deep_blue_genome.core.Database')
         
 class Database(object):
     
@@ -35,7 +39,9 @@ class Database(object):
     
     Note: Use bulk methods for large amounts or performance will suffer.
     
-    None of Database's methods commit `session`.
+    None of Database's methods commit or rollback `Database.session` or any session passed into a method.
+    
+    Note: A Session object should not be shared across threads.
     '''
     
     def __init__(self, context, host, user, password, name): # TODO whether or not to add a session id other than "We are global, NULL, session"
@@ -56,7 +62,7 @@ class Database(object):
         ''' 
         self._context = context
         
-        self._engine = create_engine('mysql+pymysql://{}:{}@{}/{}'.format(user, password, host, name))
+        self._engine = create_engine('mysql+pymysql://{}:{}@{}/{}'.format(user, password, host, name), echo=False)
         self._create()
         
         self._Session = sessionmaker(bind=self._engine)
@@ -165,134 +171,130 @@ class Database(object):
             #TODO could we bring it down to 1 round trip? update followed by select. Should we? We need profiling for DB operations
             record = session.query(LastId).filter_by(table_name=name).one()
             start = record.last_id+1
-            record.last_id += count
+            record.last_id += int(count)
             return iter(range(start, record.last_id+1))
-    
-    def get_gene_by_name(self, name, session=None):
-        '''
-        Get gene by name (including synonyms, ignoring case).
-        
-        If Gene is not found and unknown_gene handling is configured to 'add', a
-        gene will be added with the given name as canonical name. If the
-        handling is set to 'fail', this event will raise a TaskFailedException.
-        If the handling is set to 'ignore', GeneNotFoundException is raised.
-        
-        Parameters
-        ----------
-        name : str
-            One of the Gene's names
             
-        Returns
-        -------
-        Gene
-            The found/added gene
-             
-        Raises
-        ------
-        GeneNotFoundException
-            If gene not found and unknown_gene handling is set to 'ignore'.
-        TaskFailedException
-        '''
-        if not session:
-            session = self.session
-        try:
-            return (session
-                .query(Gene)
-                .join(GeneName, Gene.id == GeneName.gene_id)
-                .filter(GeneName.name == name)
-                .one()
-            )
-        except NoResultFound as ex:
-            unknown_gene_handling = self._context.configuration['exception_handling']['unknown_gene']
-            if unknown_gene_handling == UnknownGeneHandling.add:
-                gene_name = GeneName(id=self.get_next_id(GeneName), name=name)
-                gene = Gene(id=self.get_next_id(Gene), names=[gene_name], canonical_name=gene_name)
-                session.add(gene)
-                return gene
-            else:
-                ex = GeneNotFoundException(name, ex)
-                if unknown_gene_handling == UnknownGeneHandling.ignore:
-                    raise ex
-                elif unknown_gene_handling == UnknownGeneHandling.fail:
-                    raise TaskFailedException(cause=ex)
-                else:
-                    assert False
-                    
-    def get_genes_by_name(self, names, session=None):
+    def _get_genes_by_name(self, query_id, names, session):
+        stmt = (
+            session
+            .query(GeneNameQueryItem.row, GeneNameQueryItem.column, Gene) # row, col added as otherwise same Genes would fold into 1 in the return for some reason 
+            .select_from(GeneNameQueryItem)
+            .filter_by(query_id=query_id)
+            .join(GeneName, GeneName.name==GeneNameQueryItem.name, isouter=True)
+            .join(Gene, Gene.id == GeneName.gene_id, isouter=True)
+            .order_by(GeneNameQueryItem.row, GeneNameQueryItem.column)
+        )
+        return pd.DataFrame(chunked((row[2] for row in stmt), len(names.columns)), columns=names.columns, index=names.index)
+    
+    # TODO map=False (apply gene_mapping if True), map_suffix1 (map gene_name.1 to gene_name). Note: Order is: get genes by name -> apply map_suffix1 -> handle unknown genes -> apply map
+    def get_genes_by_name(self, names, session=None, unknown_gene_handler=None):
         '''
         Get genes by name (including synonyms, ignoring case).
         
-        Faster than `get_gene_by_name` unless you need only look up a single gene.
+        Can be thought of as `names.applymap(get_gene_by_name)`, except it is much
+        faster, and get_gene_by_name does not exist.
         
         If a gene is not found and unknown_gene handling is configured to 'add', a
         gene will be added with the given name as canonical name. If the
         handling is set to 'fail', this event will raise a TaskFailedException.
-        If the handling is set to 'ignore', it will be returned in the missing list.
+        If the handling is set to 'ignore', it will be returned as NaN.
         
         Parameters
         ----------
-        names : iterable of str
-            Names of genes to fetch. If the same gene is mentioned more than
-            once, it may be present in the return more than once (this includes
-            synonyms).
+        names : pandas.DataFrame(data=[[name : str]])
+            Each cell of the DataFrame is a name of a gene to get.
         session
-            Session to use. Uses `self.session` if None.
+            Session to use. Uses `self.session` if None. Concurrent calls to
+            this function with the same session (including None) are currently
+            not supported.
+        unknown_gene_handler
+            If not None, overrides the context's UnknownGeneHandler.
             
         Returns
         -------
-        (genes : list of Gene, missing : list of str)
-            Returns the genes (including added genes if handling is 'add'), and
-            names of genes not found (if handling is 'ignore').
+        pandas.DataFrame(data=[[gene : Gene]])
+            Data frame with same index as `names` and each cell's value replaced
+            with a Gene or NaN (in case the gene name was not found and unknown
+            gene handler is 'ignore').
              
         Raises
         ------
         TaskFailedException
             If a gene was not found and handling is set to 'fail' 
         '''
-        _logger.debug('get_genes_by_name')
-        names = set(names)
         if not session:
             session = self.session
         
-        # Select unknown gene names
-        names_present = list(
-            session
-            .query(GeneName)
-            .filter(GeneName.name.in_(names))
-        )
-        missing = names - {r.name for r in names_present}
+        _logger.debug('Querying up to {} genes by name'.format(names.size))
         
-        # Get present genes
-        if names_present:
-            _logger.debug('Getting {} present genes'.format(len(names_present)))
-            genes = list(
-                session
-                .query(Gene)
-                .filter(Gene.id.in_([name.gene_id for name in names_present]))
-            )
-        else:
-            genes = []
-        
-        # Handle unknown genes
-        if missing:
-            _logger.warn('Encountered {} unknown genes'.format(len(missing)))
-            unknown_gene_handling = self._context.configuration['exception_handling']['unknown_gene']
-            if unknown_gene_handling == UnknownGeneHandling.add:
-                _logger.debug('Adding unknown genes')
-                next_gene_name_ids = self.get_next_ids(GeneName, len(missing))
-                next_gene_ids = self.get_next_ids(Gene, len(missing))
-                for name in missing:
-                    gene_name = GeneName(id=next(next_gene_name_ids), name=name)
-                    gene = Gene(id=next(next_gene_ids), names=[gene_name], canonical_name=gene_name)
-                    session.add(gene)
-                    genes.append(gene)
-                missing = []
-            elif unknown_gene_handling == UnknownGeneHandling.ignore:
-                pass  # ignore
-            elif unknown_gene_handling == UnknownGeneHandling.fail:
-                raise TaskFailedException(cause=GeneNotFoundException(missing[0]))
-            else:
-                assert False
+        query_id = self.get_next_id(GeneNameQueryItem)
+        try:
+            # Insert query data
+            # XXX column axis apply followed by row axis apply followed by to_dict('split')['data'] might be faster
+            # XXX to_dict() might be faster
+            session.bulk_insert_mappings(GeneNameQueryItem, [
+                {'row': row, 'column': column, 'name': values[column], 'query_id': query_id}
+                for row, values in enumerate(names.itertuples(index=False, name=None))
+                for column in range(len(names.columns))
+            ])
             
-        return genes, missing
+            # Find genes by name
+            genes = self._get_genes_by_name(query_id, names, session)
+            
+            # Handle unknown genes
+            count_missing = df_count_null(genes)
+            if count_missing:
+                _logger.info('Input has up to {} genes missing from database'.format(count_missing))
+                
+                if not unknown_gene_handler:
+                    unknown_gene_handler = self._context.configuration['exception_handlers']['unknown_gene']
+                    
+                if unknown_gene_handler == UnknownGeneHandler.add:
+                    # Add missing genes
+                    
+                    select_missing_names_stmt = (
+                        session.query(GeneNameQueryItem.name)
+                        .distinct()
+                        .filter_by(query_id=query_id)
+                        .join(GeneName, GeneName.name == GeneNameQueryItem.name, isouter=True)
+                        .filter(GeneName.id.is_(None))
+                    )
+                    
+                    # Insert genes
+                    stmt = (
+                        Gene.__table__
+                        .insert()
+                        .from_select(['id'], 
+                            session
+                            .query(sa.null())
+                            .select_entity_from(select_missing_names_stmt.subquery())
+                        )
+                    )
+                    session.execute(stmt)
+                    
+                    # Insert gene names
+                    stmt = (
+                        GeneName.__table__
+                        .insert()
+                        .from_select(['gene_id', 'name'],
+                            sql.select([sql.text('@row := @row + 1'), select_missing_names_stmt.subquery()])
+                            .select_from(sql.text('(SELECT @row := last_insert_id() - 1) range_'))
+                        )
+                    )
+                    result = session.execute(stmt)
+                    _logger.info('Added {} missing genes to database'.format(result.rowcount))
+                        
+                    # Get genes again, with missing ones added
+                    genes = self._get_genes_by_name(query_id, names, session)
+                    assert not df_has_null(genes)  # TODO rm when verified enough
+                elif unknown_gene_handler == UnknownGeneHandler.ignore:
+                    pass  # ignore
+                elif unknown_gene_handler == UnknownGeneHandler.fail:
+                    raise TaskFailedException('Encountered {} unknown genes'.format(count_missing))
+                else:
+                    assert False
+        finally:
+            session.query(GeneNameQueryItem).filter_by(query_id=query_id).delete(synchronize_session=False)
+            
+        return genes
             

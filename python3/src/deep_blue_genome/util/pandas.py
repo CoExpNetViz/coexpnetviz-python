@@ -16,26 +16,19 @@
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
-Debug utilities
+Helper functions for pandas collections
 '''
 
-import os
-import psutil
-from contextlib import contextmanager
-import logging
+import numpy as np
 
-def print_mem():
-    process = psutil.Process(os.getpid())
-    print('{}MB memory usage'.format(int(process.memory_info().rss / 2**20)))
-    
-@contextmanager
-def log_sql():
-    logger = logging.getLogger('sqlalchemy.engine')
-    original = logger.level
-    logger.setLevel(logging.INFO)
-    try:
-        yield
-    finally:
-        logger.setLevel(original)
+# TODO does df.values cost copy time?
 
+# XXX have a count_nan or such added to DataFrame with this implementation
+def df_count_null(df):
+    return df.isnull().values.sum()
 
+def df_has_null(df):
+    return df.isnull().values.any()
+
+def series_has_duplicates(series):
+    return len(np.unique(series.values)) != len(series)

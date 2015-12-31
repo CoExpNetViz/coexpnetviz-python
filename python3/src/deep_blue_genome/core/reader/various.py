@@ -2,7 +2,11 @@ import pandas as pd
 import csv
 from plumbum import local
 from deep_blue_genome.core.expression_matrix import ExpressionMatrix
-from deep_blue_genome.core.util import df_expand_iterable_values
+from deep_blue_genome.core.util import df_expand_iterable_values, flatten,\
+    compose
+from deep_blue_genome.util.algorithms import merge_overlapping_named_sets
+from itertools import chain
+from more_itertools.more import first
 
 # TODO validation should be part of reading. We at least want to save a log of
 # warnings. TODO input validation error handling + setting stuff as warning or
@@ -11,7 +15,12 @@ from deep_blue_genome.core.util import df_expand_iterable_values
 # lenient config should be picked as default. In either case, errors and warnings
 # will be logged. Though keep in mind that in the future one might even want to limit logging.
 '''
-All reading/input things.
+File reading.
+
+Duplicate gene names in input will generally not be removed in the output.
+(Dropping duplicate gene names does not remove synonyms, thus the same gene
+would still be duplicated in the list (instead use get_genes_by_name, then
+drop_duplicates))
 
 Input validation error handling can be configured to either:
 
@@ -26,15 +35,6 @@ Some of the design principles used:
 # TODO test promises in robustness for the various file formats
 
 # TODO in the future this may be of interest https://pypi.python.org/pypi/python-string-utils/0.3.0  We could donate our own things to that library eventually...
-
-def canonise_gene(gene):
-    '''
-    Lowercase and strip variant suffix.
-    
-    Suffix stripping may be a bit error-prone but forms a decent alternative
-    when a gene table is unavailable.
-    '''
-    return gene.lower().split('.')[0]
     
 def sanitise_plain_text_file(file):
     '''
@@ -72,15 +72,13 @@ def read_expression_matrix_file(path):
     Returns
     -------
     ExpressionMatrix
-        The expression matrix
     '''
     mat = pd.read_table(path, index_col=0, header=0, engine='python').astype(float)
     mat = mat[mat.index.to_series().notnull()]  # TODO log warnings for dropped rows
     mat.index.name = 'gene'
-    mat.index = mat.index.to_series().apply(canonise_gene)
     return ExpressionMatrix(mat, name=path.name)
 
-def read_clustering_file(path):
+def read_clustering_file(path, named=True, merge_overlapping=False):
     '''
     Read generic clustering.
     
@@ -89,6 +87,11 @@ def read_clustering_file(path):
     Each row is a cluster: `cluster_name item1 item2 ...`. (An item may occur
     in multiple clusters).
     
+    Robustness notes:
+    
+    - removes duplicates (e.g. if an item is part of a cluster twice, it removes one occurence)
+    - sanitises input file (e.g. newline errors)
+    
     Clusters can also be split across multiple lines::
     
         cluster1 item1
@@ -96,33 +99,45 @@ def read_clustering_file(path):
         cluster2 item5
         cluster1 item3
     
-    Example return::
-    
-        cluster_id
-        cluster1  AT5G41040
-        cluster1  AT5G23190
-        cluster2  AT3G11430
-    
     Parameters
     ----------
     path : str
-        path to clustering file to read
-    
+        Path to clustering file to read
+    named : bool
+        If True, the first column refers to cluster names, else each line is an unnamed cluster.
+    merge_overlapping : bool
+        If True, merge overlapping clusters.
+        
     Returns
     -------
-    pandas.Series(data=str, index=(cluster_id : str))
-        Clustering
+    pandas.DataFrame(columns=[cluster_id, item : str]))
+        Clustering in relational table format. If `merge_overlapping`,
+        `cluster_id` is a set of cluster ids.
     '''
+    # Read file
     sanitise_plain_text_file(path)
     with open(path, 'r') as f:
-        reader = csv.reader(f, delimiter="\t")
-        df = pd.DataFrame(([row[0], row[1:]] for row in reader), columns='cluster_id item'.split())
+        reader = csv.reader(f, delimiter='\t')
+        if named:
+            df = pd.DataFrame(([row[0], row[1:]] for row in reader), columns=['cluster_id', 'item'])
+            df['cluster_id'] = df['cluster_id'].str.lower()
+        else:
+            df = pd.DataFrame(([row] for row in reader), columns=['item'])
+            df.index.name = 'cluster_id'
+            df.reset_index(inplace=True)
+    
+    # Merge overlapping, maybe
+    if merge_overlapping:
+        groups = df.groupby('cluster_id')['item'].apply(lambda x: set(chain(*x)))
+        groups = merge_overlapping_named_sets(({name}, set_) for name, set_ in groups.items())
+        df = pd.DataFrame(groups, columns=['cluster_id', 'item'])
+    
+    # Split lists
     df = df_expand_iterable_values(df, ['item'])
-    df['cluster_id'] = df['cluster_id'].str.lower()
-    df['item'] = df['item']
-    df.set_index('cluster_id', inplace=True)
+    
+    # Finish up
     df.drop_duplicates(inplace=True)
-    return df.item
+    return df
 
 def read_whitespace_separated_2d_array_file(path): #TODO unused?
     '''
@@ -182,20 +197,17 @@ def read_gene_families_file(path):
     
     Returns
     -------
-    pandas.Series(data=(gene : str), index=(family : str))
+    pandas.DataFrame(columns=[family : str, gene : str])
         Gene families
     '''
-    # TODO a gene_fam file is actually a clustering file with some different names set for the column and index
+    # XXX use read_clustering
     sanitise_plain_text_file(path)
     with open(path, 'r') as f:
         reader = csv.reader(f, delimiter="\t")
         df = pd.DataFrame(([row[0], row[1:]] for row in reader), columns='family gene'.split())
     df = df_expand_iterable_values(df, ['gene'])
     df['family'] = df['family'].str.lower()
-    df['gene'] = df['gene'].apply(canonise_gene)
-    df.set_index('family', inplace=True)
-    df.drop_duplicates(inplace=True)
-    return df.gene
+    return df
 
 def read_baits_file(path):
     '''
@@ -219,8 +231,7 @@ def read_baits_file(path):
         Series of genes
     '''
     with open(path, encoding='utf-8') as f:
-        baits = pd.Series(f.read().split(), name='gene').apply(canonise_gene)
-        baits.drop_duplicates(inplace=True)
+        baits = pd.Series(f.read().split(), name='gene')
         return baits
 
 def read_mcl_clustering(path):
@@ -237,23 +248,32 @@ def read_mcl_clustering(path):
     
     Returns
     -------
-    pandas.Series(index=(cluster_id : int), data=(item : str)
+    pandas.DataFrame(data=[cluster_id : int, item : str])
         Clusters
     '''
+    # XXX use read_clustering
     df = pd.read_csv(path, names=['item']).applymap(lambda x: x.lower().split())
     df.index.name = 'cluster_id'
     df.reset_index(inplace=True)
     df = df_expand_iterable_values(df, 'item')
-    df.set_index('cluster_id', inplace=True)
-    return df['item']
+    return df
 
-def read_mapping(path):
+def read_gene_mapping_file(path): 
     '''
-    Read 2-column mapping file
+    Read a gene mapping file
+    
+    A gene mapping is a non-transitive, symmetric, reflexive relation between gene names. 
+    An example of this is the rice MSU-RAP mapping (http://www.thericejournal.com/content/6/1/4).
+    
+    For each line, gene in first column maps to the genes in the other columns.
+    By symmetry, each item on the right hand side maps to the item in the first
+    column.
     
     Returns
     -------
-    pandas.DataFrame(columns=[(left : str), (right : str)])
+    pandas.DataFrame(columns=[left : str, right : str])
         Mapping
     '''
-    return pd.read_table(path, names='left right'.split()).applymap(canonise_gene)
+    gene_mapping = read_clustering_file(path, named=True, merge_overlapping=False)
+    gene_mapping.columns = ['left', 'right']
+    return gene_mapping

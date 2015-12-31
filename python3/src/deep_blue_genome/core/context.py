@@ -14,7 +14,7 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
-from deep_blue_genome.core.exception_handling import UnknownGeneHandling
+from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
 
 '''
 Mixins to build a Context class (or 'Application' class if you prefer)
@@ -48,7 +48,7 @@ class ConfigurationMixin(object):
     
     def __init__(self, main_config, **kwargs):
         self._config = {k : dict(v) for k,v in main_config.items()}
-        self._config['exception_handling']['unknown_gene'] = UnknownGeneHandling[self._config['exception_handling']['unknown_gene']]
+        self._config['exception_handlers']['unknown_gene'] = UnknownGeneHandler[self._config['exception_handlers']['unknown_gene']]
         
     @property
     def configuration(self):

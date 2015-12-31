@@ -5,7 +5,7 @@ Test Cache
 
 import pytest
 import deep_blue_genome.core.context as ctx
-from deep_blue_genome.core import GeneNotFoundException, TaskFailedException
+from deep_blue_genome.core import TaskFailedException
 from deep_blue_genome.test.util import get_config
 import plumbum as pb
 from contextlib import contextmanager
