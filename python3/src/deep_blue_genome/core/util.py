@@ -29,6 +29,7 @@ import requests
 import re
 from urllib.parse import urlparse
 import plumbum as pb
+import collections
 
 def is_sorted(l):
     return all(l[i] <= l[i+1] for i in range(len(l)-1))
@@ -51,6 +52,7 @@ def flatten(list_):
     '''
     return list(chain(*list_))
 
+# Source: http://stackoverflow.com/a/2158532/1031434
 def flatten_deep(list_):
     '''
     Flatten list deeply
@@ -62,13 +64,15 @@ def flatten_deep(list_):
     
     Parameters
     ----------
-    list_ : list or any
-        If list, it is flattened, otherwise it's returned as is
+    list_ : iterable of any
+        If iterable (except str or bytes), it is flattened, otherwise it's returned as is
     '''
-    if isinstance(list_, list):
-        return list(map(flatten_deep, list_))
-    else:
-        return list_
+    for item in list_:
+        if isinstance(item, collections.Iterable) and not isinstance(item, (str,bytes)):
+            for sub in flatten_deep(item):
+                yield sub
+        else:
+            yield item
 
 def remove_duplicates(items):
     '''

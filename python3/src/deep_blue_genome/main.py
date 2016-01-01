@@ -22,6 +22,7 @@ Deep Blue Genome entry point
 import click
 from deep_blue_genome.core.configuration import Configuration
 from deep_blue_genome.data_preparation.main import prepare
+from deep_blue_genome.morph.main import morph
 from deep_blue_genome.core import cli
 from deep_blue_genome import __root__
 
@@ -36,6 +37,7 @@ def group():
 
 # add DBG commands
 group.add_command(prepare)
+group.add_command(morph)
 
 def load_config():
     cli_config = Configuration(__root__, 'deep_blue_genome', 'cli')

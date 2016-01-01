@@ -1,4 +1,4 @@
-# Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2015, 2016 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
 # 
 # This file is part of Deep Blue Genome.
 # 
@@ -14,51 +14,53 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
-
-from deep_blue_genome.core.reader.various import read_baits_file, read_expression_matrix_file,\
-    read_gene_families_file
-import sys
-import pandas as pd
-from deep_blue_genome.morph.algorithm import morph
-from deep_blue_genome.core.cli import ArgumentParser
+import click
 
 '''
-'MOdule guided Ranking of candidate PatHway genes (MORPH)'
+MOdule guided Ranking of candidate PatHway genes (MORPH)
 '''
 
-def main():
-    main_(sys.argv)
+from deep_blue_genome.core.reader.various import read_baits_file
+from deep_blue_genome.morph.algorithm import morph as morph_
+from deep_blue_genome.core import cli, context as ctx
 
-def main_(argv):
-    def TopK(value):
-        ivalue = int(value)
-        if ivalue < 1:
-             raise argparse.ArgumentTypeError("must provide an integer greater 0, got: %s".format(value))
-        return ivalue
+class Context(ctx.DatabaseMixin, ctx.OutputMixin):
+    pass
 
-    # Parse CLI args
-    parser = ArgumentParser(description='MOdule guided Ranking of candidate PatHway genes (MORPH).')
-    parser.add_argument(
-        '--baits-file', metavar='B', required=True, nargs='+',
-        help='Path to file listing the bait genes to use.'
-    )
-    parser.add_argument(
-        '--top-k', metavar='K', default=100, type=TopK,
-        help='K best candidate genes to output in ranking.'
-    )
-    args = parser.parse_args(argv[1:])
+@click.command()
+@cli.argument(
+    'baits-file',
+    nargs=-1,
+    type=click.Path(file_okay=True, dir_okay=True, readable=True, writable=False, exists=True, resolve_path=True),
+)
+@cli.option(
+    '--top-k',
+    type=click.IntRange(min=1),
+    help='K best candidate genes to output in ranking.'
+)
+@ctx.cli_options(Context)
+@click.pass_obj
+def morph(main_config, **kwargs):
+    '''
+    MOdule guided Ranking of candidate PatHway genes (MORPH).
+    
+    BAITS_FILE: One or more files or directories containing files listing the bait genes to use.
+    '''
+    kwargs['main_config'] = main_config # XXX make this DRY
+    context = Context(**kwargs)
 
     # Read files
-    baits = read_baits_file(args.baits_file)
+    top_k = kwargs['top_k']
+    for baits_file in kwargs['baits_file']: # TODO support directories, extract some part of `to_paths` to util and reuse it here
+        baits = read_baits_file(baits_file)
     
-    # Run alg
-    network = morph(context, baits, args.top_k)
+        # Run alg
+        print(context, baits, top_k)
+        ranking = morph_(context, baits, top_k)
 
-    # Write ranking to file
-    assert False
-
-if __name__ == '__main__':
-    main()
+        # Write result to file
+        assert False
+        ranking.write(context.output_dir)
     
     
     

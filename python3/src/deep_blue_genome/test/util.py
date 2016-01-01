@@ -1,3 +1,20 @@
+# Copyright (C) 2015, 2016 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# 
+# This file is part of Deep Blue Genome.
+# 
+# Deep Blue Genome is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# Deep Blue Genome is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public License
+# along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
+
 import plumbum as pb
 from deep_blue_genome.main import main, load_config
 from deep_blue_genome.core.util import flatten_deep
@@ -55,7 +72,7 @@ class CLITester(object):
     def tmpdir(self, value):
         self._tmp_dir = value
 
-    def copy_data(self, item, prefix=''):    
+    def copy_data(self, item, prefix=''): # XXX better docstring
         '''
         Copy data to tmpdir, return basename of passed item or the basenames of its content.
         
@@ -84,7 +101,12 @@ class CLITester(object):
             return item.name
         
     def run(self, *args, **kwargs):
-        args = self._args + list(args) + flatten_deep([['--' + k.replace('_', '-'), v] for k,v in kwargs])
+        '''
+        args: list of str-able
+        kwargs: dict of str -> str-able
+        '''
+        args = self._args + list(args)
+        args += flatten_deep([['--' + k.replace('_', '-'), v] for k,v in kwargs.items()])
         args = list(map(str, args))
         with pb.local.cwd(self._tmp_dir):
             try:
