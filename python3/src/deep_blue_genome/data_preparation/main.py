@@ -25,7 +25,6 @@ from deep_blue_genome.core.database.entities import ExpressionMatrix, Clustering
     GeneMapping
 import plumbum as pb
 from deep_blue_genome.util.file_system import flatten_paths
-import textwrap
 from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
 from deep_blue_genome.util.pandas import df_has_null, series_has_duplicates
 import logging

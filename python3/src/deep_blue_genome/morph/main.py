@@ -52,10 +52,10 @@ def main_(argv):
     baits = read_baits_file(args.baits_file)
     
     # Run alg
-    network = morph(baits, args.top_k)
+    network = morph(context, baits, args.top_k)
 
     # Write ranking to file
-    CytoscapeWriter(network).write()
+    assert False
 
 if __name__ == '__main__':
     main()

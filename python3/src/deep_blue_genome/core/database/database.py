@@ -20,15 +20,15 @@ from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.orm import sessionmaker
 import sqlalchemy.sql as sql
 from deep_blue_genome.core.database.entities import LastId, DBEntity, Gene, GeneName,\
-    GeneNameQueryItem
+    GeneNameQueryItem, GeneMapping
 from deep_blue_genome.core.exceptions import TaskFailedException
 from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
 from contextlib import contextmanager
 import logging
 import pandas as pd
 import numpy as np
-from more_itertools.more import chunked
-from deep_blue_genome.util.pandas import df_has_null, df_count_null
+from deep_blue_genome.util.pandas import df_count_null
+import re
 
 _logger = logging.getLogger('deep_blue_genome.core.Database')
         
@@ -174,20 +174,87 @@ class Database(object):
             record.last_id += int(count)
             return iter(range(start, record.last_id+1))
             
-    def _get_genes_by_name(self, query_id, names, session):
+            
+    def _add_unknown_genes(self, query_id, session):
+        select_missing_names_stmt = (
+            session.query(GeneNameQueryItem.name)
+            .distinct()
+            .filter_by(query_id=query_id)
+            .join(GeneName, GeneName.name == GeneNameQueryItem.name, isouter=True)
+            .filter(GeneName.id.is_(None))
+        )
+        
+        # Insert genes
+        stmt = (
+            Gene.__table__
+            .insert()
+            .from_select(['id'], 
+                session
+                .query(sa.null())
+                .select_entity_from(select_missing_names_stmt.subquery())
+            )
+        )
+        unknown_genes_count = session.execute(stmt).rowcount
+        
+        # Continue only if there actually were unknown genes 
+        if unknown_genes_count:
+            # Insert gene names
+            stmt = (
+                GeneName.__table__
+                .insert()
+                .from_select(['gene_id', 'name'],
+                    sql.select([sql.text('@row := @row + 1'), select_missing_names_stmt.subquery()])
+                    .select_from(sql.text('(SELECT @row := last_insert_id() - 1) range_'))
+                )
+            )
+            session.execute(stmt)
+            _logger.info('Added {} missing genes to database'.format(unknown_genes_count))
+            
+    def _df_from_result(self, result):
+        '''
+        result : iterable of (row, column, value)
+        '''
+        return pd.DataFrame(iter(result), columns=['row', 'column', 'value']).pivot(index='row', columns='column', values='value')
+#         return pd.DataFrame(chunked((row[2] for row in result), len(columns)), columns=columns, index=index) # XXX If slow, you could try this instead. It requires ordered by row, col and a None for every missing val
+        
+    def _get_genes_by_name(self, query_id, names, session, map_): # XXX untested
+        '''Coupled to get_genes_by_name'''
+        # Select unmapped genes
         stmt = (
             session
             .query(GeneNameQueryItem.row, GeneNameQueryItem.column, Gene) # row, col added as otherwise same Genes would fold into 1 in the return for some reason 
             .select_from(GeneNameQueryItem)
             .filter_by(query_id=query_id)
-            .join(GeneName, GeneName.name==GeneNameQueryItem.name, isouter=True)
-            .join(Gene, Gene.id == GeneName.gene_id, isouter=True)
-            .order_by(GeneNameQueryItem.row, GeneNameQueryItem.column)
+            .join(GeneName, GeneNameQueryItem.name == GeneName.name)
         )
-        return pd.DataFrame(chunked((row[2] for row in stmt), len(names.columns)), columns=names.columns, index=names.index)
-    
-    # TODO map=False (apply gene_mapping if True), map_suffix1 (map gene_name.1 to gene_name). Note: Order is: get genes by name -> apply map_suffix1 -> handle unknown genes -> apply map
-    def get_genes_by_name(self, names, session=None, unknown_gene_handler=None):
+        select_genes_stmt = stmt.join(Gene, Gene.id == GeneName.gene_id)
+        genes = self._df_from_result(select_genes_stmt)
+        
+        # Select mapped genes
+        if map_:
+            select_mapped_genes_stmt = (
+                stmt
+                .join(GeneMapping, GeneName.gene_id == GeneMapping.left_id)
+                .join(Gene, GeneMapping.right_id == Gene.id)
+            )
+            print(str(select_mapped_genes_stmt))
+            mapped_genes = self._df_from_result(select_mapped_genes_stmt)
+        
+            # Override unmapped with mapped
+            mapped_genes.fillna(genes, inplace=True)
+            genes = mapped_genes
+        
+        # Restore columns and index of `names` to `genes`
+        genes.rename(
+            index=dict(zip(range(len(names.index)), names.index)),
+            columns=dict(zip(range(len(names.columns)), names.columns)),
+            inplace=True
+        )
+        genes = genes.reindex(index=names.index, columns=names.columns)
+        
+        return genes
+     
+    def get_genes_by_name(self, names, session=None, unknown_gene_handler=None, map_=False, map_suffix1=False):
         '''
         Get genes by name (including synonyms, ignoring case).
         
@@ -199,6 +266,10 @@ class Database(object):
         handling is set to 'fail', this event will raise a TaskFailedException.
         If the handling is set to 'ignore', it will be returned as NaN.
         
+        First each gene_name.1 is mapped to gene_name, if `map_suffix1`. Then
+        missing genes are added if the handler is `UnknownGeneHandler.add`.
+        Finally, gene mappings are applied if `map_` is True.
+        
         Parameters
         ----------
         names : pandas.DataFrame(data=[[name : str]])
@@ -209,6 +280,10 @@ class Database(object):
             not supported.
         unknown_gene_handler
             If not None, overrides the context's UnknownGeneHandler.
+        map_suffix1 : bool
+            Whether or not to map 'gene_name.1' to 'gene_name'
+        map_ : bool
+            Whether or not to map genes by their gene mapping (from left- to right-hand of mapping)
             
         Returns
         -------
@@ -224,11 +299,18 @@ class Database(object):
         '''
         if not session:
             session = self.session
+            
+        if not unknown_gene_handler:
+            unknown_gene_handler = self._context.configuration['exception_handlers']['unknown_gene']
         
         _logger.debug('Querying up to {} genes by name'.format(names.size))
         
         query_id = self.get_next_id(GeneNameQueryItem)
         try:
+            # Apply map_suffix1, maybe
+            if map_suffix1:
+                names = names.applymap(lambda x: re.sub(r'\.1$', '', x)) # TODO check
+            
             # Insert query data
             # XXX column axis apply followed by row axis apply followed by to_dict('split')['data'] might be faster
             # XXX to_dict() might be faster
@@ -238,56 +320,18 @@ class Database(object):
                 for column in range(len(names.columns))
             ])
             
+            # Add unknown genes, maybe
+            if unknown_gene_handler == UnknownGeneHandler.add:
+                self._add_unknown_genes(query_id, session)
+            
             # Find genes by name
-            genes = self._get_genes_by_name(query_id, names, session)
+            genes = self._get_genes_by_name(query_id, names, session, map_=map_)
             
             # Handle unknown genes
             count_missing = df_count_null(genes)
             if count_missing:
-                _logger.info('Input has up to {} genes missing from database'.format(count_missing))
-                
-                if not unknown_gene_handler:
-                    unknown_gene_handler = self._context.configuration['exception_handlers']['unknown_gene']
-                    
-                if unknown_gene_handler == UnknownGeneHandler.add:
-                    # Add missing genes
-                    
-                    select_missing_names_stmt = (
-                        session.query(GeneNameQueryItem.name)
-                        .distinct()
-                        .filter_by(query_id=query_id)
-                        .join(GeneName, GeneName.name == GeneNameQueryItem.name, isouter=True)
-                        .filter(GeneName.id.is_(None))
-                    )
-                    
-                    # Insert genes
-                    stmt = (
-                        Gene.__table__
-                        .insert()
-                        .from_select(['id'], 
-                            session
-                            .query(sa.null())
-                            .select_entity_from(select_missing_names_stmt.subquery())
-                        )
-                    )
-                    session.execute(stmt)
-                    
-                    # Insert gene names
-                    stmt = (
-                        GeneName.__table__
-                        .insert()
-                        .from_select(['gene_id', 'name'],
-                            sql.select([sql.text('@row := @row + 1'), select_missing_names_stmt.subquery()])
-                            .select_from(sql.text('(SELECT @row := last_insert_id() - 1) range_'))
-                        )
-                    )
-                    result = session.execute(stmt)
-                    _logger.info('Added {} missing genes to database'.format(result.rowcount))
-                        
-                    # Get genes again, with missing ones added
-                    genes = self._get_genes_by_name(query_id, names, session)
-                    assert not df_has_null(genes)  # TODO rm when verified enough
-                elif unknown_gene_handler == UnknownGeneHandler.ignore:
+                _logger.info('Input has up to {} genes not known to the database'.format(count_missing))    
+                if unknown_gene_handler == UnknownGeneHandler.ignore:
                     pass  # ignore
                 elif unknown_gene_handler == UnknownGeneHandler.fail:
                     raise TaskFailedException('Encountered {} unknown genes'.format(count_missing))
