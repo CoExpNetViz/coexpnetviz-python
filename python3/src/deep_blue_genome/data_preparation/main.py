@@ -1,4 +1,4 @@
-# Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2015, 2016 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
 # 
 # This file is part of Deep Blue Genome.
 # 
@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-# from deep_blue_genome.data_preparation.genes import load_gene_info
 import pandas as pd
 import click
 import deep_blue_genome.core.context as ctx
@@ -25,7 +24,6 @@ from deep_blue_genome.core.database.entities import ExpressionMatrix, Clustering
     GeneMapping
 import plumbum as pb
 from deep_blue_genome.util.file_system import flatten_paths
-from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
 from deep_blue_genome.util.pandas import df_has_null, series_has_duplicates
 import logging
 from deep_blue_genome.core.exceptions import TaskFailedException

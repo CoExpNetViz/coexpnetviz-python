@@ -14,15 +14,19 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
-import click
 
 '''
 MOdule guided Ranking of candidate PatHway genes (MORPH)
 '''
 
+from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
 from deep_blue_genome.core.reader.various import read_baits_file
 from deep_blue_genome.morph.algorithm import morph as morph_
 from deep_blue_genome.core import cli, context as ctx
+import click
+from deep_blue_genome.util.file_system import flatten_paths
+import pandas as pd
+import plumbum as pb
 
 class Context(ctx.DatabaseMixin, ctx.OutputMixin):
     pass
@@ -49,18 +53,26 @@ def morph(main_config, **kwargs):
     kwargs['main_config'] = main_config # XXX make this DRY
     context = Context(**kwargs)
 
-    # Read files
+    # Collect options
     top_k = kwargs['top_k']
-    for baits_file in kwargs['baits_file']: # TODO support directories, extract some part of `to_paths` to util and reuse it here
-        baits = read_baits_file(baits_file)
     
-        # Run alg
-        print(context, baits, top_k)
-        ranking = morph_(context, baits, top_k)
+    # Read baits
+    def bait_file_to_df(i, path):
+        df = read_baits_file(path).to_frame('bait')
+        df['baits_id'] = i
+        return df
+    bait_file_paths = flatten_paths(map(pb.local.path, kwargs['baits_file']))
+    baitss = pd.concat(bait_file_to_df(i, path) for i, path in enumerate(bait_file_paths))
+    baitss['bait'] = context.database.get_genes_by_name(baitss[['bait']], map_=True, map_suffix1=True)['bait']
+    if context.configuration.unknown_gene_handler == UnknownGeneHandler.ignore:
+        baitss.dropna(how='any', inplace=True)    
+    
+    # Run alg
+    ranking = morph_(context, baitss, top_k)
 
-        # Write result to file
-        assert False
-        ranking.write(context.output_dir)
+    # Write result to file
+    assert False
+    ranking.write(context.output_dir)
     
     
     

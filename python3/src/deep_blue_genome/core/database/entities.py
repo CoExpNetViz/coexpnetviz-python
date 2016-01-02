@@ -1,4 +1,4 @@
-# Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2015, 2016 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
 # 
 # This file is part of Deep Blue Genome.
 # 
@@ -29,6 +29,9 @@ from datetime import datetime
 
 # Note: we rely on the fact that mysql innodb's default collation is case-insensitive and the charset is utf8
 
+# Note: there are some `x = None` statements in class definitions, this is to
+# help autocomplete IDE functions know these attributes exist. Their actual
+# value is filled in by e.g. sqlalchemy. Sqlalchemy does not require these statements.
 
 class DBEntity(object):
     @declared_attr
@@ -100,11 +103,13 @@ class Gene(DBEntity):
     '''
      
     id =  Column(Integer, primary_key=True)
-    description = Column(String(1000), nullable=True)
+    description = Column(String(1000), nullable=True)  # XXX make lazy
     canonical_name_id =  Column(Integer, ForeignKey('gene_name.id'), nullable=True)
      
     canonical_name = relationship('GeneName', foreign_keys=[canonical_name_id], post_update=True)  # The preferred name to assign to this gene
     # names = GeneName backref, all names
+    expression_matrices = None  # ExpressionMatrix backref, all matrices of which the gene is part of
+    clusterings = None  # Clustering backref, all clusterings of which the gene is part of
      
     def __repr__(self):
         return '<Gene(id={!r}, canonical_name={!r})>'.format(self.id, self.canonical_name)
@@ -124,7 +129,7 @@ class ExpressionMatrix(DBEntity):
     id =  Column(Integer, primary_key=True, autoincrement=False)
     path = Column(String(PATH_MAX_LENGTH), nullable=False)
      
-    genes = relationship("Gene", secondary=GeneExpressionMatrixTable)  # Genes whose expression was measured in the expression matrix
+    genes = relationship("Gene", backref='expression_matrices', secondary=GeneExpressionMatrixTable)  # Genes whose expression was measured in the expression matrix
      
     def __repr__(self):
         return '<ExpressionMatrix(id={!r}, path={!r})>'.format(self.id, self.path)
@@ -142,7 +147,7 @@ class Clustering(DBEntity):
     id =  Column(Integer, primary_key=True, autoincrement=False)
     path = Column(String(PATH_MAX_LENGTH), nullable=False)
      
-    genes = relationship("Gene", secondary=GeneClusteringTable)  # Genes mentioned in the clustering
+    genes = relationship("Gene", backref='clusterings', secondary=GeneClusteringTable)  # Genes mentioned in the clustering
      
     def __repr__(self):
         return '<Clustering(id={!r}, path={!r})>'.format(self.id, self.path)
@@ -165,4 +170,14 @@ class GeneMapping(DBEntity):
      
     def __repr__(self):
         return '<GeneMapping(left_id={!r}, right_id={!r})>'.format(self.left_id, self.right_id)
+    
+class BaitsQueryItem(DBEntity):
+    
+    '''Temporary storage for bait sets to query on'''
+    
+    query_id =  Column(Integer, primary_key=True, autoincrement=True)
+    baits_id =  Column(Integer, primary_key=True, autoincrement=False)
+    bait_id =  Column(Integer, ForeignKey('gene.id'), primary_key=True, autoincrement=False)
+    
+    bait = relationship('Gene', foreign_keys=[bait_id])
     

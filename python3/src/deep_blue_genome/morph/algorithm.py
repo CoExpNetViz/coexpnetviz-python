@@ -1,4 +1,4 @@
-# Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2015, 2016 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
 # 
 # This file is part of Deep Blue Genome.
 # 
@@ -17,8 +17,11 @@
 
 import pandas as pd
 import numpy as np
+import logging
+
+_logger = logging.getLogger('deep_blue_genome.morph')
     
-def morph(context, baits, top_k):
+def morph(context, baitss, top_k):
     '''
     TODO
     
@@ -26,8 +29,8 @@ def morph(context, baits, top_k):
     
     Parameters
     ----------
-    baits : see `read_baits_file`'s return value
-        genes to which non-bait genes are compared
+    baitss : pd.DataFrame(columns=(baits_id : int, bait : Gene))
+        list of gene collections to which non-bait genes are compared
     top_k : int
         K best candidate genes to output in ranking
         
@@ -36,7 +39,17 @@ def morph(context, baits, top_k):
     TODO
         TODO
     '''
+    db = context.database
+    
     # fetch list of relevant clusterings and expression matricess from DB
+    _logger.info('Using expression matrices and clusterings which contain at least 5 baits (per bait set)')
+    result = db.get_by_genes(baitss, min_genes_present=5, expression_matrices=True, clusterings=True)
+    print(result.expression_matrices)
+    print(result.clusterings)
+    
     # Main alg stuff
+#     read_expression_matrix
+#     read_clustering
+    # AUSR...
     
     

@@ -1,4 +1,4 @@
-# Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2015, 2016 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
 # 
 # This file is part of Deep Blue Genome.
 # 
@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
+from collections import namedtuple
 
 '''
 Mixins to build a Context class (or 'Application' class if you prefer)
@@ -43,12 +44,16 @@ class ConfigurationMixin(object):
     '''
     Support for a main application configuration.
     
-    Expects a dict-like format of an ini file
+    Expects a dict-like format of an ini file.
     '''
     
+    # XXX not reusable across applications due to construction of own config object from app specific conf options, e.g. exception_handlers.unknown_gene
+    
     def __init__(self, main_config, **kwargs):
-        self._config = {k : dict(v) for k,v in main_config.items()}
-        self._config['exception_handlers']['unknown_gene'] = UnknownGeneHandler[self._config['exception_handlers']['unknown_gene']]
+        Configuration = namedtuple('Configuration', 'unknown_gene_handler'.split())
+        self._config = Configuration(
+            unknown_gene_handler=UnknownGeneHandler[main_config['exception_handlers']['unknown_gene']]
+        )
         
     @property
     def configuration(self):

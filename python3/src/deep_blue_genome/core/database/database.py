@@ -1,4 +1,4 @@
-# Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2015, 2016 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
 # 
 # This file is part of Deep Blue Genome.
 # 
@@ -20,7 +20,8 @@ from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.orm import sessionmaker
 import sqlalchemy.sql as sql
 from deep_blue_genome.core.database.entities import LastId, DBEntity, Gene, GeneName,\
-    GeneNameQueryItem, GeneMapping
+    GeneNameQueryItem, GeneMapping, ExpressionMatrix, BaitsQueryItem,\
+    Clustering
 from deep_blue_genome.core.exceptions import TaskFailedException
 from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
 from contextlib import contextmanager
@@ -29,8 +30,11 @@ import pandas as pd
 import numpy as np
 from deep_blue_genome.util.pandas import df_count_null
 import re
+from collections import namedtuple
 
 _logger = logging.getLogger('deep_blue_genome.core.Database')
+
+_ReturnTuple = namedtuple('_ReturnTuple', 'expression_matrices clusterings'.split())
         
 class Database(object):
     
@@ -168,7 +172,7 @@ class Database(object):
                 name = table.__tablename__
             else:
                 name = table.name
-            #TODO could we bring it down to 1 round trip? update followed by select. Should we? We need profiling for DB operations
+            # XXX could we bring it down to 1 round trip? update followed by select. Should we? We need profiling for DB operations
             record = session.query(LastId).filter_by(table_name=name).one()
             start = record.last_id+1
             record.last_id += int(count)
@@ -212,10 +216,24 @@ class Database(object):
             
     def _df_from_result(self, result):
         '''
+        Get DataFrame from (row, column, value) iterable
+        
         result : iterable of (row, column, value)
         '''
         return pd.DataFrame(iter(result), columns=['row', 'column', 'value']).pivot(index='row', columns='column', values='value')
 #         return pd.DataFrame(chunked((row[2] for row in result), len(columns)), columns=columns, index=index) # XXX If slow, you could try this instead. It requires ordered by row, col and a None for every missing val
+        
+    def _df_restore_axi_from(self, df, target):
+        '''
+        Restore `df`'s columns and index from `target` by treating current names
+        as indices into `target`'s axi
+        '''
+        df = df.rename(
+            index=dict(zip(range(len(target.index)), target.index)),
+            columns=dict(zip(range(len(target.columns)), target.columns)),
+        )
+        df = df.reindex(index=target.index, columns=target.columns)
+        return df
         
     def _get_genes_by_name(self, query_id, names, session, map_): # XXX untested
         '''Coupled to get_genes_by_name'''
@@ -229,6 +247,7 @@ class Database(object):
         )
         select_genes_stmt = stmt.join(Gene, Gene.id == GeneName.gene_id)
         genes = self._df_from_result(select_genes_stmt)
+        genes = self._df_restore_axi_from(genes, names)
         
         # Select mapped genes
         if map_:
@@ -237,20 +256,12 @@ class Database(object):
                 .join(GeneMapping, GeneName.gene_id == GeneMapping.left_id)
                 .join(Gene, GeneMapping.right_id == Gene.id)
             )
-            print(str(select_mapped_genes_stmt))
             mapped_genes = self._df_from_result(select_mapped_genes_stmt)
-        
+            mapped_genes = self._df_restore_axi_from(mapped_genes, names)
+            
             # Override unmapped with mapped
             mapped_genes.fillna(genes, inplace=True)
             genes = mapped_genes
-        
-        # Restore columns and index of `names` to `genes`
-        genes.rename(
-            index=dict(zip(range(len(names.index)), names.index)),
-            columns=dict(zip(range(len(names.columns)), names.columns)),
-            inplace=True
-        )
-        genes = genes.reindex(index=names.index, columns=names.columns)
         
         return genes
      
@@ -301,7 +312,7 @@ class Database(object):
             session = self.session
             
         if not unknown_gene_handler:
-            unknown_gene_handler = self._context.configuration['exception_handlers']['unknown_gene']
+            unknown_gene_handler = self._context.configuration.unknown_gene_handler
         
         _logger.debug('Querying up to {} genes by name'.format(names.size))
         
@@ -341,4 +352,109 @@ class Database(object):
             session.query(GeneNameQueryItem).filter_by(query_id=query_id).delete(synchronize_session=False)
             
         return genes
+    
+    def _get_expression_matrices_by_genes(self, query_id, min_genes_present, session=None):
+        base_stmt = (
+            session
+            .query(BaitsQueryItem)
+            .filter_by(query_id=query_id)
+            .join(Gene)
+            .join(ExpressionMatrix, Gene.expression_matrices)
+        )
+        
+        filtered_matrices_sub = (
+            base_stmt
+            .with_entities(BaitsQueryItem.baits_id, ExpressionMatrix.id)
+            .group_by(BaitsQueryItem.baits_id, ExpressionMatrix.id)
+            .having(sql.func.count() >= min_genes_present)
+            .subquery()
+        )
+        
+        stmt = (
+            base_stmt
+            .with_entities(BaitsQueryItem.baits_id, Gene, ExpressionMatrix)
+            .join(filtered_matrices_sub, sql.and_( 
+                ExpressionMatrix.id == filtered_matrices_sub.c.id,
+                BaitsQueryItem.baits_id == filtered_matrices_sub.c.baits_id,
+            ))
+        )
+        
+        expression_matrices = pd.DataFrame(iter(stmt), columns=['baits_id', 'bait', 'expression_matrix'])
+        return expression_matrices
+    
+    def _get_clusterings_by_genes(self, query_id, min_genes_present, session=None):
+        base_stmt = (
+            session
+            .query(BaitsQueryItem)
+            .filter_by(query_id=query_id)
+            .join(Gene)
+            .join(Clustering, Gene.clusterings)
+        )
+        
+        filtered_matrices_sub = (
+            base_stmt
+            .with_entities(BaitsQueryItem.baits_id, Clustering.id)
+            .group_by(BaitsQueryItem.baits_id, Clustering.id)
+            .having(sql.func.count() >= min_genes_present)
+            .subquery()
+        )
+        
+        stmt = (
+            base_stmt
+            .with_entities(BaitsQueryItem.baits_id, Gene, Clustering)
+            .join(filtered_matrices_sub, sql.and_( 
+                Clustering.id == filtered_matrices_sub.c.id,
+                BaitsQueryItem.baits_id == filtered_matrices_sub.c.baits_id,
+            ))
+        )
+        
+        clusterings = pd.DataFrame(iter(stmt), columns=['baits_id', 'bait', 'clustering'])
+        return clusterings
+        
+    def get_by_genes(self, geness, min_genes_present, expression_matrices=False, clusterings=False, session=None):
+        '''
+        Parameters
+        ----------
+        geness : pd.DataFrame(columns=[baits_id : int, bait : Gene])
+            list of gene collections to which non-bait genes are compared
+        min_genes_present : int
+            Minimum number of genes present in TODO
+        expression_matrices : bool
+        clusterings : bool
             
+        Returns
+        -------
+        namedtuple of (
+            expression_matrices = pd.DataFrame(columns=[baits_id : int, bait : Gene, expression_matrix : ExpressionMatrix]),
+            clusterings = pd.DataFrame(columns=[baits_id : int, bait : Gene, clustering : Clustering]),
+        )
+            If `expression_matrices`, baits present in expression matrix will be
+            returned in `tuple.expression_matrices`. The analog is true for
+            `clusterings`.
+        '''
+        if not session:
+            session = self.session
+            
+        # Insert baitss
+        query_id = self.get_next_id(BaitsQueryItem)
+        baitss = geness.copy()
+        baitss['query_id'] = query_id
+        baitss['bait'] = baitss['bait'].apply(lambda x: x.id)
+        baitss.rename(columns={'bait': 'bait_id'}, inplace=True)
+        try:
+            session.bulk_insert_mappings(BaitsQueryItem, baitss.to_dict('record')) # XXX this should always be undone, so when thrown out the session should be rolled back, but we're not allowed to mess with `session`. So, we should use a separate session for this and rm rows from it regardless and then commit that (don't rollback, that may cause rollback avalanches)
+            
+            if expression_matrices:
+                expression_matrices = self._get_expression_matrices_by_genes(query_id, min_genes_present, session)
+            else:
+                expression_matrices = None
+            
+            if clusterings:
+                clusterings = self._get_clusterings_by_genes(query_id, min_genes_present, session)
+            else:
+                clusterings = None
+                
+        finally:  # XXX used this twice, make DRY
+            session.query(BaitsQueryItem).filter_by(query_id=query_id).delete(synchronize_session=False)
+            
+        return _ReturnTuple(expression_matrices=expression_matrices, clusterings=clusterings)
