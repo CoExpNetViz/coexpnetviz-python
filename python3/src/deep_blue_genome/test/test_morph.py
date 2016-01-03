@@ -17,6 +17,7 @@
 
 from deep_blue_genome.test.util import CLITester
 import pytest
+import plumbum as pb
 
 cli = CLITester('morph'.split())
         
@@ -35,10 +36,14 @@ class TestMORPH(object):
         '''
         No matrices or clusterings are matched
         '''
-        cli.tmpdir = tmpdir # XXX can't concurrent test run with the same CLITester when written like this. Either fixture with scope or fix.
+        tmp_dir = pb.local.path(tmpdir)
+        output_dir = tmp_dir / 'output'
+        output_dir.mkdir()
+        cli.tmpdir = tmp_dir # XXX can't concurrent test run with the same CLITester when written like this. Either fixture with scope or fix.
         cli.run(
-            cli.copy_data('baits_two_species', 'plaza_fams'),
-            output_dir='.',
+            '/mnt/data/doc/work/prod_data/ARABIDOBSIS/gois',
+            '/mnt/data/doc/work/prod_data/rice/gois/transport.sugars',
+            output_dir=output_dir,
         )
         
     # TODO check only pub data used for testing 

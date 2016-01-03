@@ -93,23 +93,36 @@ class GeneNameQueryItem(DBEntity):
     column =  Column(Integer, primary_key=True)
     name = Column(String(250), nullable=False)
     
+GeneMappingTable = Table('gene_mapping', DBEntity.metadata,
+    Column('left_id', Integer, ForeignKey('gene.id')),
+    Column('right_id', Integer, ForeignKey('gene.id')),
+)
+'''
+Maps genes from one set (called the left-hand set) to the other (right-hand).
 
+A gene may appear on either side (left or right), not both. More formally,
+set(left_ids) and set(right_ids) must be disjoint.
+'''
  
 class Gene(DBEntity):
-     
-    '''
-    name: Canonical name
-    names: Canonical name and synonymous names (unordered)
-    '''
      
     id =  Column(Integer, primary_key=True)
     description = Column(String(1000), nullable=True)  # XXX make lazy
     canonical_name_id =  Column(Integer, ForeignKey('gene_name.id'), nullable=True)
      
     canonical_name = relationship('GeneName', foreign_keys=[canonical_name_id], post_update=True)  # The preferred name to assign to this gene
-    # names = GeneName backref, all names
+    names = None # GeneName backref, all names
     expression_matrices = None  # ExpressionMatrix backref, all matrices of which the gene is part of
     clusterings = None  # Clustering backref, all clusterings of which the gene is part of
+    
+    mapped_to = relationship(   # genes which this gene maps to
+        "Gene",
+        backref='mapped_from', 
+        secondary=GeneMappingTable,
+        primaryjoin=id == GeneMappingTable.c.left_id,
+        secondaryjoin=id == GeneMappingTable.c.right_id
+    )
+    mapped_from = None  # genes that map to this gene
      
     def __repr__(self):
         return '<Gene(id={!r}, canonical_name={!r})>'.format(self.id, self.canonical_name)
@@ -151,25 +164,6 @@ class Clustering(DBEntity):
      
     def __repr__(self):
         return '<Clustering(id={!r}, path={!r})>'.format(self.id, self.path)
-    
-    
-class GeneMapping(DBEntity):
-    
-    '''
-    Maps genes from one set (called the left-hand set) to the other (right-hand).
-    
-    A gene may appear on either side (left or right), not both. More formally,
-    set(left_ids) and set(right_ids) must be disjoint.
-    '''
-     
-    left_id =  Column(Integer, ForeignKey('gene.id'), primary_key=True, autoincrement=False)
-    right_id =  Column(Integer, ForeignKey('gene.id'), primary_key=True, autoincrement=False)
-     
-    left = relationship('Gene', foreign_keys=[left_id])
-    right = relationship('Gene', foreign_keys=[right_id])
-     
-    def __repr__(self):
-        return '<GeneMapping(left_id={!r}, right_id={!r})>'.format(self.left_id, self.right_id)
     
 class BaitsQueryItem(DBEntity):
     

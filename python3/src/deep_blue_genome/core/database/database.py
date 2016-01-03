@@ -16,11 +16,10 @@
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
 import sqlalchemy as sa
-from sqlalchemy import create_engine, MetaData, Table
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, aliased
 import sqlalchemy.sql as sql
 from deep_blue_genome.core.database.entities import LastId, DBEntity, Gene, GeneName,\
-    GeneNameQueryItem, GeneMapping, ExpressionMatrix, BaitsQueryItem,\
+    GeneNameQueryItem, ExpressionMatrix, BaitsQueryItem,\
     Clustering
 from deep_blue_genome.core.exceptions import TaskFailedException
 from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
@@ -66,7 +65,7 @@ class Database(object):
         ''' 
         self._context = context
         
-        self._engine = create_engine('mysql+pymysql://{}:{}@{}/{}'.format(user, password, host, name), echo=False)
+        self._engine = sa.create_engine('mysql+pymysql://{}:{}@{}/{}'.format(user, password, host, name), echo=False)
         self._create()
         
         self._Session = sessionmaker(bind=self._engine)
@@ -115,9 +114,9 @@ class Database(object):
         the data) from the database. Use with care.
         '''
         # Drop tables
-        metadata = MetaData(bind=self._engine)
+        metadata = sa.MetaData(bind=self._engine)
         for name in self._table_names:
-            Table(name, metadata, autoload=True, autoload_with=self._engine)
+            sa.Table(name, metadata, autoload=True, autoload_with=self._engine)
         metadata.drop_all()
         
         # Create everything
@@ -213,59 +212,66 @@ class Database(object):
             )
             session.execute(stmt)
             _logger.info('Added {} missing genes to database'.format(unknown_genes_count))
-            
-    def _df_from_result(self, result):
-        '''
-        Get DataFrame from (row, column, value) iterable
-        
-        result : iterable of (row, column, value)
-        '''
-        return pd.DataFrame(iter(result), columns=['row', 'column', 'value']).pivot(index='row', columns='column', values='value')
-#         return pd.DataFrame(chunked((row[2] for row in result), len(columns)), columns=columns, index=index) # XXX If slow, you could try this instead. It requires ordered by row, col and a None for every missing val
-        
-    def _df_restore_axi_from(self, df, target):
-        '''
-        Restore `df`'s columns and index from `target` by treating current names
-        as indices into `target`'s axi
-        '''
-        df = df.rename(
-            index=dict(zip(range(len(target.index)), target.index)),
-            columns=dict(zip(range(len(target.columns)), target.columns)),
-        )
-        df = df.reindex(index=target.index, columns=target.columns)
-        return df
         
     def _get_genes_by_name(self, query_id, names, session, map_): # XXX untested
-        '''Coupled to get_genes_by_name'''
-        # Select unmapped genes
-        stmt = (
+        '''Quite coupled to get_genes_by_name'''
+            
+        # Build query
+        stmt = (  # Select existing genes by name
             session
-            .query(GeneNameQueryItem.row, GeneNameQueryItem.column, Gene) # row, col added as otherwise same Genes would fold into 1 in the return for some reason 
+            .query() 
             .select_from(GeneNameQueryItem)
             .filter_by(query_id=query_id)
             .join(GeneName, GeneNameQueryItem.name == GeneName.name)
+            .join(Gene, GeneName.gene)
         )
-        select_genes_stmt = stmt.join(Gene, Gene.id == GeneName.gene_id)
-        genes = self._df_from_result(select_genes_stmt)
-        genes = self._df_restore_axi_from(genes, names)
         
-        # Select mapped genes
-        if map_:
-            select_mapped_genes_stmt = (
-                stmt
-                .join(GeneMapping, GeneName.gene_id == GeneMapping.left_id)
-                .join(Gene, GeneMapping.right_id == Gene.id)
+        if isinstance(names, pd.Series):
+            if map_:
+                MappedGene = aliased(Gene)
+                
+                # Select the MappedGene.id if exists, otherwise select Gene.id
+                sub = (
+                    stmt
+                    .with_entities(GeneNameQueryItem.row, sql.func.ifnull(MappedGene.id, Gene.id).label('gene_id'))
+                    .join(MappedGene, Gene.mapped_to, isouter=True)
+                    .subquery()
+                )
+                
+                # Select Gene instead of id
+                stmt = (
+                    session
+                    .query(sub.c.row, Gene)
+                    .select_from(Gene)
+                    .join(sub, Gene.id == sub.c.gene_id)
+                ) 
+            else:
+                stmt = stmt.with_entities(GeneNameQueryItem.row, Gene)
+        else:
+            stmt = stmt.with_entities(GeneNameQueryItem.row, GeneNameQueryItem.column, Gene)
+        
+        # Load result
+        if isinstance(names, pd.Series):
+            genes = pd.DataFrame(iter(stmt), columns=['row', 'value'])
+            genes.set_index('row', inplace=True)
+            genes = genes['value']
+            genes.rename(dict(enumerate(names.index)), inplace=True)
+            if not map_:
+                genes = genes.reindex(index=names.index)
+            genes.name = names.name
+            genes.index.name = names.index.name
+        else:
+            genes = pd.DataFrame(iter(stmt), columns=['row', 'column', 'value']).pivot(index='row', columns='column', values='value')
+            genes.rename(
+                index=dict(enumerate(names.index)),
+                columns=dict(enumerate(names.columns)),
+                inplace=True
             )
-            mapped_genes = self._df_from_result(select_mapped_genes_stmt)
-            mapped_genes = self._df_restore_axi_from(mapped_genes, names)
-            
-            # Override unmapped with mapped
-            mapped_genes.fillna(genes, inplace=True)
-            genes = mapped_genes
+            genes = genes.reindex(index=names.index, columns=names.columns)
         
         return genes
      
-    def get_genes_by_name(self, names, session=None, unknown_gene_handler=None, map_=False, map_suffix1=False):
+    def get_genes_by_name(self, names, session=None, unknown_gene_handler=None, map_=False, map_suffix1=False): #XXX more examples in docstring: 1 for each return case
         '''
         Get genes by name (including synonyms, ignoring case).
         
@@ -289,19 +295,34 @@ class Database(object):
             Session to use. Uses `self.session` if None. Concurrent calls to
             this function with the same session (including None) are currently
             not supported.
-        unknown_gene_handler
-            If not None, overrides the context's UnknownGeneHandler.
+        unknown_gene_handler : UnknownGeneHandler
+            If not None, override the context.configuration.unknown_gene_handler.
         map_suffix1 : bool
             Whether or not to map 'gene_name.1' to 'gene_name'
         map_ : bool
-            Whether or not to map genes by their gene mapping (from left- to right-hand of mapping)
+            Whether or not to map genes by their gene mapping (from left- to
+            right-hand of mapping). Cannot be True if `names` is a DataFrame.
             
         Returns
         -------
-        pandas.DataFrame(data=[[gene : Gene]])
-            Data frame with same index as `names` and each cell's value replaced
-            with a Gene or NaN (in case the gene name was not found and unknown
-            gene handler is 'ignore').
+        pandas.DataFrame(data=[[_ : Gene]], index=names.index, columns=names.columns)
+            If `names` is a DataFrame, a data frame is returned with the same
+            index as `names` and each cell's value replaced with a Gene or NaN
+            (in case the gene name was not found and unknown gene handler is
+            'ignore').
+            
+        pandas.Series(data=[names.name : Gene], index=names.index)
+            If `names` is a Series and not `map_`, a series is returned with
+            same index as `names` and each cell's value replaced with a Gene or
+            NaN (in case the gene name was not found and unknown gene handler is
+            'ignore').
+            
+        pandas.Series(data=[names.name : Gene])
+            If `names` is a Series and `map_`, a series is returned with an
+            index based on `names.index`. The index is a subset of `names.index`
+            where elements are repeated if the corresponding gene was mapped to
+            multiple genes (by map_), and omitted if they weren't found and the
+            unknown gene handler is 'ignore'.
              
         Raises
         ------
@@ -313,6 +334,9 @@ class Database(object):
             
         if not unknown_gene_handler:
             unknown_gene_handler = self._context.configuration.unknown_gene_handler
+            
+        if isinstance(names, pd.DataFrame) and map_:
+            raise ValueError('map_=True not available for DataFrame input')
         
         _logger.debug('Querying up to {} genes by name'.format(names.size))
         
@@ -320,16 +344,22 @@ class Database(object):
         try:
             # Apply map_suffix1, maybe
             if map_suffix1:
-                names = names.applymap(lambda x: re.sub(r'\.1$', '', x)) # TODO check
+                names = names.applymap(lambda x: re.sub(r'\.1$', '', x))
             
             # Insert query data
-            # XXX column axis apply followed by row axis apply followed by to_dict('split')['data'] might be faster
-            # XXX to_dict() might be faster
-            session.bulk_insert_mappings(GeneNameQueryItem, [
-                {'row': row, 'column': column, 'name': values[column], 'query_id': query_id}
-                for row, values in enumerate(names.itertuples(index=False, name=None))
-                for column in range(len(names.columns))
-            ])
+            names_indices = names.copy(deep=False)
+            names_indices.index = range(len(names.index))
+            names_indices.index.name = 'row'
+            if isinstance(names, pd.Series):
+                names_indices.name = 'name'
+                names_indices = names_indices.reset_index()
+                names_indices['column'] = 0
+            else:
+                names_indices.columns = range(len(names.columns))
+                names_indices = names_indices.reset_index()
+                names_indices = pd.melt(names_indices, id_vars='row', var_name='column', value_name='name')
+            names_indices['query_id'] = query_id
+            session.bulk_insert_mappings(GeneNameQueryItem, names_indices.to_dict('record'))
             
             # Add unknown genes, maybe
             if unknown_gene_handler == UnknownGeneHandler.add:
@@ -353,6 +383,7 @@ class Database(object):
             
         return genes
     
+    # XXX query might be prettier with from_self http://docs.sqlalchemy.org/en/latest/orm/query.html#sqlalchemy.orm.query.Query.from_self
     def _get_expression_matrices_by_genes(self, query_id, min_genes_present, session=None):
         base_stmt = (
             session
@@ -379,7 +410,7 @@ class Database(object):
             ))
         )
         
-        expression_matrices = pd.DataFrame(iter(stmt), columns=['baits_id', 'bait', 'expression_matrix'])
+        expression_matrices = pd.DataFrame(iter(stmt), columns=['group_id', 'gene', 'expression_matrix'])
         return expression_matrices
     
     def _get_clusterings_by_genes(self, query_id, min_genes_present, session=None):
@@ -408,14 +439,14 @@ class Database(object):
             ))
         )
         
-        clusterings = pd.DataFrame(iter(stmt), columns=['baits_id', 'bait', 'clustering'])
+        clusterings = pd.DataFrame(iter(stmt), columns=['group_id', 'gene', 'clustering'])
         return clusterings
         
-    def get_by_genes(self, geness, min_genes_present, expression_matrices=False, clusterings=False, session=None):
+    def get_by_genes(self, gene_groups, min_genes_present, expression_matrices=False, clusterings=False, session=None):
         '''
         Parameters
         ----------
-        geness : pd.DataFrame(columns=[baits_id : int, bait : Gene])
+        gene_groups : pd.DataFrame(columns=[group_id : int, gene : Gene])
             list of gene collections to which non-bait genes are compared
         min_genes_present : int
             Minimum number of genes present in TODO
@@ -425,8 +456,8 @@ class Database(object):
         Returns
         -------
         namedtuple of (
-            expression_matrices = pd.DataFrame(columns=[baits_id : int, bait : Gene, expression_matrix : ExpressionMatrix]),
-            clusterings = pd.DataFrame(columns=[baits_id : int, bait : Gene, clustering : Clustering]),
+            expression_matrices = pd.DataFrame(columns=[group_id : int, gene : Gene, expression_matrix : ExpressionMatrix]),
+            clusterings = pd.DataFrame(columns=[group_id : int, gene : Gene, clustering : Clustering]),
         )
             If `expression_matrices`, baits present in expression matrix will be
             returned in `tuple.expression_matrices`. The analog is true for
@@ -437,12 +468,12 @@ class Database(object):
             
         # Insert baitss
         query_id = self.get_next_id(BaitsQueryItem)
-        baitss = geness.copy()
-        baitss['query_id'] = query_id
-        baitss['bait'] = baitss['bait'].apply(lambda x: x.id)
-        baitss.rename(columns={'bait': 'bait_id'}, inplace=True)
+        gene_groups = gene_groups.copy()
+        gene_groups['query_id'] = query_id
+        gene_groups['gene'] = gene_groups['gene'].apply(lambda x: x.id)
+        gene_groups.rename(columns={'group_id': 'baits_id', 'gene': 'bait_id'}, inplace=True) #XXX rename entity to group_id, gene_id
         try:
-            session.bulk_insert_mappings(BaitsQueryItem, baitss.to_dict('record')) # XXX this should always be undone, so when thrown out the session should be rolled back, but we're not allowed to mess with `session`. So, we should use a separate session for this and rm rows from it regardless and then commit that (don't rollback, that may cause rollback avalanches)
+            session.bulk_insert_mappings(BaitsQueryItem, gene_groups.to_dict('record')) # XXX this should always be undone, so when thrown out the session should be rolled back, but we're not allowed to mess with `session`. So, we should use a separate session for this and rm rows from it regardless and then commit that (don't rollback, that may cause rollback avalanches)
             
             if expression_matrices:
                 expression_matrices = self._get_expression_matrices_by_genes(query_id, min_genes_present, session)

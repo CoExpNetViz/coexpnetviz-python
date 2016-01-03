@@ -209,7 +209,7 @@ def read_gene_families_file(path):
     df['family'] = df['family'].str.lower()
     return df
 
-def read_baits_file(path):
+def read_baits_file(path): #XXX more generic name: read_genes_file: file containing list of genes
     '''
     Read a file of whitespace separated bait gene names.
     
@@ -227,7 +227,7 @@ def read_baits_file(path):
     
     Returns
     -------
-    pandas.Series
+    pandas.Series(data=(gene : str))
         Series of genes
     '''
     with open(path, encoding='utf-8') as f:

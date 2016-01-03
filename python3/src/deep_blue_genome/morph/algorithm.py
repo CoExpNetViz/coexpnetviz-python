@@ -21,7 +21,7 @@ import logging
 
 _logger = logging.getLogger('deep_blue_genome.morph')
     
-def morph(context, baitss, top_k):
+def morph(context, bait_groups, top_k):
     '''
     TODO
     
@@ -29,7 +29,7 @@ def morph(context, baitss, top_k):
     
     Parameters
     ----------
-    baitss : pd.DataFrame(columns=(baits_id : int, bait : Gene))
+    bait_groups : pd.DataFrame(columns=(group_id : int, gene : Gene))
         list of gene collections to which non-bait genes are compared
     top_k : int
         K best candidate genes to output in ranking
@@ -43,7 +43,7 @@ def morph(context, baitss, top_k):
     
     # fetch list of relevant clusterings and expression matricess from DB
     _logger.info('Using expression matrices and clusterings which contain at least 5 baits (per bait set)')
-    result = db.get_by_genes(baitss, min_genes_present=5, expression_matrices=True, clusterings=True)
+    result = db.get_by_genes(bait_groups, min_genes_present=5, expression_matrices=True, clusterings=True)
     print(result.expression_matrices)
     print(result.clusterings)
     

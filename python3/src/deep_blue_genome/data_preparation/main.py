@@ -21,7 +21,7 @@ import deep_blue_genome.core.context as ctx
 from deep_blue_genome.core.reader.various import read_expression_matrix_file,\
     read_clustering_file, read_gene_mapping_file
 from deep_blue_genome.core.database.entities import ExpressionMatrix, Clustering,\
-    GeneMapping
+    GeneMappingTable
 import plumbum as pb
 from deep_blue_genome.util.file_system import flatten_paths
 from deep_blue_genome.util.pandas import df_has_null, series_has_duplicates
@@ -101,7 +101,7 @@ def add_gene_mapping(context, path):
         mapping = mapping.applymap(lambda x: x.id)
         mapping.columns = ['left_id', 'right_id']
         mapping.drop_duplicates(inplace=True)
-        session.bulk_insert_mappings(GeneMapping, mapping.to_dict('records'))
+        session.execute(GeneMappingTable.insert(), mapping.to_dict('records'))
     
 @click.command()
 @ctx.cli_options(Context) #TODO we still have version on this? Add to cli_options if not

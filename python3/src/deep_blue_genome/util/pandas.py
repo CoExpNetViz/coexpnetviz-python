@@ -24,10 +24,34 @@ import numpy as np
 # TODO does df.values cost copy time?
 
 # XXX have a count_nan or such added to DataFrame with this implementation
-def df_count_null(df):
+def pd_count_null(x):
+    '''
+    Parameters
+    ----------
+    x : pd.DataFrame or pd.Series
+    
+    Returns
+    -------
+    int
+    '''
+    return x.isnull().values.sum()
+ 
+def df_count_null(df): # XXX rm
     return df.isnull().values.sum()
 
-def df_has_null(df):
+def pd_has_null(x): # XXX rm
+    '''
+    Parameters
+    ----------
+    x : pd.DataFrame or pd.Series
+    
+    Returns
+    -------
+    bool
+    '''
+    return x.isnull().values.any()
+
+def df_has_null(df): # XXX rm
     return df.isnull().values.any()
 
 def series_has_duplicates(series):

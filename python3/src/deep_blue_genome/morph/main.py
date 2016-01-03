@@ -19,6 +19,7 @@
 MOdule guided Ranking of candidate PatHway genes (MORPH)
 '''
 
+from itertools import repeat
 from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
 from deep_blue_genome.core.reader.various import read_baits_file
 from deep_blue_genome.morph.algorithm import morph as morph_
@@ -27,6 +28,9 @@ import click
 from deep_blue_genome.util.file_system import flatten_paths
 import pandas as pd
 import plumbum as pb
+import logging
+
+_logger = logging.getLogger('deep_blue_genome.morph')
 
 class Context(ctx.DatabaseMixin, ctx.OutputMixin):
     pass
@@ -58,17 +62,18 @@ def morph(main_config, **kwargs):
     
     # Read baits
     def bait_file_to_df(i, path):
-        df = read_baits_file(path).to_frame('bait')
-        df['baits_id'] = i
-        return df
+        series = read_baits_file(path)
+        series.index = pd.Index(repeat(i, len(series.index)), name='group_id')
+        return series
     bait_file_paths = flatten_paths(map(pb.local.path, kwargs['baits_file']))
-    baitss = pd.concat(bait_file_to_df(i, path) for i, path in enumerate(bait_file_paths))
-    baitss['bait'] = context.database.get_genes_by_name(baitss[['bait']], map_=True, map_suffix1=True)['bait']
-    if context.configuration.unknown_gene_handler == UnknownGeneHandler.ignore:
-        baitss.dropna(how='any', inplace=True)    
+    bait_groups = pd.concat(bait_file_to_df(i, path) for i, path in enumerate(bait_file_paths))
+    bait_groups = context.database.get_genes_by_name(bait_groups, map_=True)
+    bait_groups.index.name = 'group_id'
+    bait_groups = bait_groups.reset_index()
+    bait_groups.drop_duplicates(inplace=True)
     
     # Run alg
-    ranking = morph_(context, baitss, top_k)
+    ranking = morph_(context, bait_groups, top_k)
 
     # Write result to file
     assert False
