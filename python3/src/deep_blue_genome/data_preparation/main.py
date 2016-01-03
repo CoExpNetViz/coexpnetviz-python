@@ -146,7 +146,6 @@ def prepare(main_config, **kwargs):
          
     for exp_mat in expression_matrices:
         with log_exception_msg(_logger, TaskFailedException):
-            print(exp_mat)
             add_expression_matrix(context, exp_mat)
         
     for clustering in clusterings:

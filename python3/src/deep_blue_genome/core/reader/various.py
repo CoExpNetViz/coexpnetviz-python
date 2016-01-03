@@ -1,12 +1,28 @@
+# Copyright (C) 2015, 2016 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# 
+# This file is part of Deep Blue Genome.
+# 
+# Deep Blue Genome is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# Deep Blue Genome is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+# 
+# You should have received a copy of the GNU Lesser General Public License
+# along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
+
+
 import pandas as pd
 import csv
 from plumbum import local
 from deep_blue_genome.core.expression_matrix import ExpressionMatrix
-from deep_blue_genome.core.util import df_expand_iterable_values, flatten,\
-    compose
+from deep_blue_genome.core.util import df_expand_iterable_values
 from deep_blue_genome.util.algorithms import merge_overlapping_named_sets
 from itertools import chain
-from more_itertools.more import first
 
 # TODO validation should be part of reading. We at least want to save a log of
 # warnings. TODO input validation error handling + setting stuff as warning or

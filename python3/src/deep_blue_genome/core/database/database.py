@@ -20,7 +20,7 @@ from sqlalchemy.orm import sessionmaker, aliased
 import sqlalchemy.sql as sql
 from deep_blue_genome.core.database.entities import LastId, DBEntity, Gene, GeneName,\
     GeneNameQueryItem, ExpressionMatrix, BaitsQueryItem,\
-    Clustering
+    Clustering, GeneExpressionMatrixTable, GeneMappingTable, GeneClusteringTable
 from deep_blue_genome.core.exceptions import TaskFailedException
 from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
 from contextlib import contextmanager
@@ -385,18 +385,35 @@ class Database(object):
     
     # XXX query might be prettier with from_self http://docs.sqlalchemy.org/en/latest/orm/query.html#sqlalchemy.orm.query.Query.from_self
     def _get_expression_matrices_by_genes(self, query_id, min_genes_present, session=None):
+        # XXX slow complicated query, consider using an exists (for simplicity) or maybe eliminating the derived table helps
+        mapped_link_table = (
+            sql
+            .select([
+                GeneExpressionMatrixTable.c.gene_id,
+                GeneMappingTable.c.right_id.label('mapped_gene_id'),
+                GeneExpressionMatrixTable.c.expression_matrix_id
+            ])
+            .select_from(
+                GeneExpressionMatrixTable.join(GeneMappingTable, GeneExpressionMatrixTable.c.gene_id == GeneMappingTable.c.left_id, isouter=True)
+            )
+            .alias('mapped_link_table')
+        )
+        
         base_stmt = (
             session
-            .query(BaitsQueryItem)
+            .query()
+            .select_from(BaitsQueryItem)
             .filter_by(query_id=query_id)
-            .join(Gene)
-            .join(ExpressionMatrix, Gene.expression_matrices)
+            .join(mapped_link_table, sql.or_(
+                BaitsQueryItem.bait_id == mapped_link_table.c.gene_id,
+                BaitsQueryItem.bait_id == mapped_link_table.c.mapped_gene_id,
+            ))
         )
         
         filtered_matrices_sub = (
             base_stmt
-            .with_entities(BaitsQueryItem.baits_id, ExpressionMatrix.id)
-            .group_by(BaitsQueryItem.baits_id, ExpressionMatrix.id)
+            .with_entities(BaitsQueryItem.baits_id, mapped_link_table.c.expression_matrix_id)
+            .group_by(BaitsQueryItem.baits_id, mapped_link_table.c.expression_matrix_id)
             .having(sql.func.count() >= min_genes_present)
             .subquery()
         )
@@ -404,28 +421,47 @@ class Database(object):
         stmt = (
             base_stmt
             .with_entities(BaitsQueryItem.baits_id, Gene, ExpressionMatrix)
-            .join(filtered_matrices_sub, sql.and_( 
-                ExpressionMatrix.id == filtered_matrices_sub.c.id,
+            .join(filtered_matrices_sub, sql.and_(
+                mapped_link_table.c.expression_matrix_id == filtered_matrices_sub.c.expression_matrix_id,
                 BaitsQueryItem.baits_id == filtered_matrices_sub.c.baits_id,
             ))
+            .join(Gene, BaitsQueryItem.bait_id == Gene.id) #TODO wrong gene, need that of the expmat before mapping
+            .join(ExpressionMatrix, filtered_matrices_sub.c.expression_matrix_id == ExpressionMatrix.id)
         )
         
         expression_matrices = pd.DataFrame(iter(stmt), columns=['group_id', 'gene', 'expression_matrix'])
         return expression_matrices
     
-    def _get_clusterings_by_genes(self, query_id, min_genes_present, session=None):
+    def _get_clusterings_by_genes(self, query_id, min_genes_present, session=None):  # XXX is a copy paste and replace of _get_expression_matrices_by_genes
+        # XXX slow complicated query, consider using an exists (for simplicity) or maybe eliminating the derived table helps
+        mapped_link_table = (
+            sql
+            .select([
+                GeneClusteringTable.c.gene_id,
+                GeneMappingTable.c.right_id.label('mapped_gene_id'),
+                GeneClusteringTable.c.clustering_id
+            ])
+            .select_from(
+                GeneClusteringTable.join(GeneMappingTable, GeneClusteringTable.c.gene_id == GeneMappingTable.c.left_id, isouter=True)
+            )
+            .alias('mapped_link_table')
+        )
+        
         base_stmt = (
             session
-            .query(BaitsQueryItem)
+            .query()
+            .select_from(BaitsQueryItem)
             .filter_by(query_id=query_id)
-            .join(Gene)
-            .join(Clustering, Gene.clusterings)
+            .join(mapped_link_table, sql.or_(
+                BaitsQueryItem.bait_id == mapped_link_table.c.gene_id,
+                BaitsQueryItem.bait_id == mapped_link_table.c.mapped_gene_id,
+            ))
         )
         
         filtered_matrices_sub = (
             base_stmt
-            .with_entities(BaitsQueryItem.baits_id, Clustering.id)
-            .group_by(BaitsQueryItem.baits_id, Clustering.id)
+            .with_entities(BaitsQueryItem.baits_id, mapped_link_table.c.clustering_id)
+            .group_by(BaitsQueryItem.baits_id, mapped_link_table.c.clustering_id)
             .having(sql.func.count() >= min_genes_present)
             .subquery()
         )
@@ -433,10 +469,12 @@ class Database(object):
         stmt = (
             base_stmt
             .with_entities(BaitsQueryItem.baits_id, Gene, Clustering)
-            .join(filtered_matrices_sub, sql.and_( 
-                Clustering.id == filtered_matrices_sub.c.id,
+            .join(filtered_matrices_sub, sql.and_(
+                mapped_link_table.c.clustering_id == filtered_matrices_sub.c.clustering_id,
                 BaitsQueryItem.baits_id == filtered_matrices_sub.c.baits_id,
             ))
+            .join(Gene, BaitsQueryItem.bait_id == Gene.id)
+            .join(Clustering, filtered_matrices_sub.c.clustering_id == Clustering.id)
         )
         
         clusterings = pd.DataFrame(iter(stmt), columns=['group_id', 'gene', 'clustering'])
@@ -444,12 +482,19 @@ class Database(object):
         
     def get_by_genes(self, gene_groups, min_genes_present, expression_matrices=False, clusterings=False, session=None):
         '''
+        Get expression matrices and/or clusterings containing (some of) given genes
+        
+        `gene_groups` is compared to mapped genes of expression_matrices.
+        `gene_groups` are expected to have already been mapped.
+            
         Parameters
         ----------
         gene_groups : pd.DataFrame(columns=[group_id : int, gene : Gene])
             list of gene collections to which non-bait genes are compared
         min_genes_present : int
             Minimum number of genes present in TODO
+        map_ : bool
+            If True, 
         expression_matrices : bool
         clusterings : bool
             
@@ -461,7 +506,8 @@ class Database(object):
         )
             If `expression_matrices`, baits present in expression matrix will be
             returned in `tuple.expression_matrices`. The analog is true for
-            `clusterings`.
+            `clusterings`. The returned `gene` values are the genes found in the
+            expression matrix or clustering (i.e. without any mapping applied).
         '''
         if not session:
             session = self.session
