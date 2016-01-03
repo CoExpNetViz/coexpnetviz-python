@@ -94,7 +94,7 @@ def read_expression_matrix_file(path):
     mat.index.name = 'gene'
     return ExpressionMatrix(mat, name=path.name)
 
-def read_clustering_file(path, named=True, merge_overlapping=False):
+def read_clustering_file(path, name_index=0, merge_overlapping=False):
     '''
     Read generic clustering.
     
@@ -119,8 +119,8 @@ def read_clustering_file(path, named=True, merge_overlapping=False):
     ----------
     path : str
         Path to clustering file to read
-    named : bool
-        If True, the first column refers to cluster names, else each line is an unnamed cluster.
+    name_index : int
+        If None, each line is an unnamed cluster, else column with index `name_index` refers to cluster names.
     merge_overlapping : bool
         If True, merge overlapping clusters.
         
@@ -134,8 +134,8 @@ def read_clustering_file(path, named=True, merge_overlapping=False):
     sanitise_plain_text_file(path)
     with open(path, 'r') as f:
         reader = csv.reader(f, delimiter='\t')
-        if named:
-            df = pd.DataFrame(([row[0], row[1:]] for row in reader), columns=['cluster_id', 'item'])
+        if name_index is not None:
+            df = pd.DataFrame(([row[name_index], row[0:name_index] + row[name_index+1:]] for row in reader), columns=['cluster_id', 'item'])
             df['cluster_id'] = df['cluster_id'].str.lower()
         else:
             df = pd.DataFrame(([row] for row in reader), columns=['item'])
@@ -290,6 +290,6 @@ def read_gene_mapping_file(path):
     pandas.DataFrame(columns=[left : str, right : str])
         Mapping
     '''
-    gene_mapping = read_clustering_file(path, named=True, merge_overlapping=False)
+    gene_mapping = read_clustering_file(path, name_index=0, merge_overlapping=False)
     gene_mapping.columns = ['left', 'right']
     return gene_mapping

@@ -79,7 +79,7 @@ def add_clustering(context, path):
     db = context.database
     with db.scoped_session() as session:
         _logger.info('Adding clustering: {}'.format(path))
-        clustering = read_clustering_file(path, named=True)  # XXX could speed up by only loading index (=gene names)
+        clustering = read_clustering_file(path, name_index=1)  # XXX could speed up by only loading index (=gene names)
         genes = db.get_genes_by_name(clustering[['item']], session)
         clustering = Clustering(id=db.get_next_id(Clustering), path=path, genes=genes['item'].tolist())
         # TODO write back without the rows with missing genes, that's what 'ignore' is about
