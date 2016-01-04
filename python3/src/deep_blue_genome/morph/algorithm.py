@@ -29,23 +29,26 @@ def morph(context, bait_groups, top_k):
     
     Parameters
     ----------
-    bait_groups : pd.DataFrame(columns=(group_id : int, gene : Gene))
+    bait_groups : pd.DataFrame(columns=[group_id : int, gene : Gene])
         list of gene collections to which non-bait genes are compared
     top_k : int
         K best candidate genes to output in ranking
         
     Returns
     -------
-    TODO
-        TODO
+    pandas.DataFrame({'group_id' : int, 'ranking' : Ranking})
+        Best Ranking for each group. Groups for which a Ranking could not be
+        made are omitted.
     '''
     db = context.database
     
     # fetch list of relevant clusterings and expression matricess from DB
-    _logger.info('Using expression matrices and clusterings which contain at least 5 baits (per bait set)')
-    result = db.get_by_genes(bait_groups, min_genes_present=5, expression_matrices=True, clusterings=True)
-    print(result.expression_matrices)
-    print(result.clusterings)
+    _logger.info('Using expression matrices and clusterings which contain at least 5 baits (grouped by bait set)')
+    result = db.get_gene_collections_by_genes(bait_groups, min_genes_present=5, expression_matrices=True, clusterings=True)
+    for group in result.expression_matrices.groupby(['group_id', 'expression_matrix']):
+        print(group)
+        assert False
+    result.clusterings
     
     # Main alg stuff
 #     read_expression_matrix

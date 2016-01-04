@@ -37,5 +37,9 @@ def log_sql():
         yield
     finally:
         logger.setLevel(original)
+        
+def print_sql_stmt(stmt):
+    print(str(stmt).replace('JOIN', '\nJOIN').replace('UNION ', '\nUNION\n').replace('(', '(\n').replace(')', '\n)').replace('GROUP', '\nGROUP'))
+    print()
 
 
