@@ -1,4 +1,4 @@
-# Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2016 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
 # 
 # This file is part of Deep Blue Genome.
 # 
@@ -14,28 +14,13 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
-from deep_blue_genome.core.util import flatten
 
-'''
-Plumbum additions, basically
-'''
-
-def path_to_list(path):
+class Object(object):
     '''
-    If dir, path.list(), else path
-    '''
-    return path.list() if path.isdir() else [path]
-
-def flatten_paths(paths):
-    '''
-    Flatten 1 level of irregular list of paths
+    Like object, but doesn't complain on __init__ when given args.
     
-    Analog to flattening irregular lists where a directory is a list.
-    
-    Parameters
-    ----------
-    paths : iterable of plumbum.Path
+    This behaviour used to be the default before Python 3. 
     '''
-    return flatten(list(map(path_to_list, paths)))
+    def __init__(self, *args, **kwargs):
+        super().__init__()
 
-# XXX add a func to filter out usually unwanted files. is_special_file(pb.Path), or such.

@@ -143,7 +143,7 @@ def prepare(main_config, **kwargs):
     for path in gene_mappings:
         with log_exception_msg(_logger, TaskFailedException):
             add_gene_mapping(context, path)
-         
+           
     for exp_mat in expression_matrices:
         with log_exception_msg(_logger, TaskFailedException):
             add_expression_matrix(context, exp_mat)

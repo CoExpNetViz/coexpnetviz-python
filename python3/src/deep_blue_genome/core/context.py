@@ -16,6 +16,7 @@
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
 from collections import namedtuple
+from deep_blue_genome.util.various import Object
 
 '''
 Mixins to build a Context class (or 'Application' class if you prefer)
@@ -39,7 +40,7 @@ def cli_options(class_):
     return compose(*options)
 
 
-class ConfigurationMixin(object):
+class ConfigurationMixin(Object):
     
     '''
     Support for a main application configuration.
@@ -50,6 +51,7 @@ class ConfigurationMixin(object):
     # XXX not reusable across applications due to construction of own config object from app specific conf options, e.g. exception_handlers.unknown_gene
     
     def __init__(self, main_config, **kwargs):
+        super().__init__(**kwargs)
         Configuration = namedtuple('Configuration', 'unknown_gene_handler'.split())
         self._config = Configuration(
             unknown_gene_handler=UnknownGeneHandler[main_config['exception_handlers']['unknown_gene']]
@@ -107,7 +109,7 @@ class CacheMixin(DatabaseMixin):
         return self._cache
     
     
-class TemporaryFilesMixin(object):
+class TemporaryFilesMixin(Object):
     
     '''
     Temporary file support
@@ -122,10 +124,11 @@ class TemporaryFilesMixin(object):
     ]
     
     def __init__(self, tmp_dir, **kwargs):
+        super().__init__()
         tempfile.tempdir = str(pb.local.path(tmp_dir))
     
     
-class OutputMixin(object):
+class OutputMixin(Object):
     
     '''
     Output file storage support
@@ -140,6 +143,7 @@ class OutputMixin(object):
     ]
     
     def __init__(self, output_dir, **kwargs):
+        super().__init__(**kwargs)
         self._output_dir = pb.local.path(output_dir)
     
     @property

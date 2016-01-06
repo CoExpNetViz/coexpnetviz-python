@@ -14,28 +14,14 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
-from deep_blue_genome.core.util import flatten
 
 '''
-Plumbum additions, basically
+Plubmum additions
 '''
 
-def path_to_list(path):
+def pb_with_stem(path, stem):
     '''
-    If dir, path.list(), else path
+    Like `pb.Path.with_name`, but operate on the stem
     '''
-    return path.list() if path.isdir() else [path]
-
-def flatten_paths(paths):
-    '''
-    Flatten 1 level of irregular list of paths
-    
-    Analog to flattening irregular lists where a directory is a list.
-    
-    Parameters
-    ----------
-    paths : iterable of plumbum.Path
-    '''
-    return flatten(list(map(path_to_list, paths)))
-
-# XXX add a func to filter out usually unwanted files. is_special_file(pb.Path), or such.
+    return path.with_name(stem + ''.join(path.suffixes))
+ 

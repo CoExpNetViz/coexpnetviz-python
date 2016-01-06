@@ -23,7 +23,7 @@ from deep_blue_genome.core.database.dbms_info import mysql_innodb
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from inflection import underscore
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, deferred
 from deep_blue_genome.util.constants import URL_MAX_LENGTH, PATH_MAX_LENGTH
 from datetime import datetime
 
@@ -107,7 +107,7 @@ set(left_ids) and set(right_ids) must be disjoint.
 class Gene(DBEntity):
      
     id =  Column(Integer, primary_key=True)
-    description = Column(String(1000), nullable=True)  # XXX make lazy
+    description = deferred(Column(String(1000), nullable=True))
     canonical_name_id =  Column(Integer, ForeignKey('gene_name.id'), nullable=True)
      
     canonical_name = relationship('GeneName', foreign_keys=[canonical_name_id], post_update=True)  # The preferred name to assign to this gene
@@ -127,8 +127,14 @@ class Gene(DBEntity):
     def __repr__(self):
         return '<Gene(id={!r}, canonical_name={!r})>'.format(self.id, self.canonical_name)
     
+    def __str__(self):
+        return '<Gene {!s}>'.format(self.id)
+    
     def __lt__(self, other):
-        return self.id < other.id
+        if isinstance(other, Gene):
+            return self.id < other.id
+        else:
+            return False
     
     
 GeneExpressionMatrixTable = Table('gene_expression_matrix', DBEntity.metadata,
@@ -147,6 +153,14 @@ class ExpressionMatrix(DBEntity):
     def __repr__(self):
         return '<ExpressionMatrix(id={!r}, path={!r})>'.format(self.id, self.path)
     
+    def __str__(self):
+        return '<ExpressionMatrix {!s}>'.format(self.id)
+    
+    def __lt__(self, other):
+        if isinstance(other, ExpressionMatrix):
+            return self.id < other.id
+        else:
+            return False
 
 
 GeneClusteringTable = Table('gene_clustering', DBEntity.metadata,
@@ -164,6 +178,16 @@ class Clustering(DBEntity):
      
     def __repr__(self):
         return '<Clustering(id={!r}, path={!r})>'.format(self.id, self.path)
+    
+    def __str__(self):
+        return '<Clustering {!s}>'.format(self.id)
+    
+    def __lt__(self, other):
+        if isinstance(other, Clustering):
+            return self.id < other.id
+        else:
+            return False
+    
     
 class BaitsQueryItem(DBEntity):
     

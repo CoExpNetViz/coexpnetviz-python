@@ -18,7 +18,7 @@
 import pandas
 import numpy as np
 
-class ExpressionMatrix(object):
+class ExpressionMatrix(object):  # XXX maybe it's better to keep just a DataFrame instead of wrapping it. The DB record has the extra info
     
     def __init__(self, data, name=None):
         self._name = name

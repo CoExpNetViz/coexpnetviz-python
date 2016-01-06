@@ -14,13 +14,13 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
+from deep_blue_genome.util.str import multiline_lstrip
 
 '''
 MOdule guided Ranking of candidate PatHway genes (MORPH)
 '''
 
 from itertools import repeat
-from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
 from deep_blue_genome.core.reader.various import read_baits_file
 from deep_blue_genome.morph.algorithm import morph as morph_
 from deep_blue_genome.core import cli, context as ctx
@@ -33,7 +33,8 @@ import logging
 _logger = logging.getLogger('deep_blue_genome.morph')
 
 class Context(ctx.DatabaseMixin, ctx.OutputMixin):
-    pass
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 @click.command()
 @cli.argument(
@@ -65,19 +66,66 @@ def morph(main_config, **kwargs):
         series = read_baits_file(path)
         series.index = pd.Index(repeat(i, len(series.index)), name='group_id')
         return series
-    bait_file_paths = flatten_paths(map(pb.local.path, kwargs['baits_file']))
-    bait_groups = pd.concat(bait_file_to_df(i, path) for i, path in enumerate(bait_file_paths))
+    bait_file_paths = pd.Series(flatten_paths(map(pb.local.path, kwargs['baits_file'])), name='bait_group_file')
+    bait_groups = pd.concat(bait_file_to_df(i, path) for i, path in enumerate(bait_file_paths)) #XXX itertuples instead of enumerate
     bait_groups = context.database.get_genes_by_name(bait_groups, map_=True)
     bait_groups.index.name = 'group_id'
     bait_groups = bait_groups.reset_index()
     bait_groups.drop_duplicates(inplace=True)
     
     # Run alg
-    ranking = morph_(context, bait_groups, top_k)
+    rankings = morph_(context, bait_groups, top_k) #XXX in logs, use some kind of name for the bait group, e.g. its path, instead of the less informative group_id
 
     # Write result to file
+    rankings = rankings.join(bait_file_paths, on='bait_group_id')
+    for bait_group_id, group in rankings.groupby('bait_group_id'):
+        best_result = group[group['ausr'] == group['ausr'].max()].iloc[0]
+        bait_group_file = best_result['bait_group_file']
+        baits_present = best_result['baits_present']
+        baits_missing = best_result['baits_missing']
+        ranking = best_result['ranking']
+        
+        # Convert each Gene to its canonical (or, if none, any other) name
+        all_genes = pd.concat((baits_present, baits_missing, ranking.index.to_series()), ignore_index=True)
+        all_genes.index = all_genes
+        all_genes = all_genes.apply(lambda x: (x.canonical_name or x.names[0]).name) # TODO went so fast, maybe they were loaded eagerly? Not rly, why so fast? Oh well let's just ignore it then? Or... they were added by session just now?
+        baits_present = baits_present.map(all_genes)
+        baits_missing = baits_missing.map(all_genes)
+        baits_present.sort_values(inplace=True)
+        baits_missing.sort_values(inplace=True)
+        ranking.sort_values(inplace=True, ascending=False)
+        ranking.index = ranking.index.to_series().map(all_genes)
+        
+        # Output result
+        path = context.output_dir / '{}_{}.txt'.format(bait_group_file.stem, bait_group_id)
+        _logger.info('Writing result to {}'.format(path))
+        with path.open('w') as f:
+            f.write(multiline_lstrip('''
+                AUSR: {}
+                Bait group file: {}
+                Expression matrix used: {}
+                Clustering used: {}
+                Baits present in both: {}
+                Baits missing: {}
+                
+                Statistics of AUSRs of other rankings of same bait group:
+                {}
+                
+                Candidates:
+                {}
+                ''').strip().format(
+                    best_result['ausr'], 
+                    best_result['bait_group_file'],
+                    best_result['expression_matrix'].path,
+                    best_result['clustering'].path,
+                    ' '.join(baits_present.tolist()), 
+                    ' '.join(baits_missing.tolist()),
+                    group['ausr'].describe().to_string(), # XXX some indent would be nice 
+                    ranking.to_string() # XXX some indent (4 spaces)
+                )
+            )
     assert False
-    ranking.write(context.output_dir)
+    # TODO mention missing ones, i.e. those with no generated rankings at all
     
     
     
