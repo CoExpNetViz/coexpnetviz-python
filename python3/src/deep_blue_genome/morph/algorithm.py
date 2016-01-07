@@ -43,7 +43,7 @@ def _get_correlations(expression_matrix, subset, correlation_method):
     return correlations
 
 def _normalise(ranking):
-    return (ranking - ranking.mean()) / ranking.std()
+    return (ranking - ranking.values.mean()) / ranking.values.std()
  
 def _finalise(ranking, baits):
     '''
@@ -53,8 +53,10 @@ def _finalise(ranking, baits):
     '''
     non_baits = ~ranking.index.isin(baits)
     ranking = ranking.loc[non_baits]
-    ranking = ranking / len(baits)
-    return _normalise(ranking)
+    if not ranking.empty:
+        ranking = ranking / len(baits)
+        ranking = _normalise(ranking)
+    return ranking
     
 def _get_auc(indices):
     return indices[indices < 1000].sum() / (1000 * len(indices))
@@ -62,6 +64,13 @@ def _get_auc(indices):
 _ReturnTuple = namedtuple('_ReturnTuple', ['ranking', 'ausr'])
 
 # TODO need think about mapped genes on exp mat: duplicates may arise e.g. gene1 mapping to (mapped1, mapped2) and gene2 mapping to mapped2. Unless off course we can assume about mappings that no 2 genes map to the same mapped gene. First thing is to check whether that's true for MSU-RAP mapping.
+
+# Performance notes:
+# - Runtime of each (bait group, exp-mat, clustering) combination appears similar to C++ version, we just have a lot more clustering/exp-mat combinations to check now.
+# - partial copy of ranking (df.loc[] = other.loc[]) was slower than fully copying
+# - using df.values in normalise() had no effect
+# - pd.Series(df.values.sum()) slowed performance by 10%
+# XXX working entirely with numpy in here and sub-funcs, and avoid copying the numpy arrays should lead to a performance gain. Am curious how close that'd get to C++. Is there potential for Cython too?
 def _rank_genes(correlations, clustering, baits):
     clustering = clustering.set_index('item')
     
@@ -86,6 +95,7 @@ def _rank_genes(correlations, clustering, baits):
     ranking = pd.concat(ranking)
     
     # For each bait, leave it out and calculate ranking based on pre_ranking, and check its position in the ranking
+    # XXX could speed up by switching to np. And with np might speed up by avoiding copies
     tmp_ranking = pre_ranking.copy()
     indices = []
     for _, corrs in correlations.groupby('cluster_id'):
@@ -97,11 +107,7 @@ def _rank_genes(correlations, clustering, baits):
                 _finalise(tmp_ranking.loc[corrs.index], cluster_baits.drop(bait))
                 tmp_ranking.sort_values(inplace=True)
                 indices.append(tmp_ranking.index.get_loc(bait))
-#             tmp_ranking = pre_ranking.copy() # XXX potential to speed up by not copying, see line below
-            tmp_ranking.loc[corrs.index] = pre_ranking.loc[corrs.index]
-#             print(len(tmp_ranking))
-#             print(len(pre_ranking))
-#             assert tmp_ranking.sort_values().equals(pre_ranking.sort_values())
+            tmp_ranking = pre_ranking.copy()
     
     # Apply area under the curve to indices to get the AUSR
     ausr = _get_auc(pd.Series(indices))
@@ -166,6 +172,7 @@ def morph(context, bait_groups, top_k):
                     _logger.info('Resulting ranking has AUSR={}'.format(result.ausr))
                     baits_missing = bait_group[~bait_group.isin(baits_present)]
                     rankings.append((group_id, expression_matrix, clustering, baits_present, baits_missing, result.ausr, result.ranking.iloc[0:top_k].copy()))
+                    db.session.commit()  # Commit every now and then to prevent database from running out of resources (e.g. table lock space)
     
     return pd.DataFrame(rankings, columns=('bait_group_id', 'expression_matrix', 'clustering', 'baits_present', 'baits_missing', 'ausr', 'ranking'))
     

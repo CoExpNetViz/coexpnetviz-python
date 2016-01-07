@@ -124,7 +124,6 @@ def morph(main_config, **kwargs):
                     ranking.to_string() # XXX some indent (4 spaces)
                 )
             )
-    assert False
     # TODO mention missing ones, i.e. those with no generated rankings at all
     
     
