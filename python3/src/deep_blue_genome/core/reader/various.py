@@ -160,34 +160,6 @@ def read_clustering_file(path, name_index=0, merge_overlapping=False):
     # Finish up
     df.drop_duplicates(inplace=True)
     return df
-
-def read_whitespace_separated_2d_array_file(path): #TODO unused?
-    '''
-    Read whitespace separated 2d array file.
-    
-    Unlike a matrix, rows may differ in field length.
-    
-    Lines act as rows, the first dimension. Words in a line act as the second
-    dimension. So `array[1][2]` is the third word on the second row.
-    
-    Lines are separated by one or more newline characters (any amount of \r or
-    \n). Empty lines are ignored. Words are separated by any whitespace other
-    than newline characters. Empty words are ignored.
-    
-    Parameters
-    ----------
-    path : str
-        path to 2d array file to read
-    
-    Returns
-    -------
-    list of list of str
-        2d array
-    '''
-    with open(path, encoding="utf-8") as f:
-        lines = f.read().split("[\r\n]+")
-        lines = [line.split() for line in lines]
-        return lines
  
 def read_gene_families_file(path):
     '''
@@ -256,29 +228,30 @@ def read_baits_file(path): #XXX more generic name: read_genes_file: file contain
         baits = pd.Series(f.read().split(), name='gene')
         return baits
 
-def read_mcl_clustering(path):
-    '''
-    Read MCL clustering outputted by an `--abc` run.
-    
-    No input sanitisation as output is expected to come directly from the MCL
-    algorithm (which is well behaved).
-        
-    Parameters
-    ----------
-    path : str
-        path to file to read
-    
-    Returns
-    -------
-    pandas.DataFrame(data=[cluster_id : int, item : str])
-        Clusters
-    '''
-    # XXX use read_clustering
-    df = pd.read_csv(path, names=['item']).applymap(lambda x: x.lower().split())
-    df.index.name = 'cluster_id'
-    df.reset_index(inplace=True)
-    df = df_expand_iterable_values(df, 'item')
-    return df
+# XXX Temporarily unused
+# def read_mcl_clustering(path):
+#     '''
+#     Read MCL clustering outputted by an `--abc` run.
+#     
+#     No input sanitisation as output is expected to come directly from the MCL
+#     algorithm (which is well behaved).
+#         
+#     Parameters
+#     ----------
+#     path : str
+#         path to file to read
+#     
+#     Returns
+#     -------
+#     pandas.DataFrame(data=[cluster_id : int, item : str])
+#         Clusters
+#     '''
+#     # XXX use read_clustering
+#     df = pd.read_csv(path, names=['item']).applymap(lambda x: x.lower().split())
+#     df.index.name = 'cluster_id'
+#     df.reset_index(inplace=True)
+#     df = df_expand_iterable_values(df, 'item')
+#     return df
 
 def read_gene_mapping_file(path): 
     '''
