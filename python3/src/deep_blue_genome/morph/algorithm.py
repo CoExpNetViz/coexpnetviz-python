@@ -136,7 +136,7 @@ def morph(context, bait_groups, top_k):
         made are omitted.
     '''
     
-    min_genes_present = 7
+    min_genes_present = 8
     _logger.info('For each bait group, use only expression matrices and clusterings which have at least {} baits in common.'.format(min_genes_present))
     _logger.info('For each expression matrix and clustering combination, temporarily reduce the current bait group to the baits both have in common. The excluded baits are also excluded from the AUSR calculation.')
     
@@ -229,6 +229,7 @@ def morph(context, bait_groups, top_k):
     
     # Main alg
     rankings = []
+    print(df.head())
     for group_id, rest in df.groupby('group_id'):
         bait_group = bait_groups[bait_groups['group_id']==group_id]['gene']
         for expression_matrix, rest2 in rest.groupby('expression_matrix'):

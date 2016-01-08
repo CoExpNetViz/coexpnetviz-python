@@ -52,7 +52,7 @@ Some of the design principles used:
 
 # TODO in the future this may be of interest https://pypi.python.org/pypi/python-string-utils/0.3.0  We could donate our own things to that library eventually...
     
-def sanitise_plain_text_file(file):
+def sanitise_plain_text_file(file):   # XXX need to change sanitise to stream output (= most flexible) or add destination file
     '''
     Sanitise plain text file.
     
@@ -65,8 +65,10 @@ def sanitise_plain_text_file(file):
     file : str-like
         string to sanitise
     '''
-    sed = local['sed']
-    sed('-i', '-r', '-e', u's/[\\x0]//g', '-e', 's/[\\r\\n]+/\\n/g', '-e', 's/(\t)+/\t/g', file)
+    out_file = file.with_name('.' + file.name)
+    cmd = local['cat'][file] | local['tr']['-s', r'\r', r'\n'] | local['sed']['-r', '-e', r's/[\x0]//g', '-e', r's/(\t)+/\t/g'] > out_file
+    cmd()
+    return out_file
 
 def read_expression_matrix_file(path):
     '''
@@ -89,6 +91,7 @@ def read_expression_matrix_file(path):
     -------
     ExpressionMatrix
     '''
+    # XXX why no sanitise?
     mat = pd.read_table(path, index_col=0, header=0, engine='python').astype(float)
     mat = mat[mat.index.to_series().notnull()]  # TODO log warnings for dropped rows
     mat.index.name = 'gene'
@@ -131,7 +134,7 @@ def read_clustering_file(path, name_index=0, merge_overlapping=False):
         `cluster_id` is a set of cluster ids.
     '''
     # Read file
-    sanitise_plain_text_file(path)
+    path = sanitise_plain_text_file(path)
     with open(path, 'r') as f:
         reader = csv.reader(f, delimiter='\t')
         if name_index is not None:
@@ -217,7 +220,7 @@ def read_gene_families_file(path):
         Gene families
     '''
     # XXX use read_clustering
-    sanitise_plain_text_file(path)
+    path = sanitise_plain_text_file(path)
     with open(path, 'r') as f:
         reader = csv.reader(f, delimiter="\t")
         df = pd.DataFrame(([row[0], row[1:]] for row in reader), columns='family gene'.split())
@@ -268,6 +271,7 @@ def read_mcl_clustering(path):
         Clusters
     '''
     # XXX use read_clustering
+    # XXX no sanitise?
     df = pd.read_csv(path, names=['item']).applymap(lambda x: x.lower().split())
     df.index.name = 'cluster_id'
     df.reset_index(inplace=True)

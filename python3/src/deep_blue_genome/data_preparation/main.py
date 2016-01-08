@@ -23,11 +23,12 @@ from deep_blue_genome.core.reader.various import read_expression_matrix_file,\
 from deep_blue_genome.core.database.entities import ExpressionMatrix, Clustering,\
     GeneMappingTable
 import plumbum as pb
-from deep_blue_genome.util.file_system import flatten_paths
 from deep_blue_genome.util.pandas import df_has_null, series_has_duplicates
 import logging
 from deep_blue_genome.core.exceptions import TaskFailedException
 from deep_blue_genome.util.exceptions import log_exception_msg
+from deep_blue_genome.util.plumbum import list_files
+from deep_blue_genome.core.util import is_data_file
 
 _logger = logging.getLogger('deep_blue_genome.prepare')
 
@@ -115,7 +116,7 @@ def prepare(main_config, **kwargs):
     def to_paths(listing):
         paths = (p.strip() for p in listing.splitlines())
         paths = [p.replace('/www/group/biocomp/extra/morph', '/mnt/data/doc/work/prod_data') for p in paths if p]
-        paths = flatten_paths(map(pb.local.path, paths))
+        paths = list(list_files(map(pb.local.path, paths), filter_=is_data_file))
         return paths
     
     gene_mappings = to_paths('''
@@ -132,6 +133,7 @@ def prepare(main_config, **kwargs):
     ''')
     
     clusterings = to_paths('''
+        /www/group/biocomp/extra/morph/ARABIDOBSIS/cluster_solution/Pollen_boavida_IsEnzymeClusteringSol.txt
         /www/group/biocomp/extra/morph/ARABIDOBSIS/cluster_solution
         /www/group/biocomp/extra/morph/ITAG/cluster_solution
         /www/group/biocomp/extra/morph/PGSC/cluster_solution
@@ -140,13 +142,13 @@ def prepare(main_config, **kwargs):
         /www/group/biocomp/extra/morph/catharanthus_roseus/clusterings
     ''')
     
-    for path in gene_mappings:
-        with log_exception_msg(_logger, TaskFailedException):
-            add_gene_mapping(context, path)
-            
-    for exp_mat in expression_matrices:
-        with log_exception_msg(_logger, TaskFailedException):
-            add_expression_matrix(context, exp_mat)
+#     for path in gene_mappings:
+#         with log_exception_msg(_logger, TaskFailedException):
+#             add_gene_mapping(context, path)
+#             
+#     for exp_mat in expression_matrices:
+#         with log_exception_msg(_logger, TaskFailedException):
+#             add_expression_matrix(context, exp_mat)
          
     for clustering in clusterings:
         with log_exception_msg(_logger, TaskFailedException):
@@ -155,7 +157,6 @@ def prepare(main_config, **kwargs):
     # Generate pathway files (files with genes in each pathway)
     pathways = pd.read_table('Ath_AGI_LOCUS_TAIR10_Aug2012.txt', quotechar="'")
     pathways.columns = pathways.columns.to_series().apply(str.lower)
-    print(pathways.head())
     arabidopsis_pathways_dir = pb.local.path('arabidopsis_pathways')
     arabidopsis_pathways_dir.mkdir()
     for name, genes in pathways.groupby('name')['identifier']:

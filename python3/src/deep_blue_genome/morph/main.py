@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 from deep_blue_genome.util.str import multiline_lstrip
+from deep_blue_genome.util.plumbum import list_files
+from deep_blue_genome.core.util import is_data_file
 
 '''
 MOdule guided Ranking of candidate PatHway genes (MORPH)
@@ -25,7 +27,6 @@ from deep_blue_genome.core.reader.various import read_baits_file
 from deep_blue_genome.morph.algorithm import morph as morph_
 from deep_blue_genome.core import cli, context as ctx
 import click
-from deep_blue_genome.util.file_system import flatten_paths
 import pandas as pd
 import plumbum as pb
 import logging
@@ -69,7 +70,7 @@ def morph(main_config, **kwargs):
         series = read_baits_file(path)
         series.index = pd.Index(repeat(i, len(series.index)), name='group_id')
         return series
-    bait_file_paths = pd.Series(flatten_paths(map(pb.local.path, kwargs['baits_file'])), name='bait_group_file')
+    bait_file_paths = pd.Series(list_files(map(pb.local.path, kwargs['baits_file']), is_data_file), name='bait_group_file')
     bait_groups = pd.concat(bait_file_to_df(i, path) for i, path in enumerate(bait_file_paths)) #XXX itertuples instead of enumerate
     bait_groups = context.database.get_genes_by_name(bait_groups, map_=True)
     bait_groups.index.name = 'group_id'
