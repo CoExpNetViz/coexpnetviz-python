@@ -136,13 +136,14 @@ def morph(context, bait_groups, top_k):
         made are omitted.
     '''
     
-    _logger.info('For each bait group, use only expression matrices and clusterings which have at least 5 baits in common.')
+    min_genes_present = 7
+    _logger.info('For each bait group, use only expression matrices and clusterings which have at least {} baits in common.'.format(min_genes_present))
     _logger.info('For each expression matrix and clustering combination, temporarily reduce the current bait group to the baits both have in common. The excluded baits are also excluded from the AUSR calculation.')
     
     # fetch list of relevant clusterings and expression matricess from DB
     # XXX could query expmat, clust in one go, filtering by their common baits only. Or on the other hand, could all that contain at least 1 gene and filter here, if you want to mention as excluded in the logs; or to simplify the query since it might not make much performance difference to do it here instead; there just aren't many matrices and clusterings
     db = context.database
-    result = db.get_gene_collections_by_genes(bait_groups, min_genes_present=5, expression_matrices=True, clusterings=True)
+    result = db.get_gene_collections_by_genes(bait_groups, min_genes_present=min_genes_present, expression_matrices=True, clusterings=True)
     df = pd.merge(result.expression_matrices, result.clusterings, on=['group_id', 'gene'], how='inner')
     
     # Hardcoded combinations
@@ -247,7 +248,7 @@ def morph(context, bait_groups, top_k):
                 if (expression_matrix.path, clustering.path) not in acceptable_combinations:
                     continue
                 
-                if len(baits_present) >= 5:
+                if len(baits_present) >= min_genes_present:
                     clustering_ = read_clustering_file(pb.local.path(clustering.path), name_index=1)
                     clustering_ = clustering_.drop('item', axis=1).join(db.get_genes_by_name(clustering_['item'], map_=True))
                     _logger.info(
