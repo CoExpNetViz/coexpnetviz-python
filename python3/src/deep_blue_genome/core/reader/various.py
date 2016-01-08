@@ -17,8 +17,8 @@
 
 
 import pandas as pd
+import plumbum as pb
 import csv
-from plumbum import local
 from deep_blue_genome.core.expression_matrix import ExpressionMatrix
 from deep_blue_genome.core.util import df_expand_iterable_values
 from deep_blue_genome.util.algorithms import merge_overlapping_named_sets
@@ -53,9 +53,12 @@ Some of the design principles used:
 
 # XXX in the future this may be of interest https://pypi.python.org/pypi/python-string-utils/0.3.0  We could donate our own things to that library eventually...
     
-def _sanitise_plain_text_file(file):   # XXX need to change sanitise to stream output (= most flexible, but probably not necessary) or add destination file
+_sed = pb.local['sed']
+_tr = pb.local['tr']
+
+def _get_sanitised_plain_text_file(path):   # XXX need to change sanitise to stream output (= most flexible, but probably not necessary) or add destination file
     '''
-    Sanitise plain text file.
+    Get sanitised contents of plain text file.
     
     - Remove null characters
     - Fix newlines, drop empty lines
@@ -63,13 +66,16 @@ def _sanitise_plain_text_file(file):   # XXX need to change sanitise to stream o
     
     Parameters
     ----------
-    file : str-like
-        string to sanitise
+    path : plumbum.Path
+        Path to file to sanitise
+        
+    Returns
+    -------
+    io.BufferedReader
+        Stream of sanitised file contents
     '''
-    out_file = file.with_name('.' + file.name)
-    cmd = local['cat'][file] | local['tr']['-s', r'\r', r'\n'] | local['sed']['-r', '-e', r's/[\x0]//g', '-e', r's/(\t)+/\t/g'] > out_file
-    cmd()
-    return out_file
+    cmd = _sed['-r', '-e', r's/[\x0]//g', '-e', r's/(\t)+/\t/g'] | _tr['-s', r'\r', r'\n'] 
+    return cmd.popen().stdout
 
 def read_expression_matrix_file(path, sanitise=True):
     '''
@@ -95,7 +101,7 @@ def read_expression_matrix_file(path, sanitise=True):
     ExpressionMatrix
     '''
     if sanitise:
-        path = _sanitise_plain_text_file(path)
+        path = _get_sanitised_plain_text_file(path)
     mat = pd.read_table(path, index_col=0, header=0, engine='python').astype(float)
     mat = mat[mat.index.to_series().notnull()]  # TODO log warnings for dropped rows
     mat.index.name = 'gene'
@@ -141,8 +147,10 @@ def read_clustering_file(path, name_index=0, merge_overlapping=False, sanitise=T
     '''
     # Read file
     if sanitise:
-        path = _sanitise_plain_text_file(path)
-    with open(path, 'r') as f:
+        f = _get_sanitised_plain_text_file(path)
+    else:
+        f = open(path, 'r', encoding='utf-8')
+    with f:
         reader = csv.reader(f, delimiter='\t')
         if name_index is not None:
             df = pd.DataFrame(([row[name_index], row[0:name_index] + row[name_index+1:]] for row in reader), columns=['cluster_id', 'item'])
@@ -202,8 +210,10 @@ def read_gene_families_file(path, sanitise=True):
     '''
     # XXX use read_clustering
     if sanitise:
-        path = _sanitise_plain_text_file(path)
-    with open(path, 'r') as f:
+        f = _get_sanitised_plain_text_file(path)
+    else:
+        f = open(path, 'r', encoding='utf-8')
+    with f:
         reader = csv.reader(f, delimiter="\t")
         df = pd.DataFrame(([row[0], row[1:]] for row in reader), columns='family gene'.split())
     df = df_expand_iterable_values(df, ['gene'])
@@ -234,8 +244,10 @@ def read_genes_file(path, sanitise=True):
         Series of genes
     '''
     if sanitise:
-        path = _sanitise_plain_text_file(path)
-    with open(path, encoding='utf-8') as f:
+        f = _get_sanitised_plain_text_file(path)
+    else:
+        f = open(path, encoding='utf-8')
+    with f:
         baits = pd.Series(f.read().split(), name='gene')
         return baits
 
@@ -282,8 +294,6 @@ def read_gene_mapping_file(path, sanitise=True):
     sanitise : bool
         Sanitise file before reading.
     '''
-    if sanitise:
-        path = _sanitise_plain_text_file(path)
-    gene_mapping = read_clustering_file(path, name_index=0, merge_overlapping=False)
+    gene_mapping = read_clustering_file(path, name_index=0, merge_overlapping=False, sanitise=sanitise)
     gene_mapping.columns = ['left', 'right']
     return gene_mapping
