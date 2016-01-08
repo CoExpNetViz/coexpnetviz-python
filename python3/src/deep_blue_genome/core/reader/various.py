@@ -74,7 +74,7 @@ def _get_sanitised_plain_text_file(path):   # XXX need to change sanitise to str
     io.BufferedReader
         Stream of sanitised file contents
     '''
-    cmd = _sed['-r', '-e', r's/[\x0]//g', '-e', r's/(\t)+/\t/g'] | _tr['-s', r'\r', r'\n'] 
+    cmd = _sed['-r', '-e', r's/[\x0]//g', '-e', r's/(\t)+/\t/g', path] | _tr['-s', r'\r', r'\n'] 
     return cmd.popen().stdout
 
 def read_expression_matrix_file(path, sanitise=True):

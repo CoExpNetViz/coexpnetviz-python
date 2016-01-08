@@ -70,7 +70,8 @@ def morph(main_config, **kwargs):
         series = read_genes_file(path)
         series.index = pd.Index(repeat(i, len(series.index)), name='group_id')
         return series
-    bait_file_paths = pd.Series(list_files(map(pb.local.path, kwargs['baits_file']), is_data_file), name='bait_group_file')
+    bait_file_paths = list(list_files(map(pb.local.path, kwargs['baits_file']), is_data_file))
+    bait_file_paths = pd.Series(map(str, bait_file_paths), name='bait_group_file')
     bait_groups = pd.concat(bait_file_to_df(i, path) for i, path in enumerate(bait_file_paths)) #XXX itertuples instead of enumerate
     bait_groups = context.database.get_genes_by_name(bait_groups, map_=True)
     bait_groups.index.name = 'group_id'
@@ -89,7 +90,6 @@ def morph(main_config, **kwargs):
     
     for _, group in rankings.groupby('bait_group_id'):
         best_result = group[group['ausr'] == group['ausr'].max()].iloc[0]
-        bait_group_file = best_result['bait_group_file']
         baits_present = best_result['baits_present']
         baits_missing = best_result['baits_missing']
         ranking = best_result['ranking']

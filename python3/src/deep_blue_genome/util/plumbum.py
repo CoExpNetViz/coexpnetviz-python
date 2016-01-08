@@ -41,8 +41,8 @@ def list_files(paths, filter_=None):
     for p in paths:
         if filter_(p):
             if p.isdir():
-                for p in list_files(p.list(), filter_): #XXX switch to iterdir and set plumbum>=1.6.1
-                    yield p
+                for p2 in list_files(p.list(), filter_): #XXX switch to iterdir and set plumbum>=1.6.1
+                    yield p2
             else:
                 yield p
             

@@ -38,7 +38,7 @@ if __name__ == '__main__':
         '-m current '
 #         '-n auto --benchmark-disable'  # parallel testing (can't and shouldn't benchmark in parallel, so --benchmark-disable)
 #         '--maxfail=1 '
-        '--capture=no '
+#         '--capture=no '
     )
     pytest.main(args)
 #     group_results()

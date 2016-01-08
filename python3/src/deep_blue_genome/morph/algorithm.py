@@ -30,7 +30,7 @@ import plumbum as pb
 import logging
 from deep_blue_genome.core.reader.various import read_expression_matrix_file,\
     read_clustering_file
-from deep_blue_genome.core.metrics import pearson_r, get_correlations
+from deep_blue_genome.core.correlation import pearson_r, get_correlations
 
 _logger = logging.getLogger('deep_blue_genome.morph') 
 
