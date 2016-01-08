@@ -30,6 +30,7 @@ from itertools import chain
 # default there should be a strict config and a more lenient config. Sadly, the
 # lenient config should be picked as default. In either case, errors and warnings
 # will be logged. Though keep in mind that in the future one might even want to limit logging.
+
 '''
 File reading.
 
@@ -48,11 +49,13 @@ Some of the design principles used:
 - Don't trust the user, sanitise frantically
 '''
 
-# TODO test promises in robustness for the various file formats
+# XXX test promises in robustness for the various file formats
 
-# TODO in the future this may be of interest https://pypi.python.org/pypi/python-string-utils/0.3.0  We could donate our own things to that library eventually...
+# XXX in the future this may be of interest https://pypi.python.org/pypi/python-string-utils/0.3.0  We could donate our own things to that library eventually...
+
+# XXX need only sanitise in data prep, so maybe public sanitise and not do it implicitly. Basically, in data prep you sanitise. In Database you don't. But if a user were to call one of these funcs, we'd want sanitisation by default or require them to be explicit. => private sanitise, add option to each read_ that sanitises by default (True) and can be turned off (e.g. in Database)
     
-def sanitise_plain_text_file(file):   # XXX need to change sanitise to stream output (= most flexible) or add destination file
+def _sanitise_plain_text_file(file):   # XXX need to change sanitise to stream output (= most flexible) or add destination file
     '''
     Sanitise plain text file.
     
@@ -91,7 +94,7 @@ def read_expression_matrix_file(path):
     -------
     ExpressionMatrix
     '''
-    # XXX why no sanitise?
+    path = _sanitise_plain_text_file(path)
     mat = pd.read_table(path, index_col=0, header=0, engine='python').astype(float)
     mat = mat[mat.index.to_series().notnull()]  # TODO log warnings for dropped rows
     mat.index.name = 'gene'
@@ -134,7 +137,7 @@ def read_clustering_file(path, name_index=0, merge_overlapping=False):
         `cluster_id` is a set of cluster ids.
     '''
     # Read file
-    path = sanitise_plain_text_file(path)
+    path = _sanitise_plain_text_file(path)
     with open(path, 'r') as f:
         reader = csv.reader(f, delimiter='\t')
         if name_index is not None:
@@ -220,7 +223,7 @@ def read_gene_families_file(path):
         Gene families
     '''
     # XXX use read_clustering
-    path = sanitise_plain_text_file(path)
+    path = _sanitise_plain_text_file(path)
     with open(path, 'r') as f:
         reader = csv.reader(f, delimiter="\t")
         df = pd.DataFrame(([row[0], row[1:]] for row in reader), columns='family gene'.split())
@@ -271,7 +274,6 @@ def read_mcl_clustering(path):
         Clusters
     '''
     # XXX use read_clustering
-    # XXX no sanitise?
     df = pd.read_csv(path, names=['item']).applymap(lambda x: x.lower().split())
     df.index.name = 'cluster_id'
     df.reset_index(inplace=True)
@@ -294,6 +296,7 @@ def read_gene_mapping_file(path):
     pandas.DataFrame(columns=[left : str, right : str])
         Mapping
     '''
+    path = _sanitise_plain_text_file(path)
     gene_mapping = read_clustering_file(path, name_index=0, merge_overlapping=False)
     gene_mapping.columns = ['left', 'right']
     return gene_mapping

@@ -142,13 +142,13 @@ def prepare(main_config, **kwargs):
         /www/group/biocomp/extra/morph/catharanthus_roseus/clusterings
     ''')
     
-#     for path in gene_mappings:
-#         with log_exception_msg(_logger, TaskFailedException):
-#             add_gene_mapping(context, path)
-#             
-#     for exp_mat in expression_matrices:
-#         with log_exception_msg(_logger, TaskFailedException):
-#             add_expression_matrix(context, exp_mat)
+    for path in gene_mappings:
+        with log_exception_msg(_logger, TaskFailedException):
+            add_gene_mapping(context, path)
+             
+    for exp_mat in expression_matrices:
+        with log_exception_msg(_logger, TaskFailedException):
+            add_expression_matrix(context, exp_mat)
          
     for clustering in clusterings:
         with log_exception_msg(_logger, TaskFailedException):

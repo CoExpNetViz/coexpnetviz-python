@@ -30,19 +30,11 @@ import plumbum as pb
 import logging
 from deep_blue_genome.core.reader.various import read_expression_matrix_file,\
     read_clustering_file
-from deep_blue_genome.core.metrics import pearson_r
+from deep_blue_genome.core.metrics import pearson_r, get_correlations
 
 _logger = logging.getLogger('deep_blue_genome.morph') 
 
 # XXX could perhaps squeeze out some more vectorisation
-
-
-# XXX would be nice to have an interface to wrap around e.g. pearson_r to say 'these indices is the subset, restore index afterwards'. Share this func modified with coexpnetviz
-def _get_correlations(expression_matrix, subset, correlation_method):
-    mask = expression_matrix.index.isin(subset)
-    correlations = correlation_method(expression_matrix.values, np.flatnonzero(mask))
-    correlations = pd.DataFrame(correlations, index=expression_matrix.index, columns=expression_matrix.index[mask])
-    return correlations
 
 def _normalise(ranking):
     return (ranking - ranking.values.mean()) / ranking.values.std()
@@ -229,7 +221,6 @@ def morph(context, bait_groups, top_k):
     
     # Main alg
     rankings = []
-    print(df.head())
     for group_id, rest in df.groupby('group_id'):
         bait_group = bait_groups[bait_groups['group_id']==group_id]['gene']
         for expression_matrix, rest2 in rest.groupby('expression_matrix'):
@@ -243,7 +234,7 @@ def morph(context, bait_groups, top_k):
             assert not expression_matrix_.index.has_duplicates  # currently assuming this never happens
             
             # Calculate correlations
-            correlations = _get_correlations(expression_matrix_, bait_group, pearson_r)
+            correlations = get_correlations(expression_matrix_, bait_group, pearson_r)
             
             for clustering, baits_present in rest2.groupby('clustering')['gene']:
                 if (expression_matrix.path, clustering.path) not in acceptable_combinations:

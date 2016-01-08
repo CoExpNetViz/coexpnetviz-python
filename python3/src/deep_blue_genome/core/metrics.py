@@ -15,7 +15,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
+# XXX rename module to correlation? It has correlation methods / metrics?, and funcs to apply it to e.g. an exp mat
+ 
 import numpy as np
+import pandas as pd
+
+# XXX would be nice to have an interface to wrap around e.g. pearson_r to say 'these indices is the subset, restore index afterwards'. Share this func modified with coexpnetviz. 
+# XXX Tidy up interface of this func
+# XXX coexpnetviz should use this func
+def get_correlations(expression_matrix, subset, correlation_method):
+    mask = expression_matrix.index.isin(subset)
+    correlations = correlation_method(expression_matrix.values, np.flatnonzero(mask))
+    correlations = pd.DataFrame(correlations, index=expression_matrix.index, columns=expression_matrix.index[mask])
+    return correlations
 
 # TODO correlation between e.g. [1,1] and [2,2] is NaN with pearson, which kind of makes sense because... how could you possibly tell? Is it 1, -1, something in between?
     
