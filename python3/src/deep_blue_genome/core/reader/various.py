@@ -203,7 +203,7 @@ def read_gene_families_file(path):
     df['family'] = df['family'].str.lower()
     return df
 
-def read_baits_file(path): #XXX more generic name: read_genes_file: file containing list of genes
+def read_genes_file(path):
     '''
     Read a file of whitespace separated bait gene names.
     

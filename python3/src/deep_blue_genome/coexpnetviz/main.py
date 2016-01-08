@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-from deep_blue_genome.core.reader.various import read_baits_file, read_expression_matrix_file,\
+from deep_blue_genome.core.reader.various import read_genes_file, read_expression_matrix_file,\
     read_gene_families_file
 import sys
 import argparse
@@ -85,7 +85,7 @@ def main_(argv):
     args = parser.parse_args(argv[1:])
 
     # Read files
-    baits = read_baits_file(args.baits_file)
+    baits = read_genes_file(args.baits_file)
     expression_matrices = [read_expression_matrix_file(matrix) for matrix in args.expression_matrices] # TODO should remove non-varying rows in user-submitted exp mats (in any exp mats really, but we can trust our own prepped mats already have this step performed)
     if args.gene_families:
         gene_families = read_gene_families_file(args.gene_families)

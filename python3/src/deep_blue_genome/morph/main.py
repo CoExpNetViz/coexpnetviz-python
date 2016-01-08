@@ -23,7 +23,7 @@ MOdule guided Ranking of candidate PatHway genes (MORPH)
 '''
 
 from itertools import repeat
-from deep_blue_genome.core.reader.various import read_baits_file
+from deep_blue_genome.core.reader.various import read_genes_file
 from deep_blue_genome.morph.algorithm import morph as morph_
 from deep_blue_genome.core import cli, context as ctx
 import click
@@ -67,7 +67,7 @@ def morph(main_config, **kwargs):
     
     # Read baits
     def bait_file_to_df(i, path):
-        series = read_baits_file(path)
+        series = read_genes_file(path)
         series.index = pd.Index(repeat(i, len(series.index)), name='group_id')
         return series
     bait_file_paths = pd.Series(list_files(map(pb.local.path, kwargs['baits_file']), is_data_file), name='bait_group_file')
