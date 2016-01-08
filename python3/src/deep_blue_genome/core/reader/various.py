@@ -52,10 +52,8 @@ Some of the design principles used:
 # XXX test promises in robustness for the various file formats
 
 # XXX in the future this may be of interest https://pypi.python.org/pypi/python-string-utils/0.3.0  We could donate our own things to that library eventually...
-
-# XXX need only sanitise in data prep, so maybe public sanitise and not do it implicitly. Basically, in data prep you sanitise. In Database you don't. But if a user were to call one of these funcs, we'd want sanitisation by default or require them to be explicit. => private sanitise, add option to each read_ that sanitises by default (True) and can be turned off (e.g. in Database)
     
-def _sanitise_plain_text_file(file):   # XXX need to change sanitise to stream output (= most flexible) or add destination file
+def _sanitise_plain_text_file(file):   # XXX need to change sanitise to stream output (= most flexible, but probably not necessary) or add destination file
     '''
     Sanitise plain text file.
     
@@ -73,7 +71,7 @@ def _sanitise_plain_text_file(file):   # XXX need to change sanitise to stream o
     cmd()
     return out_file
 
-def read_expression_matrix_file(path):
+def read_expression_matrix_file(path, sanitise=True):
     '''
     Read expression matrix file.
     
@@ -88,19 +86,22 @@ def read_expression_matrix_file(path):
     Parameters
     ----------
     path : plumbum.Path
-        path to expression matrix file to read
+        Path to expression matrix file to read
+    sanitise : bool
+        Sanitise file before reading.
     
     Returns
     -------
     ExpressionMatrix
     '''
-    path = _sanitise_plain_text_file(path)
+    if sanitise:
+        path = _sanitise_plain_text_file(path)
     mat = pd.read_table(path, index_col=0, header=0, engine='python').astype(float)
     mat = mat[mat.index.to_series().notnull()]  # TODO log warnings for dropped rows
     mat.index.name = 'gene'
     return ExpressionMatrix(mat, name=path.name)
 
-def read_clustering_file(path, name_index=0, merge_overlapping=False):
+def read_clustering_file(path, name_index=0, merge_overlapping=False, sanitise=True):
     '''
     Read generic clustering.
     
@@ -129,6 +130,8 @@ def read_clustering_file(path, name_index=0, merge_overlapping=False):
         If None, each line is an unnamed cluster, else column with index `name_index` refers to cluster names.
     merge_overlapping : bool
         If True, merge overlapping clusters.
+    sanitise : bool
+        Sanitise file before reading.
         
     Returns
     -------
@@ -137,7 +140,8 @@ def read_clustering_file(path, name_index=0, merge_overlapping=False):
         `cluster_id` is a set of cluster ids.
     '''
     # Read file
-    path = _sanitise_plain_text_file(path)
+    if sanitise:
+        path = _sanitise_plain_text_file(path)
     with open(path, 'r') as f:
         reader = csv.reader(f, delimiter='\t')
         if name_index is not None:
@@ -161,7 +165,7 @@ def read_clustering_file(path, name_index=0, merge_overlapping=False):
     df.drop_duplicates(inplace=True)
     return df
  
-def read_gene_families_file(path):
+def read_gene_families_file(path, sanitise=True):
     '''
     Read a gene families file.
     
@@ -188,6 +192,8 @@ def read_gene_families_file(path):
     ----------
     path : str
         path to gene families file to read
+    sanitise : bool
+        Sanitise file before reading.
     
     Returns
     -------
@@ -195,7 +201,8 @@ def read_gene_families_file(path):
         Gene families
     '''
     # XXX use read_clustering
-    path = _sanitise_plain_text_file(path)
+    if sanitise:
+        path = _sanitise_plain_text_file(path)
     with open(path, 'r') as f:
         reader = csv.reader(f, delimiter="\t")
         df = pd.DataFrame(([row[0], row[1:]] for row in reader), columns='family gene'.split())
@@ -203,9 +210,9 @@ def read_gene_families_file(path):
     df['family'] = df['family'].str.lower()
     return df
 
-def read_genes_file(path):
+def read_genes_file(path, sanitise=True):
     '''
-    Read a file of whitespace separated bait gene names.
+    Read a file of whitespace separated gene names.
     
     Example return::
     
@@ -218,12 +225,16 @@ def read_genes_file(path):
     ----------
     path : str
         path to file to read
+    sanitise : bool
+        Sanitise file before reading.
     
     Returns
     -------
     pandas.Series(data=(gene : str))
         Series of genes
     '''
+    if sanitise:
+        path = _sanitise_plain_text_file(path)
     with open(path, encoding='utf-8') as f:
         baits = pd.Series(f.read().split(), name='gene')
         return baits
@@ -253,7 +264,7 @@ def read_genes_file(path):
 #     df = df_expand_iterable_values(df, 'item')
 #     return df
 
-def read_gene_mapping_file(path): 
+def read_gene_mapping_file(path, sanitise=True): 
     '''
     Read a gene mapping file
     
@@ -268,8 +279,11 @@ def read_gene_mapping_file(path):
     -------
     pandas.DataFrame(columns=[left : str, right : str])
         Mapping
+    sanitise : bool
+        Sanitise file before reading.
     '''
-    path = _sanitise_plain_text_file(path)
+    if sanitise:
+        path = _sanitise_plain_text_file(path)
     gene_mapping = read_clustering_file(path, name_index=0, merge_overlapping=False)
     gene_mapping.columns = ['left', 'right']
     return gene_mapping
