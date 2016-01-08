@@ -15,7 +15,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-# XXX rename module to correlation? It has correlation methods / metrics?, and funcs to apply it to e.g. an exp mat
+'''
+Correlation functions such as Pearson R and functions to apply them
+'''
  
 import numpy as np
 import pandas as pd
@@ -28,8 +30,6 @@ def get_correlations(expression_matrix, subset, correlation_method):
     correlations = correlation_method(expression_matrix.values, np.flatnonzero(mask))
     correlations = pd.DataFrame(correlations, index=expression_matrix.index, columns=expression_matrix.index[mask])
     return correlations
-
-# TODO correlation between e.g. [1,1] and [2,2] is NaN with pearson, which kind of makes sense because... how could you possibly tell? Is it 1, -1, something in between?
     
 def pearson_r(data, subset):
     '''
