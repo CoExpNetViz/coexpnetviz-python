@@ -143,15 +143,26 @@ def prepare(main_config, **kwargs):
     for path in gene_mappings:
         with log_exception_msg(_logger, TaskFailedException):
             add_gene_mapping(context, path)
-           
+            
     for exp_mat in expression_matrices:
         with log_exception_msg(_logger, TaskFailedException):
             add_expression_matrix(context, exp_mat)
-        
+         
     for clustering in clusterings:
         with log_exception_msg(_logger, TaskFailedException):
             add_clustering(context, clustering)
-        
+
+    # Generate pathway files (files with genes in each pathway)
+    pathways = pd.read_table('Ath_AGI_LOCUS_TAIR10_Aug2012.txt', quotechar="'")
+    pathways.columns = pathways.columns.to_series().apply(str.lower)
+    print(pathways.head())
+    arabidopsis_pathways_dir = pb.local.path('arabidopsis_pathways')
+    arabidopsis_pathways_dir.mkdir()
+    for name, genes in pathways.groupby('name')['identifier']:
+        genes = genes.dropna()
+        if not genes.empty:
+            with (arabidopsis_pathways_dir / name.replace(' ', '_').replace('/', '.')).open('w') as f:
+                f.write('\n'.join(genes.tolist()))
     
     # TODO output_dir context
     # TODO dist to output_dir

@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 from collections import namedtuple
+from deep_blue_genome.util.itertools import window
+from more_itertools.more import chunked
 
 '''
 The MORPH algorithm
@@ -143,6 +145,87 @@ def morph(context, bait_groups, top_k):
     result = db.get_gene_collections_by_genes(bait_groups, min_genes_present=5, expression_matrices=True, clusterings=True)
     df = pd.merge(result.expression_matrices, result.clusterings, on=['group_id', 'gene'], how='inner')
     
+    # Hardcoded combinations
+    # TODO is is_enzyme a full clustering or does it contain only half of everything? E.g. just one clustering? It's not that hard to add the missing cluster, is it? Why should we or shouldn't we?
+    exp_mats = '''
+        E-GEOD-14275.expression_matrix  
+        E-GEOD-25073.expression_matrix  
+        E-GEOD-31077.expression_matrix  
+        E-GEOD-5167.expression_matrix
+        E-GEOD-8216.expression_matrix
+        E-MEXP-2267.expression_matrix
+        E-GEOD-35984.expression_matrix  
+        E-GEOD-39298.expression_matrix
+        RiceGenomeDataSet.expression_matrix
+    '''.split()
+    exp_mats = ['/mnt/data/doc/work/prod_data/rice/data_sets/' + x for x in exp_mats]
+    
+    clusterings = '''
+        E-GEOD-14275_click.clustering          
+        E-GEOD-14275_ppi_mcl_matisse.clustering
+        E-GEOD-25073_click.clustering          
+        E-GEOD-25073_ppi_mcl_matisse.clustering
+        E-GEOD-31077_click.clustering          
+        E-GEOD-31077_ppi_mcl_matisse.clustering
+        E-GEOD-5167_click.clustering
+        E-GEOD-5167_ppi_mcl_matisse.clustering
+        E-GEOD-8216_click.clustering
+        E-GEOD-8216_ppi_mcl_matisse.clustering
+        E-MEXP-2267_click.clustering
+        E-MEXP-2267_ppi_mcl_matisse.clustering
+        E-GEOD-35984_click.clustering            
+        E-GEOD-35984_ppi_mcl_matisse.clustering
+        E-GEOD-39298_click.clustering            
+        E-GEOD-39298_ppi_mcl_matisse.clustering
+        RiceGenomeDataSet_click.clustering
+        RiceGenomeDataSet_ppi_mcl_matisse.clustering
+        is_enzyme.clustering
+    '''.split()
+    clusterings = ['/mnt/data/doc/work/prod_data/rice/clusterings/' + x for x in clusterings]
+    clustering = clusterings[-1]
+    clusterings = clusterings[0:-1]
+    
+    acceptable_combinations = (
+        [(exp_mat, clustering) for exp_mat in exp_mats] +
+        [(exp_mat, clustering) for exp_mat, clusterings_ in zip(exp_mats, chunked(clusterings, 2)) for clustering in clusterings_] +
+        [('/mnt/data/doc/work/prod_data/ARABIDOBSIS/data_sets/' + exp_mat, '/mnt/data/doc/work/prod_data/ARABIDOBSIS/cluster_solution/' + clustering)
+            for exp_mat, clustering
+            in chunked('''
+                ds1Data.txt                 DS1_click.txt
+                ds1Data.txt                 ds1_ppi_matisse_0.4.txt
+                Seed_GH_DataSet.txt   Seed_GH_CLICK_ClusteringSol.txt
+                Seed_GH_DataSet.txt   Seed_GH_IsEnzymeClusteringSol.txt
+                Seed_GH_DataSet.txt   Seed_GH_ppi_matisse_0.4.txt
+                SeedsDataSet.txt Seeds_CLICK_ClusteringSol.txt
+                SeedsDataSet.txt SeedsDataSet_Metabolic_Network_ClusteringSol.txt
+                SeedsDataSet.txt SeedsDataSet_PPI_Network_ClusteringSol.txt
+                Seed_GH_2_DataSet.txt    Seed_GH_2_ppi_matisse_0.4.txt
+                Seed_GH_2_DataSet.txt    Seed_GH_2_CLICK_ClusteringSol.txt
+                Seed_GH_2_DataSet.txt    Seed_GH_2_IsEnzymeClusteringSol.txt
+                TissuesData.txt    Tissues_IsEnzymeClusteringSol.txt
+                TissuesData.txt    Tissues_Metabolic_Network_ClusteringSol.txt
+                TissuesData.txt    Tissues_PPI_Network_ClusteringSol.txt
+                TissuesData.txt    Tissues_CLICK_ClusteringSol.txt
+                SeedlingsDataSet.txt    Seedlings_IsEnzymeClusteringSol.txt
+                SeedlingsDataSet.txt    Seedlings_Metabolic_Network_ClusteringSol.txt
+                SeedlingsDataSet.txt    Seedlings_PPI_Network_ClusteringSol.txt
+                SeedlingsDataSet.txt    Seedlings_CLICK_ClusteringSol.txt
+                Root_DataSet.txt    Root_IsEnzymeClusteringSol.txt
+                Root_DataSet.txt    Root_CLICK_ClusteringSol.txt
+                Root_DataSet.txt    Root_MCL_PPI_reduced_extended_solution_0.4.txt
+                Pollen_Boavida_DataSet.txt    Pollen_boavida_CLICK_ClusteringSol.txt
+                Pollen_Boavida_DataSet.txt    Pollen_boavida_IsEnzymeClusteringSol.txt
+                Pollen_Boavida_DataSet.txt    Pollen_boavida_matisseimprove_0.4.txt
+                Pollen_Lin_DataSet.txt    Pollen_lin_CLICK_ClusteringSol.txt
+                Pollen_Lin_DataSet.txt    Pollen_lin_IsEnzymeClusteringSol.txt
+                Pollen_Lin_DataSet.txt    Pollen_lin_matisseimprove_0.4.txt
+                Lateral_Root_DataSet.txt    Lateral_CLICK_ClusteringSol.txt
+                Lateral_Root_DataSet.txt    Lateral_IsEnzymeClusteringSol.txt
+                Lateral_Root_DataSet.txt    Lateral_matisseimprove_0.4.txt
+            '''.split(), 2)
+        ]
+    )
+    
     # Main alg
     rankings = []
     for group_id, rest in df.groupby('group_id'):
@@ -161,6 +244,9 @@ def morph(context, bait_groups, top_k):
             correlations = _get_correlations(expression_matrix_, bait_group, pearson_r)
             
             for clustering, baits_present in rest2.groupby('clustering')['gene']:
+                if (expression_matrix.path, clustering.path) not in acceptable_combinations:
+                    continue
+                
                 if len(baits_present) >= 5:
                     clustering_ = read_clustering_file(pb.local.path(clustering.path), name_index=1)
                     clustering_ = clustering_.drop('item', axis=1).join(db.get_genes_by_name(clustering_['item'], map_=True))

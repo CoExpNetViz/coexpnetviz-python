@@ -36,4 +36,8 @@ class TestPrepare(object):
     def test_run(self, tmpdir):
         init_tmp(tmpdir)
         cli.tmpdir = tmpdir
+        cli.copy_data('Ath_AGI_LOCUS_TAIR10_Aug2012.txt')
         cli.run()
+        
+        
+        

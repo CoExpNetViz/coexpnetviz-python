@@ -124,7 +124,7 @@ class TemporaryFilesMixin(Object):
     ]
     
     def __init__(self, tmp_dir, **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
         tempfile.tempdir = str(pb.local.path(tmp_dir))
     
     

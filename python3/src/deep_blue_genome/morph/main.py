@@ -57,6 +57,9 @@ def morph(main_config, **kwargs):
     '''
     kwargs['main_config'] = main_config # XXX make this DRY
     context = Context(**kwargs)
+    
+    # Send log to file as well
+    logging.getLogger().addHandler(logging.FileHandler(str(context.output_dir / 'morph.log'), mode='w'))
 
     # Collect options
     top_k = kwargs['top_k']
@@ -76,9 +79,14 @@ def morph(main_config, **kwargs):
     # Run alg
     rankings = morph_(context, bait_groups, top_k) #XXX in logs, use some kind of name for the bait group, e.g. its path, instead of the less informative group_id
 
-    # Write result to file
+    # Write results to output directory
+    ranking_output_dir = context.output_dir / 'rankings'
+    ranking_output_dir.mkdir()
+    
     rankings = rankings.join(bait_file_paths, on='bait_group_id')
-    for bait_group_id, group in rankings.groupby('bait_group_id'):
+    rankings['output_path'] = rankings.apply(lambda x: ranking_output_dir / '{}_{}.txt'.format(x.bait_group_file.stem, x.bait_group_id), axis=1)
+    
+    for _, group in rankings.groupby('bait_group_id'):
         best_result = group[group['ausr'] == group['ausr'].max()].iloc[0]
         bait_group_file = best_result['bait_group_file']
         baits_present = best_result['baits_present']
@@ -96,17 +104,16 @@ def morph(main_config, **kwargs):
         ranking.sort_values(inplace=True, ascending=False)
         ranking.index = ranking.index.to_series().map(all_genes)
         
-        # Output result
-        path = context.output_dir / '{}_{}.txt'.format(bait_group_file.stem, bait_group_id)
-        _logger.info('Writing result to {}'.format(path))
-        with path.open('w') as f:
+        # Output result 
+        _logger.info('Writing result to {}'.format(best_result.output_path))
+        with best_result.output_path.open('w') as f:
             f.write(multiline_lstrip('''
                 AUSR: {}
                 Bait group file: {}
                 Expression matrix used: {}
                 Clustering used: {}
-                Baits present in both: {}
-                Baits missing: {}
+                Baits present in both ({}): {}
+                Baits missing ({}): {}
                 
                 Statistics of AUSRs of other rankings of same bait group:
                 {}
@@ -118,12 +125,33 @@ def morph(main_config, **kwargs):
                     best_result['bait_group_file'],
                     best_result['expression_matrix'].path,
                     best_result['clustering'].path,
-                    ' '.join(baits_present.tolist()), 
+                    len(baits_present),
+                    ' '.join(baits_present.tolist()),
+                    len(baits_missing), 
                     ' '.join(baits_missing.tolist()),
                     group['ausr'].describe().to_string(), # XXX some indent would be nice 
                     ranking.to_string() # XXX some indent (4 spaces)
                 )
             )
+         
+    overview_path = context.output_dir / 'overview.txt'   
+    _logger.info('Writing overview of results to {}'.format(overview_path))
+    with overview_path.open('w') as f:
+        best_ausrs = rankings.groupby('output_path')['ausr'].max()
+        best_ausrs.index = best_ausrs.index.to_series().apply(lambda x: x.name)
+        best_ausrs.sort_values(inplace=True, ascending=False)
+        f.write(multiline_lstrip('''
+            Statistics of best AUSRs:
+            {}
+            
+            List of best AUSRs:
+            {}
+            ''').strip().format(
+                best_ausrs.describe().to_string(),
+                best_ausrs.to_string(header=False)
+            )
+        )
+    
     # TODO mention missing ones, i.e. those with no generated rankings at all
     
     

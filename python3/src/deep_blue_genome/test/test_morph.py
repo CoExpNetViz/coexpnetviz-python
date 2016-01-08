@@ -42,7 +42,8 @@ class TestMORPH(object):
         cli.tmpdir = tmp_dir # XXX can't concurrent test run with the same CLITester when written like this. Either fixture with scope or fix.
         cli.run(
 #             '/mnt/data/doc/work/prod_data/ARABIDOBSIS/gois',
-            '/mnt/data/doc/work/prod_data/rice/gois',
+            '/mnt/data/doc/work/prod_data/ARABIDOBSIS/pathways',
+#             '/mnt/data/doc/work/prod_data/rice/gois',
             output_dir=output_dir,
         )
         
