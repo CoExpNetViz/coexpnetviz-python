@@ -23,6 +23,7 @@ from deep_blue_genome.core.expression_matrix import ExpressionMatrix
 from deep_blue_genome.core.util import df_expand_iterable_values
 from deep_blue_genome.util.algorithms import merge_overlapping_named_sets
 from itertools import chain
+from io import TextIOWrapper
 
 # TODO validation should be part of reading. We at least want to save a log of
 # warnings. TODO input validation error handling + setting stuff as warning or
@@ -75,7 +76,7 @@ def _get_sanitised_plain_text_file(path):   # XXX need to change sanitise to str
         Stream of sanitised file contents
     '''
     cmd = _sed['-r', '-e', r's/[\x0]//g', '-e', r's/(\t)+/\t/g', path] | _tr['-s', r'\r', r'\n'] 
-    return cmd.popen().stdout
+    return TextIOWrapper(cmd.popen().stdout, encoding='utf-8')
 
 def read_expression_matrix_file(path, sanitise=True):
     '''
