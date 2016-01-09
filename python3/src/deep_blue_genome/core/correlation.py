@@ -30,6 +30,31 @@ def get_correlations(expression_matrix, subset, correlation_method):
     correlations = correlation_method(expression_matrix.values, np.flatnonzero(mask))
     correlations = pd.DataFrame(correlations, index=expression_matrix.index, columns=expression_matrix.index[mask])
     return correlations
+
+def get_correlations_sample(matrix, correlation_method):
+    '''
+    Randomly select rows from matrix as subset and returns as if
+    `get_correlations(matrix, subset, correlation_method)` was called.
+    
+    Parameters
+    ----------
+    matrix : numpy 2d-array of float
+    correlation_method
+    
+    Returns
+    -------
+    np.array(dtype=float, shape=(len(data), len(subset)))
+        Correlations. Position (i,j) contains correlation between row i and j'th
+        subset row.
+    '''
+    sample_size = 800
+    data = matrix.values
+    sample = np.random.choice(len(data), sample_size)
+    sample = data[sample]
+    sample = correlation_method(sample, np.arange(len(sample)))
+    sample = sample.flatten()
+    sample = sample[~np.isnan(sample)]
+    return sample
     
 def pearson_r(data, subset):
     '''
@@ -43,7 +68,7 @@ def pearson_r(data, subset):
     
     Returns
     -------
-    array(dtype=float, shape=(len(data), len(subset)))
+    np.array(dtype=float, shape=(len(data), len(subset)))
         Correlations. Position (i,j) contains correlation between row i and j'th
         subset row.
     '''

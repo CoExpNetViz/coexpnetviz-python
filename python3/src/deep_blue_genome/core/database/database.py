@@ -441,6 +441,7 @@ class Database(object):
         # Run query and return result
         return pd.DataFrame(iter(stmt), columns=['group_id', 'gene', gene_collection_name])
         
+    # XXX rewrite docstrings: pd.DataFrame(...) -> pandas.DataFrame({'key' : [val_type]})
     def get_gene_collections_by_genes(self, gene_groups, min_genes_present, expression_matrices=False, clusterings=False, session=None):
         '''
         Get expression matrices and/or clusterings containing (some of) given genes
@@ -536,7 +537,7 @@ class Database(object):
         if not session:
             session = self._session
             
-        expression_matrix_ = read_expression_matrix_file(expression_matrix.path).data
+        expression_matrix_ = read_expression_matrix_file(expression_matrix.path)
             
         # Swap gene names for actual genes
         matrix_genes = self.get_genes_by_name(expression_matrix_.index.to_series(), map_=True)

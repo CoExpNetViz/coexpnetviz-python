@@ -20,6 +20,7 @@ import numpy as np
 from deep_blue_genome.core.util import series_invert
 from deep_blue_genome.coexpnetviz.network import Network
 import matplotlib.pyplot as plt
+from deep_blue_genome.core.correlation import get_correlations_sample
 
 def determine_cutoffs(expression_matrix, correlation_method, percentile_ranks):
     '''
@@ -45,20 +46,14 @@ def determine_cutoffs(expression_matrix, correlation_method, percentile_ranks):
     #
     # Before that, take a step back and compare some form of significance vs using a percentile of a sample as cutoff
     
-    sample_size = 800
-    data = expression_matrix.data.values
-    sample = np.random.choice(len(data), sample_size)
-    sample = data[sample]
-    sample = correlation_method(sample, np.arange(len(sample)))
-    sample = sample.flatten()
-    sample = sample[~np.isnan(sample)]
+    sample = get_correlations_sample(expression_matrix, correlation_method)
     
     # Also save a histogram
     plt.clf()
     pd.Series(sample).plot.hist(bins=30)
     plt.title('Correlations between sample of {} genes in exp-mat'.format(sample_size))
     plt.xlabel(correlation_method.name)
-    plt.savefig('{}.corr_sample_histogram.png'.format(expression_matrix.name))
+    plt.savefig('{}.corr_sample_histogram.png'.format(expression_matrix.name))#TODO no name attrib
 
     # Return result
     return np.percentile(sample, percentile_ranks)
