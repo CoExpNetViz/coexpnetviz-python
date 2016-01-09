@@ -377,7 +377,7 @@ def download_file(url, dest_dir):
 
 def is_data_file(path):
     '''
-    Is a regular data file, e.g. a clustering.
+    Is a regular data file or directory, e.g. a clustering.
     
     Parameters
     ----------
@@ -388,6 +388,7 @@ def is_data_file(path):
     bool
     '''
     return not path.name.startswith('.')
+    # XXX add filecmp.DEFAULT_IGNORES to things to ignore
 
 if __name__ == '__main__':
     df = pd.DataFrame([[1,[1,2],[1]],[1,[1,2],[3,4,5]],[2,[1],[1,2]]], columns='check a b'.split())

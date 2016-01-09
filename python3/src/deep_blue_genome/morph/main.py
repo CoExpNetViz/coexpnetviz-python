@@ -86,7 +86,7 @@ def morph(main_config, **kwargs):
     ranking_output_dir.mkdir()
     
     rankings = rankings.join(bait_file_paths, on='bait_group_id')
-    rankings['output_path'] = rankings.apply(lambda x: ranking_output_dir / '{}.{}.txt'.format(x.bait_group_file.name, x.bait_group_id), axis=1)
+    rankings['output_path'] = rankings.apply(lambda x: ranking_output_dir / '{}.{}.txt'.format(pb.local.path(x.bait_group_file).name, x.bait_group_id), axis=1)
     
     for _, group in rankings.groupby('bait_group_id'):
         best_result = group[group['ausr'] == group['ausr'].max()].iloc[0]

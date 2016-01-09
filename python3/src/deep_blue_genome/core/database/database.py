@@ -31,11 +31,12 @@ from deep_blue_genome.util.pandas import df_count_null
 import re
 from collections import namedtuple
 from deep_blue_genome.util.debug import print_sql_stmt
+from deep_blue_genome.core.reader.various import read_expression_matrix_file
 
 _logger = logging.getLogger('deep_blue_genome.core.Database')
 
 _ReturnTuple = namedtuple('_ReturnTuple', 'expression_matrices clusterings'.split())
-        
+
 class Database(object):
     
     '''
@@ -518,5 +519,31 @@ class Database(object):
 #             stmt.all()
 #         # TODO test this:
 #         # When a Gene is loaded in the same session, it will be the same object. So loading additional stuff, should load it on the relevant objects. So no need for any assignments or returns.
+
+    def get_expression_matrix_data(self, expression_matrix, session=None):
+        '''
+        Get expression matrix data by meta data
+        
+        Parameters
+        ----------
+        expression_matrix : database.ExpressionMatrix
+            Meta data of the expression matrix
+            
+        Returns
+        -------
+        pandas.DataFrame({condition_name : [float]}, index=('gene' : [Gene]))
+        '''
+        if not session:
+            session = self._session
+            
+        expression_matrix_ = read_expression_matrix_file(expression_matrix.path).data
+            
+        # Swap gene names for actual genes
+        matrix_genes = self.get_genes_by_name(expression_matrix_.index.to_series(), map_=True)
+        expression_matrix_ = expression_matrix_.reindex(matrix_genes.index)
+        expression_matrix_.index = matrix_genes
+        assert not expression_matrix_.index.has_duplicates  # currently assuming this never happens  # XXX enforce things in gene mapping loading so it indeed can't happen
+        
+        return expression_matrix_
         
         

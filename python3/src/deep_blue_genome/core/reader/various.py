@@ -53,6 +53,8 @@ Some of the design principles used:
 # XXX test promises in robustness for the various file formats
 
 # XXX in the future this may be of interest https://pypi.python.org/pypi/python-string-utils/0.3.0  We could donate our own things to that library eventually...
+
+# XXX switch from pb.Path to pathlib from the std. pb will still be used for writing shell-like scripts, but its pb.Path will be avoided and will not be exposed in one of our API
     
 _sed = pb.local['sed']
 _tr = pb.local['tr']
@@ -92,21 +94,21 @@ def read_expression_matrix_file(path, sanitise=True):
     
     Parameters
     ----------
-    path : plumbum.Path
+    path : hasattr(__str__)
         Path to expression matrix file to read
     sanitise : bool
         Sanitise file before reading.
     
     Returns
     -------
-    ExpressionMatrix
+    pandas.DataFrame({condition_name : [float]}, index=('gene' : [str]))
     '''
     if sanitise:
         path = _get_sanitised_plain_text_file(path)
     mat = pd.read_table(path, index_col=0, header=0, engine='python').astype(float)
     mat = mat[mat.index.to_series().notnull()]  # TODO log warnings for dropped rows
     mat.index.name = 'gene'
-    return ExpressionMatrix(mat, name=path.name)
+    return mat
 
 def read_clustering_file(path, name_index=0, merge_overlapping=False, sanitise=True):
     '''

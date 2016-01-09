@@ -224,14 +224,7 @@ def morph(context, bait_groups, top_k):
     for group_id, rest in df.groupby('group_id'):
         bait_group = bait_groups[bait_groups['group_id']==group_id]['gene']
         for expression_matrix, rest2 in rest.groupby('expression_matrix'):
-            expression_matrix_ = read_expression_matrix_file(pb.local.path(expression_matrix.path)).data # TODO keep pb.local.path or load from db as such? Probably should load as pb straight away for max convenience
-            
-            # Swap gene names for actual genes
-            # XXX Loading genes on the index of an exp-mat is going to be a fairly common operation, want a func for it?
-            matrix_genes = db.get_genes_by_name(expression_matrix_.index.to_series(), map_=True)
-            expression_matrix_ = expression_matrix_.reindex(matrix_genes.index)
-            expression_matrix_.index = matrix_genes
-            assert not expression_matrix_.index.has_duplicates  # currently assuming this never happens
+            expression_matrix_ = db.get_expression_matrix_data(expression_matrix)
             
             # Calculate correlations
             correlations = get_correlations(expression_matrix_, bait_group, pearson_r)
