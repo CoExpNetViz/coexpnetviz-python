@@ -47,6 +47,8 @@ def determine_cutoffs(expression_matrix, correlation_method, percentile_ranks):
     # Before that, take a step back and compare some form of significance vs using a percentile of a sample as cutoff
     
     sample = get_correlations_sample(expression_matrix, correlation_method)
+    sample = sample.flatten()
+    sample = sample[~np.isnan(sample)]
     
     # Also save a histogram
     plt.clf()

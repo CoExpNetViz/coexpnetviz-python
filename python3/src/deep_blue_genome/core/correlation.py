@@ -22,16 +22,20 @@ Correlation functions such as Pearson R and functions to apply them
 import numpy as np
 import pandas as pd
 
-# XXX would be nice to have an interface to wrap around e.g. pearson_r to say 'these indices is the subset, restore index afterwards'. Share this func modified with coexpnetviz. 
-# XXX Tidy up interface of this func
-# XXX coexpnetviz should use this func
-def get_correlations(expression_matrix, subset, correlation_method):
-    mask = expression_matrix.index.isin(subset)
-    correlations = correlation_method(expression_matrix.values, np.flatnonzero(mask))
-    correlations = pd.DataFrame(correlations, index=expression_matrix.index, columns=expression_matrix.index[mask])
+# XXX don't assert for no NaNs here, do that in the alg. Do add func to remove variance and other cleaning which belongs in some core.prepare for data prep funcs
+# XXX docstrings
+
+# XXX would be nice to have an interface to wrap around e.g. pearson_r to say 'these indices is the subset, restore index afterwards'. Share this func modified with coexpnetviz.
+# XXX coexpnetviz should use this func. Fix coexpnetviz when done
+def get_correlations(matrix, subset, correlation_method):
+    mask = matrix.index.isin(subset)
+    correlations = correlation_method(matrix.values, np.flatnonzero(mask))
+    correlations = pd.DataFrame(correlations, index=matrix.index, columns=matrix.index[mask])
     return correlations
 
-def get_correlations_sample(matrix, correlation_method):
+# XXX something to grab random subset of index, then of column, then a func to make corrs easily by (matrix, subset, subset2) where by default subset is everything of matrix. Input is DataFrame and df[compatible] because keeping it simple. Better yet might be (matrix, columns, rows=None) and require an actual index for columns,rows.
+# XXX coexpnetviz should take random 800 as rows, random 800 from same set as columns. Unless coexpr doesn't compare to the same, which I think it doesn't, then should pick random first set and random second set that is disjoint with the first. Or do allow from the same but remove any self comparisons. That removal should be done by the caller though...
+def get_correlations_sample(matrix, correlation_method): #XXX doesn't return a dataframe, so can't compare it to get_correlations. Either return a DF (in which case you can indeed forward to get_correlations which is pretty nice) or ...
     '''
     Randomly select rows from matrix as subset and returns as if
     `get_correlations(matrix, subset, correlation_method)` was called.
@@ -52,8 +56,6 @@ def get_correlations_sample(matrix, correlation_method):
     sample = np.random.choice(len(data), sample_size)
     sample = data[sample]
     sample = correlation_method(sample, np.arange(len(sample)))
-    sample = sample.flatten()
-    sample = sample[~np.isnan(sample)]
     return sample
     
 def pearson_r(data, subset):

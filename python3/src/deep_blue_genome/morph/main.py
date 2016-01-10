@@ -67,11 +67,13 @@ def morph(main_config, **kwargs):
     
     # Read baits
     def bait_file_to_df(i, path):
+        _logger.info('Loading gene group: {}'.format(path))
         series = read_genes_file(path)
         series.index = pd.Index(repeat(i, len(series.index)), name='group_id')
         return series
     bait_file_paths = list(list_files(map(pb.local.path, kwargs['baits_file']), is_data_file))
     bait_file_paths = pd.Series(map(str, bait_file_paths), name='bait_group_file')
+    # XXX log each bait file path loaded
     bait_groups = pd.concat(bait_file_to_df(i, path) for i, path in enumerate(bait_file_paths)) #XXX itertuples instead of enumerate
     bait_groups = context.database.get_genes_by_name(bait_groups, map_=True)
     bait_groups.index.name = 'group_id'
