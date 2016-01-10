@@ -35,7 +35,7 @@ def get_correlations(matrix, subset, correlation_method):
 
 # XXX something to grab random subset of index, then of column, then a func to make corrs easily by (matrix, subset, subset2) where by default subset is everything of matrix. Input is DataFrame and df[compatible] because keeping it simple. Better yet might be (matrix, columns, rows=None) and require an actual index for columns,rows.
 # XXX coexpnetviz should take random 800 as rows, random 800 from same set as columns. Unless coexpr doesn't compare to the same, which I think it doesn't, then should pick random first set and random second set that is disjoint with the first. Or do allow from the same but remove any self comparisons. That removal should be done by the caller though...
-def get_correlations_sample(matrix, correlation_method): #XXX doesn't return a dataframe, so can't compare it to get_correlations. Either return a DF (in which case you can indeed forward to get_correlations which is pretty nice) or ...
+def get_correlations_sample(matrix, correlation_method, sample_size=800): #XXX doesn't return a dataframe, so can't compare it to get_correlations. Either return a DF (in which case you can indeed forward to get_correlations which is pretty nice) or ...
     '''
     Randomly select rows from matrix as subset and returns as if
     `get_correlations(matrix, subset, correlation_method)` was called.
@@ -51,7 +51,6 @@ def get_correlations_sample(matrix, correlation_method): #XXX doesn't return a d
         Correlations. Position (i,j) contains correlation between row i and j'th
         subset row.
     '''
-    sample_size = 800
     data = matrix.values
     sample = np.random.choice(len(data), sample_size)
     sample = data[sample]
