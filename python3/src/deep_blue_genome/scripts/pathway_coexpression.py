@@ -95,20 +95,30 @@ def script(main_config, **kwargs):
     pathways = pathways[pathways.group_id.isin(result.group_id)]
     
     #
-    def finalise(corrs, group_id, expression_matrix, is_sampled): 
-        np.fill_diagonal(corrs.values, np.nan) # ignore comparisons to self  # TODO does this work for pathway genes? no, not on diag because rows bigger or yes yes, should work.
+    def np_quartiles(corrs, keep_outliers=False):
+        # q1,q2,q3
+        quartiles = np.percentile(corrs, [25,50,75])
         
-        # Create graph
+        # Remove outliers
+        if not keep_outliers:
+            iqr = quartiles[2] - quartiles[0]
+            corrs = corrs[(corrs > quartiles[0] - 1.5 * iqr) & (corrs < quartiles[2] + 1.5 * iqr)]
+        
+        # q0, q4
+        extrema = np.percentile(corrs, [0,100])
+        
+        quartiles = [extrema[0]] + list(quartiles) + [extrema[1]]
+        return quartiles
+        
+    def finalise(corrs, group_id, expression_matrix, is_sampled): 
+        np.fill_diagonal(corrs.values, np.nan) # ignore comparisons to self
         
         # Keep stats only
         corrs = corrs.values.flatten()
         corrs = corrs[~np.isnan(corrs)]
         corrs = np.abs(corrs) # anti-corr or corr is all the same to us
-        stats = boxplot_stats(corrs)[0]
-        stats['group_id'] = group_id
-        stats['expression_matrix'] = pb.local.path(expression_matrix.path).stem
-        stats['is_sampled'] = is_sampled
-        return stats
+        quartiles = np_quartiles(corrs)
+        return quartiles + [group_id, pb.local.path(expression_matrix.path).stem, is_sampled]
         
     _logger.debug('loop')
     all_corrs = []
@@ -131,50 +141,58 @@ def script(main_config, **kwargs):
 #         break
 
     _logger.debug('merging results')
-    result = pd.DataFrame(all_corrs)
-    quartile = 'q3'
-    result = result[['group_id', 'expression_matrix', quartile, 'is_sampled']]
-    
-    sampled = result[result.is_sampled].drop('is_sampled', axis=1)
-    sampled.rename(columns={quartile: 'sampled'}, inplace=True)
-    
-    not_sampled = result[~result.is_sampled].drop('is_sampled', axis=1)
-    not_sampled.rename(columns={quartile: 'pathway'}, inplace=True)
-    
-    result = pd.merge(sampled, not_sampled, on=['group_id', 'expression_matrix'], how='inner')
+    quartiles = ['q0', 'q1', 'q2', 'q3', 'q4']
+    percentiles = np.linspace(0, 1, 50)
+    suffixes = ['_random', '_pathway']
+    result = pd.DataFrame(all_corrs, columns=quartiles + ['group_id', 'expression_matrix', 'is_sampled'])
+    random_results = result[result.is_sampled].drop('is_sampled', axis=1)
+    pathway_results = result[~result.is_sampled].drop('is_sampled', axis=1)
+    result = pd.merge(random_results, pathway_results, on=['group_id', 'expression_matrix'], suffixes=suffixes, how='inner')
     
     _logger.debug('generating figures')
-    
-    quartiles = ['pathway', 'sampled']
-    plot_args = dict(figsize=(20, 11), xlim=(0, 1), alpha=0.5, colormap='Dark2')
+    ylim = (0, 1)
+    random_quartiles, pathway_quartiles = ([quartile + suffix for quartile in quartiles] for suffix in suffixes)
+    legend_labels = ['real pathway coexpression', 'random set coexpression']
     
     # sample medians
-    plt.clf()
-    result[quartiles].plot.hist(
-        title='histogram of {} coexpression (of pathway/sampled genes) across all pathways and matrices'.format(quartile), 
-        **plot_args)
-    plt.savefig('hist_{}_all.png'.format(quartile))
+    plt.figure()
+    pathway_line = result[pathway_quartiles].quantile(percentiles).plot(color='b', ax=plt.gca()).lines[-1]
+    random_line = result[random_quartiles].quantile(percentiles).plot(color='k', ax=plt.gca()).lines[-1]
+    plt.ylim(ylim)
+    plt.suptitle('Percentiles of quartiles of coexpression between each pair of pathway genes.\n Random: random sample of genes.')
+    plt.legend([pathway_line, random_line], legend_labels, loc='upper left')
+    plt.savefig('pathway_coexpr_all.png')
+    plt.close()
     
     # medians per matrix: how much does median vary within an expression matrix as pathway changes
-    plt.figure(figsize=plot_args['figsize'])
-    plt.suptitle('histogram of {} coexpression per matrix of pathways'.format(quartile))
-    groups = result.groupby('expression_matrix')[quartiles]
-#     layout = [np.ceil(np.sqrt(len(groups)))]*2
-    layout = [4,5]
-    for i, (expression_matrix, data) in enumerate(groups):
-        #XXX pandas v18 will have a working plot.hist(by=), currently it's broken so we use this loop. Could extract a func, throw it in pandas, for now
+    plt.figure(figsize=(20, 12))
+    plt.suptitle('Percentiles of quartiles of coexpression between each pair of pathway genes, per matrix')
+    percentiles_per_matrix = (
+        result
+        .groupby('expression_matrix')[pathway_quartiles + random_quartiles]
+        .apply(lambda x: x.quantile(percentiles))
+        .reset_index('expression_matrix')
+    )
+    groups = percentiles_per_matrix.groupby('expression_matrix')
+    layout_column_count = np.ceil(np.sqrt(len(groups)))
+    layout = [int(np.ceil(len(groups) / layout_column_count)), layout_column_count]
+    for i, (expression_matrix, data) in enumerate(groups): #XXX df.plot has no `by`; df.plot works for a single plot but it tends to get in the way with my own figure tinkering instead of simply plotting 
         plt.subplot(*(layout + [i+1]))
-        patches = plt.hist([data['pathway'].values, data['sampled'].values], label=quartiles)[2]
+        pathway_line = data[pathway_quartiles].plot(color='b', ax=plt.gca()).lines[0]
+        random_line = data[random_quartiles].plot(color='k', ax=plt.gca()).lines[0]
+#         pathway_line = plt.plot(data.index.values, data[pathway_quartiles].values, color='b')[0]
+#         random_line = plt.plot(data[random_quartiles].values, color='k')[0]
+        plt.ylim(ylim)
+        plt.gca().get_legend().remove()
         plt.title(expression_matrix)
-        plt.xlim(plot_args['xlim'])
-    plt.gcf().legend(patches, quartiles)
-        
-    plt.savefig('hist_{}s_within_matrix_across_pathways.png'.format(quartile))
+    plt.gcf().legend([pathway_line, random_line], legend_labels, loc='lower right')
+    plt.tight_layout(rect=(0,0,1,.95))
+    plt.savefig('pathway_coexpr_per_matrix.png')
     
     # std per matrix: how much does median vary within a pathway as exp mat changes
-    plt.clf()
-    result.groupby('group_id')[quartiles].std().plot.hist(title='histogram of std of {} coexpression within pathway as matrix varies'.format(quartile), **plot_args)
-    plt.savefig('hist_std_within_pathway_across_matrices.png')
+#     plt.clf()
+#     result.groupby('group_id')[quartiles].std().plot.hist(title='histogram of std of {} coexpression within pathway as matrix varies'.format(quartile), **plot_args)
+#     plt.savefig('pathway_coexpr_median_std.png')
     
     _logger.debug('done')
     
