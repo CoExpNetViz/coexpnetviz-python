@@ -154,6 +154,10 @@ def script(main_config, **kwargs):
     random_quartiles, pathway_quartiles = ([quartile + suffix for quartile in quartiles] for suffix in suffixes)
     legend_labels = ['real pathway coexpression', 'random set coexpression']
     
+    # TODO mirror along the 1st diagonal to get cumulative distributions which is easier to interpret due to more common
+    # In an accompanying doc: Cumulative distribution of quartiles 0-4 of coexpression of each pathway gene pair grouped by pathway, outliers removed in pathway coexpression, and outliers removed in quartiles of each pathway grouped by pathway.
+    # TODO remove outliers
+    
     # sample medians
     plt.figure()
     pathway_line = result[pathway_quartiles].quantile(percentiles).plot(color='b', ax=plt.gca()).lines[-1]

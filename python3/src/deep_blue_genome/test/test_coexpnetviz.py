@@ -16,9 +16,11 @@
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
 from deep_blue_genome.test.util import CLITester
+import pytest
 
 cli = CLITester('coexpnetviz'.split())
 
+@pytest.mark.current
 class TestCoExpNetViz(object):
     
     '''
