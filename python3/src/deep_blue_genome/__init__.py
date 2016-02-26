@@ -18,7 +18,7 @@
 from deep_blue_genome.version import __version__
 
 def _init():
-    import plumbum as pb
+    from deep_blue_genome.util import plumbum as pb
     import matplotlib
     from deep_blue_genome.util.database import patch_pymysql
     
@@ -50,5 +50,5 @@ def _init():
     logging.getLogger('deep_blue_genome').setLevel(logging.DEBUG)
     logging.getLogger('deep_blue_genome.core.Database').setLevel(logging.INFO)
     
-        
+__root__ = None  # make linter happy
 _init()

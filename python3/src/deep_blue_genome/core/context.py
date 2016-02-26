@@ -14,33 +14,23 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
-from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
-from collections import namedtuple
-from deep_blue_genome.util.various import Object
 
 '''
 Mixins to build a Context class (or 'Application' class if you prefer)
 
-To create a context class: e.g. class MyContext(Context, Mixin1, Mixin2, ...): pass
+To create a context class: e.g. class MyContext(Mixin1, Mixin2, ...): pass
 '''
 
-from deep_blue_genome.core.util import compose, flatten
-from deep_blue_genome.core.database.database import Database
+from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
+from collections import namedtuple
 from deep_blue_genome.core import cli
 from deep_blue_genome.core.cache import Cache
+from deep_blue_genome.core.database import Database
 import click
 import plumbum as pb
 import tempfile
-        
-def cli_options(class_):
-    '''
-    Get click CLI options of the built context class 
-    '''
-    options = flatten([cls._cli_options for cls in class_.__mro__[1:] if hasattr(cls, '_cli_options')])
-    return compose(*options)
-
-
-class ConfigurationMixin(Object):
+    
+class ConfigurationMixin(Context):
     
     '''
     Support for a main application configuration.
@@ -62,27 +52,8 @@ class ConfigurationMixin(Object):
         return self._config
         
         
-class DatabaseMixin(ConfigurationMixin):
-    
-    '''
-    Database access
-    '''
-    
-    _cli_options = [
-        cli.option('--database-host', help='Host running the database to connect to. Provide its DNS or IP.'),
-        cli.option('--database-user', help='User name to authenticate with.'),
-        cli.password_option('--database-password', help='Password corresponding to user to authenticate with.'),
-        cli.option('--database-name', help='Name to use for SQL database on given host.'),
-    ]
-    
-    def __init__(self, database_host, database_user, database_password, database_name, **kwargs):
-        super().__init__(**kwargs)
-        self._database = Database(self, host=database_host, user=database_user, password=database_password, name=database_name)
-    
-    @property
-    def database(self):
-        return self._database
-        
+DatabaseMixin = ctx.DatabaseMixin(Database)
+
         
 class CacheMixin(DatabaseMixin):
     
@@ -109,7 +80,7 @@ class CacheMixin(DatabaseMixin):
         return self._cache
     
     
-class TemporaryFilesMixin(Object):
+class TemporaryFilesMixin(Context):
     
     '''
     Temporary file support
@@ -128,7 +99,7 @@ class TemporaryFilesMixin(Object):
         tempfile.tempdir = str(pb.local.path(tmp_dir))
     
     
-class OutputMixin(Object):
+class OutputMixin(Context):
     
     '''
     Output file storage support

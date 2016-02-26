@@ -12,3 +12,8 @@ python3/src/deep_blue_genome/cli.conf
 .*\.pyc
 __pycache__
 .*\.egg-info
+.*\.png
+.*\.log
+.*\.cache
+.*\.settings
+.*\.pydevproject
