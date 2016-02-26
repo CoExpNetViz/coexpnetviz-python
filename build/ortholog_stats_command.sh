@@ -1,1 +1,0 @@
-command=(./ortholog_stats ~/dbg_db "/mnt/midas/group/biocomp/projects/morph/coexpr/data/plaza_source/orthologs_monocot" "/mnt/midas/group/biocomp/projects/morph/coexpr/data/plaza_source/orthologs_dicot" "/mnt/midas/group/biocomp/projects/morph/coexpr/data/plaza_source/mcl_merge/family_clusters" "/mnt/midas/group/biocomp/projects/morph/coexpr/data/pgsc_itag/orthologs_2col")

@@ -1,9 +1,0 @@
-# database
-
-Deep Blue Genome database management tool
-
-## About the database
-
-Doesn't support concurrent updates, or reading while updating.
-
-Supports hardly anything, currently it's a way of building a store of binary files.
