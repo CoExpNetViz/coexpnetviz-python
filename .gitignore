@@ -1,0 +1,12 @@
+*.orig
+__pycache__
+.pydevproject
+.project
+venv
+*.pyc
+*.egg-info
+*.swp
+last_test_runs
+.cproject
+dist
+.cache

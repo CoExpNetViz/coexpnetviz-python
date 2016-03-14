@@ -1,0 +1,26 @@
+# Runtime
+numpy
+matplotlib
+scipy
+scikit-learn
+pandas
+numexpr
+bottleneck
+plumbum
+inflection
+more_itertools
+memory_profiler
+psutil
+pyxdg
+frozendict
+requests
+sqlalchemy
+pymysql
+
+# Testing
+pytest
+pytest-benchmark
+pytest-timeout
+pytest-xdist
+freezegun>0.3.5
+networkx

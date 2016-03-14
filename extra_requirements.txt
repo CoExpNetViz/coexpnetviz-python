@@ -1,1 +1,0 @@
-git+git://github.com/spulec/freezegun.git@a20f222daa940448f1353f0c642dbd715abe0ce0

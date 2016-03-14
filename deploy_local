@@ -1,0 +1,6 @@
+
+#!/bin/sh
+set -e
+ct-mkvenv -e   
+echo Warning: testing disabled
+#venv/bin/py.test
