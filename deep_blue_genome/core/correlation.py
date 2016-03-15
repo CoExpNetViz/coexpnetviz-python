@@ -81,7 +81,7 @@ def pearson_r(data, subset):
     sum_cross = np.zeros((matrix.shape[0], len(subset)))
  
     for i in range(1,matrix.shape[1]):
-        ratio = 1 / (i+1)
+        ratio = i / (i+1)
         delta = matrix[:,i] - mean
         sum_sq += (delta**2) * ratio;
         sum_cross += np.outer(delta, delta[subset]) * ratio;

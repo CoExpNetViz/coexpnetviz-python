@@ -1,3 +1,4 @@
+click==6.3
 numpy==1.10.4
 matplotlib==1.5.1
 scipy==0.17.0
@@ -15,20 +16,21 @@ frozendict==0.5
 requests==2.9.1
 sqlalchemy==1.0.12
 pymysql==0.7.2
+-e file:///home/limyreth/doc/eclipse_workspace/chicken_turtle_util
 pytest==2.9.0
 pytest-benchmark==3.0.0
 pytest-timeout==1.0.0
 pytest-xdist==1.14
 freezegun==0.3.6
 networkx==1.11
-decorator==4.0.9          # via networkx
-six==1.10.0               # via cycler, freezegun, python-dateutil
-cycler==0.10.0            # via matplotlib
 statistics==1.0.3.5       # via pytest-benchmark
-pyparsing==2.1.0          # via matplotlib
+docutils==0.12            # via statistics
+six==1.10.0               # via cycler, freezegun, python-dateutil
+decorator==4.0.9          # via networkx
 py==1.4.31                # via pytest, pytest-xdist
 apipkg==1.4               # via execnet
+cycler==0.10.0            # via matplotlib
 python-dateutil==2.5.0    # via freezegun, matplotlib, pandas
 execnet==1.4.1            # via pytest-xdist
-docutils==0.12            # via statistics
+pyparsing==2.1.0          # via matplotlib
 pytz==2016.1              # via matplotlib, pandas

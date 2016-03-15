@@ -16,9 +16,9 @@
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
 def _init():
-    from deep_blue_genome.util import plumbum as pb
+    import plumbum as pb
     import matplotlib
-    from deep_blue_genome.util.database import patch_pymysql
+    from chicken_turtle_util.database import patch_pymysql
     
     # from Bio import Entrez
     # Entrez.email = 'no-reply@psb.ugent.be'  # TODO perhaps this email address should be user supplied
