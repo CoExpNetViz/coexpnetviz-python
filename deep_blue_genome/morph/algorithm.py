@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 from collections import namedtuple
-from deep_blue_genome.util.itertools import window
+from chicken_turtle_util.itertools import window
 from more_itertools.more import chunked
 
 '''

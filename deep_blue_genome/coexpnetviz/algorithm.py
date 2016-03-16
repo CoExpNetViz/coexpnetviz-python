@@ -17,7 +17,7 @@
 
 import pandas as pd
 import numpy as np
-from deep_blue_genome.core.util import series_invert
+from chicken_turtle_util.pandas import series_invert
 from deep_blue_genome.coexpnetviz.network import Network
 import matplotlib.pyplot as plt
 from deep_blue_genome.core.correlation import get_correlations_sample

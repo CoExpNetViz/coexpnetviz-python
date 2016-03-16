@@ -20,7 +20,7 @@ import pytest
 
 cli = CLITester('coexpnetviz'.split())
 
-@pytest.mark.current
+# @pytest.mark.current
 class TestCoExpNetViz(object):
     
     '''

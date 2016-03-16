@@ -17,7 +17,7 @@
 
 
 from urllib.parse import urlparse
-from deep_blue_genome.core.util import download_file
+from chicken_turtle_util.various import download_file
 from deep_blue_genome.core.database.entities import CachedFile
 from datetime import datetime
 import plumbum as pb

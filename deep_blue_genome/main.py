@@ -23,7 +23,7 @@ import click
 from deep_blue_genome.core.configuration import Configuration
 from deep_blue_genome.data_preparation.main import prepare
 from deep_blue_genome.morph.main import morph
-from deep_blue_genome.core import cli
+from chicken_turtle_util import cli
 from deep_blue_genome import __root__, __version__
 
 @click.group()

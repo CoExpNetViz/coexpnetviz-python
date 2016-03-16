@@ -1,6 +1,6 @@
 import pandas
 import numpy as np
-from deep_blue_genome.util import is_sorted
+from chicken_turtle_util.list import is_sorted
 
 def read_gene_info_file_chunked(path, chunk_size, usecols=None):
     '''

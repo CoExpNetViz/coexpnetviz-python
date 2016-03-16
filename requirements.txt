@@ -23,14 +23,14 @@ pytest-timeout==1.0.0
 pytest-xdist==1.14
 freezegun==0.3.6
 networkx==1.11
-statistics==1.0.3.5       # via pytest-benchmark
-docutils==0.12            # via statistics
-six==1.10.0               # via cycler, freezegun, python-dateutil
-decorator==4.0.9          # via networkx
-py==1.4.31                # via pytest, pytest-xdist
 apipkg==1.4               # via execnet
-cycler==0.10.0            # via matplotlib
-python-dateutil==2.5.0    # via freezegun, matplotlib, pandas
-execnet==1.4.1            # via pytest-xdist
-pyparsing==2.1.0          # via matplotlib
+decorator==4.0.9          # via networkx
 pytz==2016.1              # via matplotlib, pandas
+statistics==1.0.3.5       # via pytest-benchmark
+python-dateutil==2.5.0    # via freezegun, matplotlib, pandas
+six==1.10.0               # via cycler, freezegun, python-dateutil
+execnet==1.4.1            # via pytest-xdist
+cycler==0.10.0            # via matplotlib
+py==1.4.31                # via pytest, pytest-xdist
+pyparsing==2.1.0          # via matplotlib
+docutils==0.12            # via statistics

@@ -1,4 +1,5 @@
 # Runtime
+click
 numpy
 matplotlib
 scipy
@@ -16,6 +17,7 @@ frozendict
 requests
 sqlalchemy
 pymysql
+-e /home/limyreth/doc/eclipse_workspace/chicken_turtle_util
 
 # Testing
 pytest

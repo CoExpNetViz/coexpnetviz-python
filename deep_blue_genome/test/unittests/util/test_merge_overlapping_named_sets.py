@@ -26,9 +26,9 @@ import pytest
 import pandas as pd
 import networkx as nx
 import numpy as np
-from deep_blue_genome.util.itertools import window, bifilter_tuples
+from chicken_turtle_util.itertools import window, bifilter_tuples
+from chicken_turtle_util.algorithms import merge_overlapping_named_sets
 from collections import deque
-from deep_blue_genome.util.algorithms import merge_overlapping_named_sets
 from more_itertools.more import first
 import itertools
 import heapq

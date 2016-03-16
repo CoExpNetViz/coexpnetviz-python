@@ -23,10 +23,9 @@ To create a context class: e.g. class MyContext(Mixin1, Mixin2, ...): pass
 
 from deep_blue_genome.core.exception_handlers import UnknownGeneHandler
 from collections import namedtuple
-from deep_blue_genome.core import cli
+from chicken_turtle_util.context import *
 from deep_blue_genome.core.cache import Cache
 from deep_blue_genome.core.database import Database
-import click
 import plumbum as pb
 import tempfile
     
@@ -52,7 +51,7 @@ class ConfigurationMixin(Context):
         return self._config
         
         
-DatabaseMixin = ctx.DatabaseMixin(Database)
+DatabaseMixin = DatabaseMixin(Database)
 
         
 class CacheMixin(DatabaseMixin):

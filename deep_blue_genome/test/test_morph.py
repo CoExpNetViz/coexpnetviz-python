@@ -31,7 +31,7 @@ class TestMORPH(object):
     # - Are the correct clusterings an matrices selected? Think of min amount of baits that need to be present. Simply don't mention those that did not qualify. If none qualify, do mention that, duh.
     # - Sanity check on output: AUSR in valid range? Scores in valid range (not NaN)?
     # - Compare to an old MORPH run: run with your stuff, take selected list and feed it as a job to old MORPH, then you can compare outputs.
-#     @pytest.mark.current 
+    @pytest.mark.current 
     def test_tmp(self, tmpdir):
         '''
         No matrices or clusterings are matched
@@ -42,8 +42,8 @@ class TestMORPH(object):
         cli.tmpdir = tmp_dir # XXX can't concurrent test run with the same CLITester when written like this. Either fixture with scope or fix.
         cli.run(
 #             '/mnt/data/doc/work/prod_data/ARABIDOBSIS/gois',
-            '/mnt/data/doc/work/prod_data/ARABIDOBSIS/pathways',
-#             '/mnt/data/doc/work/prod_data/rice/gois',
+#             '/mnt/data/doc/work/prod_data/ARABIDOBSIS/pathways',
+            '/mnt/data/doc/work/prod_data/rice/gois',
             output_dir=output_dir,
         )
         

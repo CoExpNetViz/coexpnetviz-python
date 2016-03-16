@@ -26,14 +26,14 @@ import click
 import matplotlib.pyplot as plt
 import deep_blue_genome.core.context as ctx
 from deep_blue_genome.core.reader.various import read_genes_file
-from deep_blue_genome.core.util import is_data_file
-from deep_blue_genome.util.plumbum import list_files
 from deep_blue_genome.main import group, main
 from deep_blue_genome.core.correlation import get_correlations, pearson_r,\
     get_correlations_sample
-from deep_blue_genome.util.itertools import window
+from deep_blue_genome.util.plumbum import list_files
+from chicken_turtle_util.various import is_data_file
+from chicken_turtle_util.itertools import window
+from chicken_turtle_util.pandas import df_has_null
 import logging
-from deep_blue_genome.util.pandas import df_has_null
 from matplotlib.cbook import boxplot_stats
 from contextlib import contextmanager
 

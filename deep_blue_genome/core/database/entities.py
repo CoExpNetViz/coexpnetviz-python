@@ -24,7 +24,7 @@ from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from inflection import underscore
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table
 from sqlalchemy.orm import relationship, deferred
-from deep_blue_genome.util.constants import URL_MAX_LENGTH, PATH_MAX_LENGTH
+from chicken_turtle_util.constants import URL_MAX_LENGTH, PATH_MAX_LENGTH
 from datetime import datetime
 
 # Note: we rely on the fact that mysql innodb's default collation is case-insensitive and the charset is utf8

@@ -19,7 +19,7 @@ from deep_blue_genome.core.reader.various import read_mcl_clustering,\
     read_gene_families_file, read_mapping
 # from deep_blue_genome.data_preparation.genes import load_gene_info
 import pandas as pd
-from deep_blue_genome.core.util import series_invert
+from chicken_turtle_util.pandas import series_invert
 
 '''
 The main tool to prepare data for DBG tools

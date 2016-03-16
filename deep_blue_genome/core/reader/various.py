@@ -19,8 +19,8 @@
 import pandas as pd
 import plumbum as pb
 import csv
-from deep_blue_genome.core.util import df_expand_iterable_values
-from deep_blue_genome.util.algorithms import merge_overlapping_named_sets
+from chicken_turtle_util.pandas import df_expand_iterable_values
+from chicken_turtle_util.algorithms import merge_overlapping_named_sets
 from itertools import chain
 from io import TextIOWrapper
 

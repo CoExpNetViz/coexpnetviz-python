@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-from deep_blue_genome.core.util import get_distinct_colours,\
-    spread_points_in_hypercube
+from deep_blue_genome.core.util import get_distinct_colours
+from chicken_turtle_util.algorithms import spread_points_in_hypercube
 import pandas as pd
 import matplotlib.pyplot as plt
 

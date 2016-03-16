@@ -40,7 +40,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from deep_blue_genome.test.unittests.util.test_merge_overlapping_named_sets import create_input
-from deep_blue_genome.core.util import df_expand_iterable_values
+from chicken_turtle_util.pandas import df_expand_iterable_values
 import itertools
 
 def normalised_set_family(sets):

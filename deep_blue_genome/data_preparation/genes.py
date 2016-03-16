@@ -24,8 +24,9 @@ from plumbum.cmd import wget, gunzip
 from plumbum import local, FG
 from tempfile import TemporaryDirectory
 from deep_blue_genome.core.reader.ncbi import read_gene_info_file_chunked
-from deep_blue_genome.util import fill_na_with_none, print_mem,\
-    remove_duplicates
+from chicken_turtle_util.list import remove_duplicates
+from chicken_turtle_util.pandas import fill_na_with_none 
+from chicken_turtle_util.debug import print_mem
 from deep_blue_genome.core.database.gene import Gene, GeneName
 from collections import defaultdict
 from pandas.core.series import Series

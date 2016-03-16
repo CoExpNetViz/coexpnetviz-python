@@ -17,7 +17,8 @@
 
 import pandas as pd
 import numpy as np
-from deep_blue_genome.core.util import series_invert, get_distinct_colours
+from deep_blue_genome.core.util import get_distinct_colours
+from chicken_turtle_util.pandas import series_invert
 from deep_blue_genome.pkg_util import get_data_file
 
 

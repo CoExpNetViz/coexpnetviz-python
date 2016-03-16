@@ -14,18 +14,19 @@
 # 
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
-from deep_blue_genome.util.str import multiline_lstrip
-from deep_blue_genome.util.plumbum import list_files
-from deep_blue_genome.core.util import is_data_file
 
 '''
 MOdule guided Ranking of candidate PatHway genes (MORPH)
 '''
 
+from deep_blue_genome.util.plumbum import list_files
+from chicken_turtle_util.str import multiline_lstrip
+from chicken_turtle_util.various import is_data_file
+from chicken_turtle_util import cli
 from itertools import repeat
 from deep_blue_genome.core.reader.various import read_genes_file
 from deep_blue_genome.morph.algorithm import morph as morph_
-from deep_blue_genome.core import cli, context as ctx
+from deep_blue_genome.core import context as ctx
 import click
 import pandas as pd
 import plumbum as pb
@@ -33,7 +34,7 @@ import logging
 
 _logger = logging.getLogger('deep_blue_genome.morph')
 
-class Context(ctx.DatabaseMixin, ctx.OutputMixin):
+class Context(ctx.DatabaseMixin, ctx.OutputMixin, ctx.ConfigurationMixin):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

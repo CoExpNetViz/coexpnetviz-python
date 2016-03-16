@@ -17,12 +17,11 @@
 
 import plumbum as pb
 from deep_blue_genome.main import main, load_config
-from deep_blue_genome.core.util import flatten_deep
+from chicken_turtle_util.list import flatten_deep
 from copy import deepcopy
 import cProfile
 import pstats
 import io
-import pytest
 
 cache_dir = pb.local.path('test/cache')  # cache across runs
 data_dir = pb.local.path('test/data')

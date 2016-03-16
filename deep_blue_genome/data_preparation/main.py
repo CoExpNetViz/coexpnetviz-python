@@ -23,12 +23,12 @@ from deep_blue_genome.core.reader.various import read_expression_matrix_file,\
 from deep_blue_genome.core.database.entities import ExpressionMatrix, Clustering,\
     GeneMappingTable
 import plumbum as pb
-from deep_blue_genome.util.pandas import df_has_null, series_has_duplicates
 import logging
 from deep_blue_genome.core.exceptions import TaskFailedException
-from deep_blue_genome.util.exceptions import log_exception_msg
+from chicken_turtle_util.pandas import df_has_null, series_has_duplicates
+from chicken_turtle_util.exceptions import log_exception
+from chicken_turtle_util.various import is_data_file
 from deep_blue_genome.util.plumbum import list_files
-from deep_blue_genome.core.util import is_data_file
 
 _logger = logging.getLogger('deep_blue_genome.prepare')
 
@@ -41,7 +41,7 @@ def load_rice_genes(database):
     Load MSU and RAP gene names
     '''
     
-class Context(ctx.CacheMixin, ctx.DatabaseMixin, ctx.TemporaryFilesMixin, ctx.OutputMixin):
+class Context(ctx.CacheMixin, ctx.DatabaseMixin, ctx.TemporaryFilesMixin, ctx.OutputMixin, ctx.ConfigurationMixin):
     pass
 
 
@@ -60,7 +60,7 @@ def add_expression_matrix(context, path):
         exp_mat = read_expression_matrix_file(path)  # XXX could speed up by only loading index (=gene names)
         
         # Get genes from database
-        genes = pd.DataFrame(exp_mat.data.index)
+        genes = pd.DataFrame(exp_mat.index)
         genes = db.get_genes_by_name(genes, session)
         
         # Validate
@@ -143,15 +143,15 @@ def prepare(main_config, **kwargs):
     ''')
     
     for path in gene_mappings:
-        with log_exception_msg(_logger, TaskFailedException):
+        with log_exception(_logger, TaskFailedException):
             add_gene_mapping(context, path)
              
     for exp_mat in expression_matrices:
-        with log_exception_msg(_logger, TaskFailedException):
+        with log_exception(_logger, TaskFailedException):
             add_expression_matrix(context, exp_mat)
          
     for clustering in clusterings:
-        with log_exception_msg(_logger, TaskFailedException):
+        with log_exception(_logger, TaskFailedException):
             add_clustering(context, clustering)
 
     # Generate pathway files (files with genes in each pathway)

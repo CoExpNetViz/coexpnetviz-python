@@ -32,7 +32,7 @@ class TestPrepare(object):
     Database prepare tests
     ''' 
         
-    @pytest.mark.current
+#     @pytest.mark.current
     def test_run(self, tmpdir):
         init_tmp(tmpdir)
         cli.tmpdir = tmpdir

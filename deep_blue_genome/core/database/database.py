@@ -27,10 +27,10 @@ from contextlib import contextmanager
 import logging
 import pandas as pd
 import numpy as np
-from deep_blue_genome.util.pandas import df_count_null
+from chicken_turtle_util.pandas import df_count_null
 import re
 from collections import namedtuple
-from deep_blue_genome.util.debug import print_sql_stmt
+from chicken_turtle_util.debug import print_sql_stmt
 from deep_blue_genome.core.reader.various import read_expression_matrix_file
 
 _logger = logging.getLogger('deep_blue_genome.core.Database')
