@@ -1,26 +1,26 @@
 # Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
 # 
-# This file is part of Deep Blue Genome.
+# This file is part of Deep Genome.
 # 
-# Deep Blue Genome is free software: you can redistribute it and/or modify
+# Deep Genome is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 # 
-# Deep Blue Genome is distributed in the hope that it will be useful,
+# Deep Genome is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 # 
 # You should have received a copy of the GNU Lesser General Public License
-# along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
+# along with Deep Genome.  If not, see <http://www.gnu.org/licenses/>.
 
 import pandas as pd
 import numpy as np
 from chicken_turtle_util.pandas import series_invert
-from deep_blue_genome.coexpnetviz.network import Network
+from deep_genome.coexpnetviz.network import Network
 import matplotlib.pyplot as plt
-from deep_blue_genome.core.correlation import get_correlations_sample
+from deep_genome.core.correlation import get_correlations_sample
 
 def determine_cutoffs(expression_matrix, correlation_method, percentile_ranks):
     '''

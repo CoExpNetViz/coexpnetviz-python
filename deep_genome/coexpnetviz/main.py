@@ -1,28 +1,28 @@
 # Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
 # 
-# This file is part of Deep Blue Genome.
+# This file is part of Deep Genome.
 # 
-# Deep Blue Genome is free software: you can redistribute it and/or modify
+# Deep Genome is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 # 
-# Deep Blue Genome is distributed in the hope that it will be useful,
+# Deep Genome is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 # 
 # You should have received a copy of the GNU Lesser General Public License
-# along with Deep Blue Genome.  If not, see <http://www.gnu.org/licenses/>.
+# along with Deep Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-from deep_blue_genome.core.reader.various import read_genes_file, read_expression_matrix_file,\
+from deep_genome.core.reader.various import read_genes_file, read_expression_matrix_file,\
     read_gene_families_file
 import sys
 import argparse
 import pandas as pd
-from deep_blue_genome.coexpnetviz.correlationmethod import CorrelationMethod
-from deep_blue_genome.coexpnetviz.cytoscapewriter import CytoscapeWriter
-from deep_blue_genome.coexpnetviz.algorithm import coexpnetviz
+from deep_genome.coexpnetviz.correlationmethod import CorrelationMethod
+from deep_genome.coexpnetviz.cytoscapewriter import CytoscapeWriter
+from deep_genome.coexpnetviz.algorithm import coexpnetviz
 
 # TODO wouldn't it be interesting to show correlation between baits as well?
 

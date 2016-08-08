@@ -63,7 +63,7 @@ project = dict(
     # Auto generate entry points
     entry_points={
         'console_scripts': [
-            'coexpnetviz = deep_blue_genome.coexpnetviz.main:main',
+            'coexpnetviz = deep_genome.coexpnetviz.main:main',
         ],
     },
 )
