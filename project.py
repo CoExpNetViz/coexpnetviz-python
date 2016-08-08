@@ -1,15 +1,18 @@
 project = dict(
-    name='deep-blue-genome',
-    description='Genome analysis platform',
+    name='deep-genome-coexpnetviz',
+    package_name='deep_genome.coexpnetviz',
+    human_friendly_name='CoExpNetViz',
+    description='Comparative co-expression network construction and visualization',
     author='VIB/BEG/UGent',
-    author_email='tidie@psb.vib-ugent.be',
+    author_email='timdiels.m@gmail.com',
+    python_version=(3,5),
     readme_file='README.md',
-    url='https://bitbucket.org/deep_blue_genome/deep_blue_genome', # project homepage.
+    url='https://gitlab.psb.ugent.be/deep_genome/coexpnetviz.git', # project homepage.
     download_url='https://example.com/TODO/{version}', # Template for url to download source archive from. You can refer to the current version with {version}. You can get one from github or gitlab for example.
     license='LGPL3',
 
     # What does your project relate to?
-    keywords='bioinformatics genome-analysis',
+    keywords='bioinformatics coexpression guilt-by-association',
     
     # Package indices to release to using `ct-release`
     # These names refer to those defined in ~/.pypirc.
@@ -27,8 +30,6 @@ project = dict(
         License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)
         Natural Language :: English
         Environment :: Console
-        Topic :: Scientific/Engineering :: Bio-Informatics
-        Topic :: Scientific/Engineering :: Artificial Intelligence
         Operating System :: POSIX
         Operating System :: POSIX :: AIX
         Operating System :: POSIX :: BSD
@@ -54,12 +55,15 @@ project = dict(
         Programming Language :: Python :: Implementation
         Programming Language :: Python :: Implementation :: CPython
         Programming Language :: Python :: Implementation :: Stackless
+        Topic :: Scientific/Engineering
+        Topic :: Scientific/Engineering :: Bio-Informatics
+        Topic :: Scientific/Engineering :: Artificial Intelligence
     ''',
  
     # Auto generate entry points
     entry_points={
         'console_scripts': [
-            'dbg = deep_blue_genome.main:main',
+            'coexpnetviz = deep_blue_genome.coexpnetviz.main:main',
         ],
     },
 )

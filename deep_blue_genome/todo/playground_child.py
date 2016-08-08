@@ -1,1 +1,0 @@
-from datetime.datetime import now
