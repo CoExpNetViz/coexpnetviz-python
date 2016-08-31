@@ -17,7 +17,6 @@
 
 import pandas as pd
 import numpy as np
-from deep_genome.core.util import get_distinct_colours
 from chicken_turtle_util.pandas import series_invert
 from deep_genome.pkg_util import get_data_file
 
@@ -29,55 +28,6 @@ class CytoscapeWriter(object):
         self._network = network
         
     def write(self):
-        # assign node ids to baits: pd.Series(index=(gene : str), data=(id : int))
-        self._bait_nodes = self._network.baits.copy()
-        self._bait_nodes.index.name = 'id'
-        self._bait_nodes = series_invert(self._bait_nodes)
-        
-        # assign node ids to family nodes that have a non-nan family
-        next_id = self._bait_nodes.max() + 1
-        family_ids = self._network.correlations['family']
-        family_ids.dropna(inplace=True)
-        family_ids.drop_duplicates(inplace=True)
-        family_ids = family_ids.to_frame()
-        family_ids['family_id'] = range(next_id, next_id+len(family_ids))
-        next_id += len(family_ids)
-        family_ids.set_index('family', inplace=True)
-        self._correlations = self._network.correlations.set_index('family').join(family_ids)
-        self._correlations.reset_index(inplace=True)
-        del family_ids
-        
-        # assign node ids to family nodes with nan family
-        mask = self._correlations['family_id'].isnull()
-        self._correlations.loc[mask, 'family_id'] = range(next_id, next_id + mask.sum())
-        
-        # throw in a bait_id column
-        # self._correlations : pd.DataFrame(columns=[(bait : str), (family : str), (family_gene : str), (correlation : float), (family_id : int), (bait_id : int)])
-        self._correlations.set_index('bait', inplace=True)
-        self._correlations = self._correlations.join(self._bait_nodes)
-        self._correlations.reset_index(inplace=True)
-        self._correlations.rename(columns={'index': 'bait', 'id': 'bait_id'}, inplace=True)
-        
-        # group correlation and family_gene
-        # self._correlations : pd.DataFrame(columns=[(bait : str), (family : str), (family_id : int), (bait_id : int), (correlating_genes_in_family : str), (max_correlation : float)]) 
-        max_correlations = self._correlations.groupby(['family_id', 'bait_id'])['correlation'].max()
-        max_correlations.name = 'max_correlation'
-        self._correlations.drop('correlation', axis=1, inplace=True)
-        self._correlations.drop_duplicates('family_gene', inplace=True)
-        
-        correlating_genes_in_family = self._correlations.groupby('family_id')['family_gene'].apply(lambda x: ', '.join(x.tolist()))
-        correlating_genes_in_family.name = 'correlating_genes_in_family'
-        self._correlations.drop('family_gene', axis=1, inplace=True)
-        self._correlations.drop_duplicates(inplace=True)
-        
-        self._correlations = self._correlations.join(correlating_genes_in_family, on='family_id')
-        self._correlations = self._correlations.join(max_correlations, on=['family_id', 'bait_id'])
-        
-        # bait_families: pd.Series(index=(family : str), data=(id : int))
-        bait_families = self._network.gene_families.map(self._bait_nodes)
-        bait_families.dropna(inplace=True)
-        bait_families.name = self._bait_nodes.name
-        
         # Write it
         self.write_sif(bait_families)
         self.write_node_attr(bait_families)

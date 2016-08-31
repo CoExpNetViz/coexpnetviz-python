@@ -6,7 +6,7 @@ project = dict(
     author='VIB/BEG/UGent',
     author_email='timdiels.m@gmail.com',
     python_version=(3,5),
-    readme_file='README.md',
+    readme_file='README.rst',
     url='https://gitlab.psb.ugent.be/deep_genome/coexpnetviz.git', # project homepage.
     download_url='https://example.com/TODO/{version}', # Template for url to download source archive from. You can refer to the current version with {version}. You can get one from github or gitlab for example.
     license='LGPL3',
@@ -66,4 +66,10 @@ project = dict(
             'coexpnetviz = deep_genome.coexpnetviz.main:main',
         ],
     },
+    
+    # Files not to ignore in pre commit checks, despite them not being tracked by
+    # git.
+    pre_commit_no_ignore = [
+        'test.conf',
+    ],
 )

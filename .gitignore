@@ -16,3 +16,4 @@ last_test_runs
 .cproject
 dist
 .cache
+test.conf

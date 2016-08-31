@@ -42,44 +42,51 @@ setup(
     'description': 'Comparative co-expression network construction and visualization',
     'entry_points': {'console_scripts': ['coexpnetviz = deep_genome.coexpnetviz.main:main']},
     'extras_require': {   'dev': ['sphinx', 'numpydoc', 'sphinx-rtd-theme'],
-                          'test': ['pytest', 'pytest-env', 'pytest-xdist', 'pytest-cov', 'coverage-pth']},
-    'install_requires': [   'click',
-                            'numpy',
-                            'matplotlib',
-                            'scipy',
-                            'scikit-learn',
-                            'pandas',
-                            'numexpr',
-                            'bottleneck',
-                            'plumbum',
-                            'inflection',
-                            'more-itertools',
-                            'memory-profiler',
-                            'psutil',
-                            'pyxdg',
-                            'frozendict',
-                            'requests',
-                            'sqlalchemy',
-                            'pymysql',
-                            'chicken-turtle-util',
-                            'pytest',
-                            'pytest-benchmark',
-                            'pytest-timeout',
-                            'pytest-xdist',
-                            'freezegun>0.3.5',
-                            'networkx'],
+                          'test': [   'pytest',
+                                      'pytest-env',
+                                      'pytest-xdist',
+                                      'pytest-cov',
+                                      'coverage-pth',
+                                      'pytest-mock']},
+    'install_requires': [   'chicken-turtle-util[sqlalchemy,data_frame,series,algorithms]',
+                            'deep-genome-core',
+                            'recordclass'],
     'keywords': 'bioinformatics coexpression guilt-by-association',
     'license': 'LGPL3',
-    'long_description': 'Required Python 3 libraries:\n'
+    'long_description': 'TODO\n'
                         '\n'
-                        'Additional Python 3 libraries required for development:\n'
+                        'Links\n'
+                        '=====\n'
                         '\n'
-                        '-  twine\n'
-                        '-  pypandoc\n',
+                        'TODO\n'
+                        '\n'
+                        'Features\n'
+                        '========\n'
+                        '\n'
+                        'TODO\n'
+                        '\n'
+                        'Change log\n'
+                        '==========\n'
+                        '\n'
+                        'v5.0.0\n'
+                        '------\n'
+                        '\n'
+                        '-  \n'
+                        '-  Added tests increasing coverage from 0% to TODO%\n'
+                        '\n'
+                        'Older versions\n'
+                        '--------------\n'
+                        '\n'
+                        'No change log\n',
     'name': 'deep-genome-coexpnetviz',
-    'package_data': {   'deep_genome.coexpnetviz': [   'data/cli.defaults.conf',
-                                                       'data/coexpnetviz/README.txt',
-                                                       'data/coexpnetviz/coexpnetviz_style.xml']},
+    'package_data': {   'deep_genome.coexpnetviz': [   'data/README.txt',
+                                                       'data/coexpnetviz_style.xml',
+                                                       'data/todo_cli.defaults.conf'],
+                        'deep_genome.coexpnetviz.tests': [   'data/test_share_2_baits/Eggplant.txt',
+                                                             'data/test_share_2_baits/Orth.txt',
+                                                             'data/test_share_2_baits/TODO',
+                                                             'data/test_share_2_baits/Tomato.txt',
+                                                             'data/test_share_2_baits/baits.txt']},
     'packages': ['deep_genome', 'deep_genome.coexpnetviz', 'deep_genome.coexpnetviz.tests'],
     'url': 'https://gitlab.psb.ugent.be/deep_genome/coexpnetviz.git',
     'version': '0.0.0'}
