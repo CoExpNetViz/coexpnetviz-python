@@ -1,9 +1,0 @@
-# Example 
-negative_treshold: -1.0  # All correlations below this treshold will be included in the result
-positive_treshold: 0.8  # All correlations above this treshold will be included in the result
-baits: /mnt/midas/group/biocomp/projects/morph/coexpr/tmp/baits2.txt  # Absolute path to file with bait genes separated by whitespace
-expression_matrices: # List of paths to expression matrices
-    - '/mnt/midas/group/biocomp/projects/morph/coexpr/tmp/Arabidopsis_dataset.txt'
-    - '/mnt/midas/group/biocomp/projects/morph/coexpr/tmp/Tomato_dataset.txt'
-    - '/mnt/midas/group/biocomp/projects/morph/coexpr/tmp/Apple_dataset.txt'
-    - '/mnt/midas/group/biocomp/projects/morph/coexpr/tmp/Potato_dataset.txt'

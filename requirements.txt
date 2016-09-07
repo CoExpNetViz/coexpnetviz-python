@@ -1,15 +1,15 @@
--e file:///home/limyreth/doc/eclipse_workspace/chicken_turtle_util
--e file:///home/limyreth/doc/eclipse_workspace/deep_genome_core
-recordclass==0.4.1
 Sphinx==1.4.5             # via sphinx-rtd-theme
+numpydoc==0.6.0
+sphinx-rtd-theme==0.1.9
 pytest==2.9.0
 pytest-env==0.6.0
 pytest-xdist==1.14
 pytest-cov==2.3.1
 coverage-pth==0.0.1
 pytest-mock==1.2
-numpydoc==0.6.0
-sphinx-rtd-theme==0.1.9
+-e file:///home/limyreth/doc/eclipse_workspace/chicken_turtle_util
+-e file:///home/limyreth/doc/eclipse_workspace/deep_genome_core
+recordclass==0.4.1
 alabaster==0.7.9          # via sphinx
 apipkg==1.4               # via execnet
 babel==2.3.4              # via sphinx
