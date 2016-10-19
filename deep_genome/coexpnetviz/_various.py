@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Deep Genome.  If not, see <http://www.gnu.org/licenses/>.
 
-from collections import namedtuple
-from recordclass import recordclass
 from enum import Enum
 import numpy as np
 from numpy.linalg import norm
@@ -24,7 +22,7 @@ from chicken_turtle_util.algorithms import spread_points_in_hypercube
 import attr
 
 _network_attrs = ('nodes', 'homology_edges', 'correlation_edges', 'significant_correlations', 'samples', 'percentiles', 'correlation_matrices')
-Network = namedtuple('Network', _network_attrs)
+Network = attr.make_class('Network', _network_attrs, frozen=True)
 '''
 Network (aka a graph) result of CoExpNetViz
 
@@ -86,7 +84,7 @@ See also
 coexpnetviz : Create a comparative coexpression network
 '''
         
-MutableNetwork = recordclass('MutableNetwork', _network_attrs)  # internal class
+MutableNetwork = attr.make_class('MutableNetwork', _network_attrs)  # internal class
 
 class NodeType(Enum):
     '''

@@ -40,7 +40,6 @@ pytest==2.9.0
 python-dateutil==2.5.0
 pytz==2016.1
 pyxdg==0.25
-recordclass==0.4.1
 scikit-learn==0.17.1
 scipy==0.17.0
 six==1.10.0

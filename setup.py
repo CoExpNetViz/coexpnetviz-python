@@ -51,8 +51,7 @@ setup(
     'install_requires': [   'attrs',
                             'chicken-turtle-util[sqlalchemy,data_frame,series,algorithms,configuration]',
                             'deep-genome-core',
-                            'matplotlib',
-                            'recordclass'],
+                            'matplotlib'],
     'keywords': 'bioinformatics coexpression guilt-by-association',
     'license': 'LGPL3',
     'long_description': 'TODO\n'

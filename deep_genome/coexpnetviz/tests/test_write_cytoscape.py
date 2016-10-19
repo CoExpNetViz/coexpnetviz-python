@@ -30,6 +30,7 @@ from chicken_turtle_util.test import temp_dir_cwd
 from deep_genome.coexpnetviz._various import MutableNetwork
 from deep_genome.coexpnetviz import NodeType, write_cytoscape, Network, RGB
 from pkg_resources import resource_string
+import attr
 
 @pytest.fixture(autouse=True)
 def use_temp_dir_cwd(temp_dir_cwd):
@@ -72,7 +73,7 @@ def assert_(network):
         homology_edges and/or correlation_edges made empty
     '''
     network_name = 'amazing network'
-    write_cytoscape(Network(**network._asdict()), network_name)
+    write_cytoscape(Network(**attr.asdict(network)), network_name)
     
     node_attr_file = Path(network_name + '.node.attr')
     edge_attr_file = Path(network_name + '.edge.attr')

@@ -23,6 +23,7 @@ from deep_genome.core import correlation
 from itertools import product
 from textwrap import dedent
 import logging
+import attr
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +178,9 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
         corrs.dropna(subset=['correlation'], inplace=True)
         correlations.append(corrs)
     
-    network._replace(samples=tuple(network.samples), percentiles=tuple(network.percentiles), correlation_matrices=tuple(network.correlation_matrices))
+    network.samples = tuple(network.samples)
+    network.percentiles = tuple(network.percentiles)
+    network.correlation_matrices = tuple(network.correlation_matrices)
     correlations = pd.concat(correlations)
     correlations = correlations[correlations['bait'] < correlations['gene']]  # drop self comparisons
     correlations = correlations.reindex(columns=('bait', 'gene', 'correlation'))
@@ -188,7 +191,7 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
     network.homology_edges = _get_homology_edges(network.nodes)
     network.correlation_edges = _get_correlation_edges(network.nodes, correlations)
     
-    return Network(**network._asdict())
+    return Network(**attr.asdict(network))
 
 def _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, percentile_ranks):
     '''
