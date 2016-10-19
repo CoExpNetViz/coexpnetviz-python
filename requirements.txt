@@ -1,50 +1,55 @@
-pytest==2.9.0
-pytest-env==0.6.0
-pytest-xdist==1.14
-Sphinx==1.4.5             # via sphinx-rtd-theme
-numpydoc==0.6.0
+
 -e file:///home/limyreth/doc/eclipse_workspace/chicken_turtle_util
-pytest-cov==2.3.1
-coverage-pth==0.0.1
-pytest-mock==1.2
-sphinx-rtd-theme==0.1.9
 -e file:///home/limyreth/doc/eclipse_workspace/deep_genome_core
-recordclass==0.4.1
-alabaster==0.7.9          # via sphinx
-apipkg==1.4               # via execnet
-babel==2.3.4              # via sphinx
+alabaster==0.7.9
+apipkg==1.4
+attrs==16.2.0
+babel==2.3.4
 bottleneck==1.0.0
 click==6.3
 collections-extended==0.8.0
-coverage==4.2             # via coverage-pth, pytest-cov
-cycler==0.10.0            # via matplotlib
-docutils==0.12            # via sphinx
+coverage-pth==0.0.1
+coverage==4.2
+cycler==0.10.0
+decorator==4.0.10
+docutils==0.12
 drmaa==0.7.6
-execnet==1.4.1            # via pytest-xdist
-frozendict==0.5
-imagesize==0.7.1          # via sphinx
+execnet==1.4.1
+imagesize==0.7.1
 inflection==0.3.1
-Jinja2==2.8               # via sphinx
-MarkupSafe==0.23          # via jinja2
-matplotlib==1.5.1
-memory-profiler==0.41
+Jinja2==2.8
+MarkupSafe==0.23
+matplotlib==1.5.3
 more-itertools==2.2
+networkx==1.11
 numexpr==2.5
-numpy==1.10.4             # via bottleneck, matplotlib, numexpr, pandas
+numpy==1.10.4
+numpydoc==0.6.0
 pandas==0.18.1
 plumbum==1.6.1.post0
 psutil==4.1.0
-py==1.4.31                # via pytest, pytest-xdist
-Pygments==2.1.3           # via sphinx
+py==1.4.31
+Pygments==2.1.3
 pymysql==0.7.2
-pyparsing==2.1.0          # via matplotlib
-python-dateutil==2.5.0    # via matplotlib, pandas
-pytz==2016.1              # via babel, matplotlib, pandas
+pyparsing==2.1.10
+pytest-cov==2.3.1
+pytest-env==0.6.0
+pytest-mock==1.2
+pytest-xdist==1.14
+pytest==2.9.0
+python-dateutil==2.5.0
+pytz==2016.1
 pyxdg==0.25
-requests==2.9.1
+recordclass==0.4.1
 scikit-learn==0.17.1
 scipy==0.17.0
-six==1.10.0               # via cycler, python-dateutil, sphinx
-snowballstemmer==1.2.1    # via sphinx
+six==1.10.0
+snowballstemmer==1.2.1
+sphinx-rtd-theme==0.1.9
+Sphinx==1.4.5
 sqlalchemy==1.0.12
 sqlparse==0.2.1
+
+# The following packages are commented out because they are
+# considered to be unsafe in a requirements file:
+# setuptools

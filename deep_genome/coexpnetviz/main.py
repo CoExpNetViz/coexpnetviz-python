@@ -16,18 +16,38 @@
 # along with Deep Genome.  If not, see <http://www.gnu.org/licenses/>.
 
 from deep_genome.coexpnetviz import __version__
-from deep_genome.core import AlgorithmContext
 # from deep_genome.coexpnetviz.correlationmethod import CorrelationMethod
 # from deep_genome.coexpnetviz.cytoscapewriter import CytoscapeWriter
 # from deep_genome.coexpnetviz.algorithm import coexpnetviz
 # from deep_genome.core.reader.various import read_genes_file, read_expression_matrix_file, read_gene_families_file
 # import sys
 # import pandas as pd
+from deep_genome.core import Context as CoreContext
+from deep_genome.core.database import Credentials
+from chicken_turtle_util.configuration import ConfigurationLoader
+from pathlib import Path
 
-Context = AlgorithmContext(__version__)
 
-@Context.command()
-def main():
+class Context(object):
+    
+    def __init__(self, configuration_path):
+        loader = ConfigurationLoader('deep_genome.coexpnetviz', 'deep_genome_coexpnetviz', 'coexpnetviz')
+        configuration = loader.load(configuration_path)
+        
+        core_credentials = Credentials(
+            configuration['core']['database_host'],
+            configuration['core']['database_name'],
+            configuration['core']['database_user'],
+            configuration['core']['database_password']
+        )
+        
+        self._core = CoreContext(
+            core_credentials
+        )
+        
+    def __getattr__(self, attr):
+        return getattr(self._core, attr)
+
     '''
     TODO description, maybe ref to project and doc links too
     '''

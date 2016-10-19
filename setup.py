@@ -5,12 +5,12 @@ from setuptools import setup
 setup(
     **{   'author': 'VIB/BEG/UGent',
     'author_email': 'timdiels.m@gmail.com',
-    'classifiers': [   'Development Status :: 2 - Pre-Alpha',
-                       "'Intended Audience :: Science/Research',",
+    'classifiers': [   "'Intended Audience :: Science/Research',",
+                       'Development Status :: 2 - Pre-Alpha',
+                       'Environment :: Console',
                        'License :: OSI Approved',
                        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
                        'Natural Language :: English',
-                       'Environment :: Console',
                        'Operating System :: POSIX',
                        'Operating System :: POSIX :: AIX',
                        'Operating System :: POSIX :: BSD',
@@ -37,28 +37,49 @@ setup(
                        'Programming Language :: Python :: Implementation :: CPython',
                        'Programming Language :: Python :: Implementation :: Stackless',
                        'Topic :: Scientific/Engineering',
-                       'Topic :: Scientific/Engineering :: Bio-Informatics',
-                       'Topic :: Scientific/Engineering :: Artificial Intelligence'],
+                       'Topic :: Scientific/Engineering :: Artificial Intelligence',
+                       'Topic :: Scientific/Engineering :: Bio-Informatics'],
     'description': 'Comparative co-expression network construction and visualization',
     'entry_points': {'console_scripts': ['coexpnetviz = deep_genome.coexpnetviz.main:main']},
-    'extras_require': {   'dev': ['sphinx', 'numpydoc', 'sphinx-rtd-theme'],
-                          'test': [   'pytest',
-                                      'pytest-env',
-                                      'pytest-xdist',
+    'extras_require': {   'dev': ['numpydoc', 'sphinx', 'sphinx-rtd-theme'],
+                          'test': [   'coverage-pth',
+                                      'pytest',
                                       'pytest-cov',
-                                      'coverage-pth',
-                                      'pytest-mock']},
-    'install_requires': [   'chicken-turtle-util[sqlalchemy,data_frame,series,algorithms]',
+                                      'pytest-env',
+                                      'pytest-mock',
+                                      'pytest-xdist']},
+    'install_requires': [   'attrs',
+                            'chicken-turtle-util[sqlalchemy,data_frame,series,algorithms,configuration]',
                             'deep-genome-core',
+                            'matplotlib',
                             'recordclass'],
     'keywords': 'bioinformatics coexpression guilt-by-association',
     'license': 'LGPL3',
     'long_description': 'TODO\n'
                         '\n'
+                        '.. Chicken Turtle Util (CTU) provides an API of various Python utility functions.\n'
+                        '   \n'
+                        '   Chicken Turtle Util is alpha. None of the interface is stable (yet), meaning it\n'
+                        '   may change in the future.\n'
+                        '   \n'
+                        '   Chicken Turtle Util offers a variety of features, as such we kept most\n'
+                        '   dependencies optional.  When using a module, add/install its dependencies,\n'
+                        '   listed in its corresponding ``*_requirements.in`` file found in the root of the\n'
+                        '   project; e.g.  `cli_requirements.in`__ lists the dependencies of\n'
+                        '   `chicken_turtle_util.cli`.\n'
+                        '\n'
+                        '.. __: https://github.com/timdiels/chicken_turtle_util/blob/master/cli_requirements.in\n'
+                        '\n'
                         'Links\n'
                         '=====\n'
                         '\n'
                         'TODO\n'
+                        '\n'
+                        '..\n'
+                        '\n'
+                        '   - `Documentation <http://pythonhosted.org/chicken_turtle_util/>`_\n'
+                        '   - `PyPI <https://pypi.python.org/pypi/chicken_turtle_util/>`_\n'
+                        '   - `GitHub <https://github.com/timdiels/chicken_turtle_util/>`_\n'
                         '\n'
                         'Features\n'
                         '========\n'
@@ -71,12 +92,11 @@ setup(
                         'v5.0.0\n'
                         '------\n'
                         '\n'
-                        '-  \n'
-                        '-  Added tests increasing coverage from 0% to TODO%\n'
+                        '- \n'
+                        '- Added tests increasing coverage from 0% to TODO%\n'
                         '\n'
                         'Older versions\n'
                         '--------------\n'
-                        '\n'
                         'No change log\n',
     'name': 'deep-genome-coexpnetviz',
     'package_data': {   'deep_genome.coexpnetviz': [   'data/README.txt',

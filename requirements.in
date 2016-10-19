@@ -1,4 +1,5 @@
 # List of required dependencies
--e /home/limyreth/doc/eclipse_workspace/chicken_turtle_util[sqlalchemy,data_frame,series,algorithms]
+-e /home/limyreth/doc/eclipse_workspace/chicken_turtle_util[sqlalchemy,data_frame,series,algorithms,configuration]
 -e /home/limyreth/doc/eclipse_workspace/deep_genome_core
 recordclass
+attrs

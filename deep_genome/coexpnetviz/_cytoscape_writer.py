@@ -59,8 +59,6 @@ def write_cytoscape(network, name):
 def _write_node_attr(network, network_name):
     nodes = network.nodes.copy()
     
-    nodes['family'] = nodes['family'].apply(lambda x: x.name if pd.notnull(x) else None)
-    
     # bait nodes
     bait_nodes = nodes[nodes['type'] == NodeType.bait]
     nodes['bait_gene'] = bait_nodes['genes'].apply(lambda x: first(x).name)

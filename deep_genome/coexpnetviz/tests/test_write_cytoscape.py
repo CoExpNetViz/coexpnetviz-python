@@ -45,7 +45,7 @@ def assert_(network):
     - label is kept unchanged
     - type is 'bait' iff bait, 'family' otherwise
     - genes is ', '.join(sorted(gene.name))
-    - family is '' if null else family.name
+    - family is '' if null else family name
     - colour is #FFFFFF
     - partition_id is kept unchanged
     - no duplicate rows, tab separated columns
@@ -156,32 +156,21 @@ def assert_(network):
 @pytest.fixture
 def network(session):
     genes = series_.split(session.get_genes_by_name(pd.Series(['bait1', 'bait2', 'gene1', 'gene2', 'gene3', 'gene4', 'gene5', 'bait3'])))
-    session.add_gene_families(pd.DataFrame([
-            ['fam1', 'bait1'],
-            ['fam1', 'bait2'],
-            ['fam1', 'gene1'],
-            ['fam1', 'gene2'],
-            ['fam2', 'gene3'],
-        ],
-        columns=('family', 'gene')
-    ))
 
     nodes = pd.DataFrame([
-            [2, 'labeL2', NodeType.bait, genes.iloc[[0]], RGB((255,255,255)), 10],
-            [9, 'label9', NodeType.gene, genes.iloc[[6]], RGB((255,0,0)), 18],
-            [8, 'label8', NodeType.family, genes.iloc[[4]], RGB((0,0,255)), 11],
-            [22, 'label22', NodeType.gene, genes.iloc[[5]], RGB((0,255,0)), 14],
-            [3, 'label3', NodeType.bait, genes.iloc[[1]], RGB((255,255,255)), 10],
-            [5, 'label5', NodeType.family, genes.iloc[[2,3]], RGB((0,0,255)), 11],
-            [20, 'label20', NodeType.bait, genes.iloc[[7]], RGB((255,255,255)), 10],
+            [2, 'labeL2', NodeType.bait, genes.iloc[[0]], 'fam1', RGB((255,255,255)), 10],
+            [9, 'label9', NodeType.gene, genes.iloc[[6]], None, RGB((255,0,0)), 18],
+            [8, 'label8', NodeType.family, genes.iloc[[4]], 'fam2', RGB((0,0,255)), 11],
+            [22, 'label22', NodeType.gene, genes.iloc[[5]], np.nan, RGB((0,255,0)), 14],
+            [3, 'label3', NodeType.bait, genes.iloc[[1]], 'fam1', RGB((255,255,255)), 10],
+            [5, 'label5', NodeType.family, genes.iloc[[2,3]], 'fam1', RGB((0,0,255)), 11],
+            [20, 'label20', NodeType.bait, genes.iloc[[7]], None, RGB((255,255,255)), 10],
         ],
-        columns=('id', 'label', 'type', 'genes', 'colour', 'partition_id')
+        columns=('id', 'label', 'type', 'genes', 'family', 'colour', 'partition_id')
     )
     nodes['id'] = nodes['id'].astype(int)
     nodes['partition_id'] = nodes['partition_id'].astype(int)
     nodes['genes'] = nodes['genes'].apply(frozenset)
-    families = session.get_gene_families_by_gene(genes.iloc[[0, 4]])['family']
-    nodes.insert(4, 'family', (families.iloc[0], None, families.iloc[1], np.nan, families.iloc[0], families.iloc[0], None))
     
     return MutableNetwork(
         nodes=nodes,

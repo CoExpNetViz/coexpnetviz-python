@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # TODO refactor: inplace does not necessarily improve performance. Remove unnecessary use of inplace. Check performance before vs after though, manually, couple of reruns; or simply check it remains acceptable
 # TODO XXX is higher priority than TODO, so s/XXX/TODO or something low priority
 
-def get_cutoffs(expression_matrix, expression_matrix_, correlation_function, percentile_ranks):
+def _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, percentile_ranks):
     '''
     Get upper and lower correlation cutoffs for coexpnetviz
     
@@ -77,25 +77,25 @@ def get_cutoffs(expression_matrix, expression_matrix_, correlation_function, per
     # Return result
     return sample, np.percentile(sample_, percentile_ranks)
 
-def std_0_causes_nan(correlation_function):
+def _std_0_causes_nan(correlation_function):
     '''
     A heuristic to see whether the correlation function produces NaN upon zero std functions
     '''
     df = pd.DataFrame([[1, 1], [2, 3]], dtype=float)
     return correlation_function(df, df).isnull().any().any()
 
-def create_network(session, baits, expression_matrices, correlation_function=correlation.pearson_df, percentile_ranks=(5, 95)):
+def create_network(baits, expression_matrices, gene_families, correlation_function=correlation.pearson_df, percentile_ranks=(5, 95)):
     '''
     Create a comparative co-expression network
     
     Parameters
     ----------
-    session : deep_genome.core.database.Session
-        Database session to use
     baits : pd.Series([deep_genome.core.database.entities.Gene])
         Genes to which all genes are compared
-    expression_matrices : Sequence(deep_genome.core.database.entities.ExpressionMatrix)
+    expression_matrices : Sequence(deep_genome.coexpnetviz.ExpressionMatrix)
         Gene expression matrices containing at least one bait
+    gene_families : pd.DataFrame({'family' => [str], 'gene' => [Gene]})
+        Gene families (to make family nodes with)
     correlation_function
         A vectorised correlation function with DataFrame input/output. The
         expected function is exactly like
@@ -136,14 +136,14 @@ def create_network(session, baits, expression_matrices, correlation_function=cor
         raise ValueError('Must provide at least one expression matrix, got: {}'.format(expression_matrices))
     
     # Check each bait occurs in exactly one matrix
-    bait_presence = np.array([bait in matrix.genes for matrix, bait in product(expression_matrices, baits)])
+    bait_presence = np.array([bait in matrix.data.index for matrix, bait in product(expression_matrices, baits)])
     bait_presence = bait_presence.reshape(len(expression_matrices), len(baits))
     missing_bait_matrix = pd.DataFrame(bait_presence, index=expression_matrices, columns=baits).loc[:,bait_presence.sum(axis=0) != 1]
     if not missing_bait_matrix.empty:
         missing_bait_matrix = missing_bait_matrix.applymap(lambda x: 'present' if x else 'absent')
         missing_bait_matrix.index = missing_bait_matrix.index.map(lambda x: x.name)
         missing_bait_matrix.index.name = 'Matrix name'
-        missing_bait_matrix.columns = missing_bait_matrix.columns.map(lambda x: x.name)
+        missing_bait_matrix.columns = missing_bait_matrix.columns.map(lambda gene: gene.name)
         missing_bait_matrix.columns.name = 'Gene name'
         raise ValueError(dedent('''\
             Each of the following baits is either missing from all or present in
@@ -169,7 +169,7 @@ def create_network(session, baits, expression_matrices, correlation_function=cor
         )
         
     # Check the matrices don't overlap (same gene in multiple matrices)
-    all_genes = pd.Series(sum((matrix.genes for matrix in expression_matrices), []))
+    all_genes = pd.Series(sum((list(matrix.data.index) for matrix in expression_matrices), []))
     overlapping_genes = all_genes[all_genes.duplicated()]
     if not overlapping_genes.empty:
         raise ValueError(
@@ -182,14 +182,14 @@ def create_network(session, baits, expression_matrices, correlation_function=cor
     # Calculate correlations
     correlations = []
     for expression_matrix in expression_matrices:
-        expression_matrix_ = session.get_expression_matrix_data(expression_matrix)
+        expression_matrix_ = expression_matrix.data
         
         # Remove rows with no variance if using a correlation function that yields nan for it
         # Note: we only drop the absolutely necessary so that the user can
         # choose how to clean the expression matrices instead of the algorithm
         # doing it for them
         #TODO ask statistics whether -or google- there is a corr func for which corr([1,1], other) ever yields other than nan
-        if std_0_causes_nan(correlation_function): #TODO is mutual information score a correlation function? It appears to be a metric instead. Hence we check here 
+        if _std_0_causes_nan(correlation_function): #TODO is mutual information score a correlation function? It appears to be a metric instead. Hence we check here 
             tiny_stds = expression_matrix_.std(axis=1) < np.finfo(float).tiny
             rows_dropped = sum(tiny_stds)
             if rows_dropped:
@@ -207,7 +207,7 @@ def create_network(session, baits, expression_matrices, correlation_function=cor
                     )
         
         # Get cutoffs
-        sample, percentiles = get_cutoffs(expression_matrix, expression_matrix_, correlation_function, percentile_ranks)
+        sample, percentiles = _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, percentile_ranks)
         network.samples.append(sample)
         network.percentiles.append(tuple(percentiles))
         lower_cutoff, upper_cutoff = percentiles
@@ -239,19 +239,20 @@ def create_network(session, baits, expression_matrices, correlation_function=cor
     
     # Format as Network
     network.significant_correlations = correlations
-    network.nodes = get_nodes(session, baits, correlations)
-    network.homology_edges = get_homology_edges(network.nodes)
-    network.correlation_edges = get_correlation_edges(network.nodes, correlations)
+    network.nodes = _get_nodes(baits, correlations, gene_families)
+    network.homology_edges = _get_homology_edges(network.nodes)
+    network.correlation_edges = _get_correlation_edges(network.nodes, correlations)
     
     return Network(**network._asdict())
 
-def get_nodes(session, baits, correlations):
+def _get_nodes(baits, correlations, gene_families):
     # bait nodes
     assert not baits.empty
     bait_nodes = baits.to_frame('genes')
     bait_nodes.reset_index(drop=True, inplace=True)
     bait_nodes['type'] = NodeType.bait
-    bait_nodes['family'] = session.get_gene_families_by_gene(bait_nodes['genes'])['family']
+    bait_nodes = pd.merge(bait_nodes, gene_families, left_on='genes', right_on='gene', how='left')
+    del bait_nodes['gene']
     bait_nodes['label'] = bait_nodes['genes'].apply(lambda gene: gene.name)
     bait_nodes['genes'] = bait_nodes['genes'].apply(lambda gene: frozenset({gene}))
     bait_nodes['colour'] = [RGB((255, 255, 255))] * len(bait_nodes)
@@ -262,7 +263,7 @@ def get_nodes(session, baits, correlations):
     correlations = correlations[~correlations['gene'].isin(baits)].copy()  # no baits
     if not correlations.empty:
         # split into family and gene nodes
-        correlations['family'] = session.get_gene_families_by_gene(correlations['gene'])['family']
+        correlations = pd.merge(correlations, gene_families, on='gene', how='left')
         orphans = correlations[correlations['family'].isnull()].copy()
         correlations.dropna(inplace=True)  # no orphans
         nodes = []
@@ -272,7 +273,7 @@ def get_nodes(session, baits, correlations):
             family_nodes = correlations.groupby('family')[['bait','gene']].agg(lambda x: frozenset(x)).reset_index()
             family_nodes.columns = ('family', 'baits', 'genes')
             family_nodes['type'] = NodeType.family
-            family_nodes['label'] = family_nodes['family'].apply(lambda family: family.name)
+            family_nodes['label'] = family_nodes['family']
             nodes.append(family_nodes)
         
         # gene nodes
@@ -309,7 +310,7 @@ def get_nodes(session, baits, correlations):
     
     return nodes
 
-def get_homology_edges(nodes):
+def _get_homology_edges(nodes):
     bait_nodes = nodes[nodes['type'] == NodeType.bait][['id', 'family']]
     bait_nodes = bait_nodes.dropna(subset=('family',)).rename(columns={'id': 'bait_node'})
     homology_edges = pd.merge(bait_nodes, bait_nodes, on='family', suffixes=('1', '2'))
@@ -317,7 +318,7 @@ def get_homology_edges(nodes):
     homology_edges = homology_edges[homology_edges['bait_node1'] < homology_edges['bait_node2']].copy()
     return homology_edges
     
-def get_correlation_edges(nodes, correlations):
+def _get_correlation_edges(nodes, correlations):
     if not correlations.empty:
         correlations = correlations.copy()
         nodes = nodes[['id', 'genes']].copy()

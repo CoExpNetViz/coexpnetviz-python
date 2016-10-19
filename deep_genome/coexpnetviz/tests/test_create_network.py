@@ -20,8 +20,8 @@ Test deep_genome.coexpnetviz.create_network(...)
 '''
 
 from chicken_turtle_util import data_frame as df_, series as series_
-from deep_genome.coexpnetviz import create_network, NodeType, RGB
-from deep_genome.core import correlation
+from deep_genome.coexpnetviz import create_network, NodeType, RGB, ExpressionMatrix, _interpret
+from deep_genome.core import correlation, interpret
 from itertools import product
 from textwrap import dedent
 import pandas as pd
@@ -67,7 +67,7 @@ def get_name(x):
     return np.nan if pd.isnull(x) else x.name
     
 def assert_network( 
-        session, input_, network, bait_nodes=None, family_nodes=None, gene_nodes=None,
+        input_, network, bait_nodes=None, family_nodes=None, gene_nodes=None,
         samples=None, correlation_matrices=None, percentiles=None, homology_edges=None,
         significant_correlations=None, correlation_edges=None, partitions=None
     ):
@@ -82,7 +82,7 @@ def assert_network(
     expected_correlation_edges = correlation_edges
     
     input_baits = set(input_['baits'].tolist())
-    input_genes = set(sum((mat.genes for mat in input_['expression_matrices']), []))
+    input_genes = set(sum((mat.data.index.tolist() for mat in input_['expression_matrices']), []))
     input_non_baits = input_genes - input_baits
     
     nodes = network.nodes
@@ -95,9 +95,9 @@ def assert_network(
     # samples
     assert len(network.correlation_matrices) == len(input_['expression_matrices'])
     for sample, exp_mat in zip(network.samples, input_['expression_matrices']):
-        assert sample.columns.isin(exp_mat.genes).all()
+        assert sample.columns.isin(exp_mat.data.index).all()
         assert sample.columns.is_monotonic_increasing  # sorted
-        assert sample.index.isin(exp_mat.genes).all()
+        assert sample.index.isin(exp_mat.data.index).all()
         assert sample.index.is_monotonic_increasing  # sorted
         assert sample.shape[0] == sample.shape[1]
         assert (sample.dtypes == float).all()
@@ -107,7 +107,7 @@ def assert_network(
     for corr_mat, exp_mat in zip(network.correlation_matrices, input_['expression_matrices']):
         assert corr_mat.columns.isin(input_baits).all()
         assert corr_mat.columns.is_monotonic_increasing  # sorted
-        assert corr_mat.index.isin(exp_mat.genes).all()
+        assert corr_mat.index.isin(exp_mat.data.index).all()
         assert corr_mat.index.is_monotonic_increasing  # sorted
         assert (corr_mat.dtypes == float).all()
     
@@ -127,7 +127,7 @@ def assert_network(
     assert nodes['label'].notnull().all()
     assert not nodes['label'].duplicated().any()  # unique
     assert (bait_nodes['label'] == bait_nodes['genes'].apply(lambda genes: next(iter(genes)).name)).all()
-    assert (family_nodes['label'] == family_nodes['family'].apply(lambda family: family.name)).all()
+    assert (family_nodes['label'] == family_nodes['family']).all()
     assert (gene_nodes['label'] == gene_nodes['genes'].apply(lambda genes: next(iter(genes)).name)).all()
     labels = nodes.set_index('id')['label']
     
@@ -204,11 +204,10 @@ def assert_network(
         actual = bait_nodes[['genes', 'family']].copy()
         actual['gene'] = actual['genes'].apply(lambda x: next(iter(x)))
         del actual['genes']
-        actual = actual.applymap(get_name)
+        actual['gene'] = actual['gene'].apply(get_name)
         df_.assert_equals(actual, expected_bait_nodes, ignore_order={0,1}, ignore_indices={0}, all_close=True)
     if expected_family_nodes is not None:
         actual = family_nodes[['genes', 'family']].copy()
-        actual['family'] = actual['family'].apply(get_name)
         actual['genes'] = actual['genes'].apply(lambda genes: {x.name for x in genes})
         df_.assert_equals(actual, expected_family_nodes, ignore_order={0,1}, ignore_indices={0}, all_close=True)
     if expected_gene_nodes is not None:
@@ -225,7 +224,11 @@ def assert_network(
         actual = set(homology_edges['combined'])
         expected = set(map(frozenset, expected_homology_edges))
         assert actual == expected, (actual, expected)
-    
+
+@pytest.fixture
+def no_gene_families():
+    return pd.DataFrame(columns=('family', 'gene'))
+
 @pytest.fixture
 def trivial_input(all_correlate_perfectly_input):
     '''
@@ -236,13 +239,14 @@ def trivial_input(all_correlate_perfectly_input):
     return all_correlate_perfectly_input
 
 @pytest.fixture
-def all_correlate_perfectly_input(session):
+def all_correlate_perfectly_input(session, no_gene_families):
     '''
     All genes correlate or anti-correlate completely.
     
     Uses just 1 matrix. Has 2 baits: bait1, bait2. Has 2 non-baits gene1, gene2.
     '''
-    trivial_matrix = session.add_expression_matrix(
+    trivial_matrix = ExpressionMatrix('trivial matrix', interpret.expression_matrix(
+        session,
         pd.DataFrame(
             [
                 [3, 5],
@@ -253,17 +257,17 @@ def all_correlate_perfectly_input(session):
             columns=['condition1', 'condition2'],
             index=['bait1', 'bait2', 'gene1', 'gene2'],
             dtype=float
-        ),
-        name='trivial matrix'
-    )
+        )
+    ))
         
     return dict(
         baits=series_.split(session.get_genes_by_name(pd.Series(['bait1', 'bait2']))),
-        expression_matrices=[trivial_matrix]
+        expression_matrices=[trivial_matrix],
+        gene_families=no_gene_families
     )
     
 @pytest.fixture
-def cutoff_input(session):
+def cutoff_input(session, no_gene_families):
     '''
     Input where gene2, gene3 are dropped
     
@@ -271,7 +275,8 @@ def cutoff_input(session):
     
     2 baits: bait1 bait2. 4 genes: gene1 ... gene4.
     '''
-    matrix = session.add_expression_matrix(
+    matrix = ExpressionMatrix('cutoff input matrix', interpret.expression_matrix(
+        session,
         pd.DataFrame(
             [
                 [0, 1, 2],
@@ -284,9 +289,8 @@ def cutoff_input(session):
             columns=['condition1', 'condition2', 'condition3'],
             index=['bait1', 'bait2', 'gene1', 'gene2', 'gene3', 'gene4'],
             dtype=float
-        ),
-        name='cutoff matrix'
-    )
+        )
+    ))
 
     # Given that the sample size is normally 800, this is the correlation
     # matrix used to derive the percentiles. The diagonal is ignored.
@@ -305,6 +309,7 @@ def cutoff_input(session):
     return dict(
         baits=series_.split(session.get_genes_by_name(pd.Series(['bait1', 'bait2']))),
         expression_matrices=[matrix],
+        gene_families=no_gene_families,
         percentile_ranks=percentile_ranks
     )
 
@@ -333,7 +338,7 @@ class TestCutoffs(object):
     )
     
     @pytest.mark.parametrize('value,is_valid,is_lower', (x + (y,) for x,y in product(inputs, (True, False))))
-    def test_input_validation(self, session, trivial_input, value, is_valid, is_lower):
+    def test_input_validation(self, trivial_input, value, is_valid, is_lower):
         '''
         Error iff invalid value
         '''
@@ -343,39 +348,39 @@ class TestCutoffs(object):
             percentile_ranks = (0, value)
         trivial_input['percentile_ranks'] = percentile_ranks
         if is_valid:
-            create_network(session, **trivial_input)
+            create_network(**trivial_input)
         else:
             with pytest.raises(ValueError) as ex:
-                create_network(session, **trivial_input)
+                create_network(**trivial_input)
             assert 'Percentile ranks must be in range of [0, 100], got: {}'.format(np.array(percentile_ranks)) in str(ex.value)
             
-    def test_input_validation2(self, session, trivial_input):
+    def test_input_validation2(self, trivial_input):
         '''
         Error if lower > upper
         '''
         trivial_input['percentile_ranks'] = (51, 50)
         with pytest.raises(ValueError) as ex:
-            create_network(session, **trivial_input)
+            create_network(**trivial_input)
         assert 'Lower percentile rank must be less or equal to upper percentile rank' in str(ex.value)
         
         # lower == upper, is fine
         trivial_input['percentile_ranks'] = (50, 50)
-        network = create_network(session, **trivial_input)
-        assert_network(session, trivial_input, network)
+        network = create_network(**trivial_input)
+        assert_network(trivial_input, network)
           
-    def test_no_cutoff(self, session, all_correlate_perfectly_input):
+    def test_no_cutoff(self, all_correlate_perfectly_input):
         '''
         Lower and upper cutoff of (x, x) musn't cut anything
         '''
         all_correlate_perfectly_input['percentile_ranks'] = (50, 50)
-        network = create_network(session, **all_correlate_perfectly_input)
-        assert_network(session, all_correlate_perfectly_input, network)
+        network = create_network(**all_correlate_perfectly_input)
+        assert_network(all_correlate_perfectly_input, network)
         
-    def test_cutoff(self, session, cutoff_input, cutoff_input_percentiles):
+    def test_cutoff(self, cutoff_input, cutoff_input_percentiles):
         '''
         Do cut off when out of range of [lower, upper percentile]
         '''
-        network = create_network(session, **cutoff_input)
+        network = create_network(**cutoff_input)
         significant_correlations = pd.DataFrame(
             [
                 ['bait1', 'bait2', 0.96076892283052284],
@@ -385,7 +390,7 @@ class TestCutoffs(object):
             columns=['bait', 'gene', 'correlation']
         )
         correlation_edges = significant_correlations.rename(columns={'correlation' : 'max_correlation'})
-        assert_network(session, 
+        assert_network(
             cutoff_input,
             network,
             bait_nodes=pd.DataFrame(
@@ -414,8 +419,10 @@ class TestCutoffs(object):
         '''
         # gene2 and gene4 are normally dropped in cutoff_input, making them a bait should keep them in
         cutoff_input['baits'] = series_.split(session.get_genes_by_name(pd.Series(['bait1', 'bait2', 'gene2', 'gene4'])))
-        network = create_network(session, **cutoff_input)
-        assert_network(session, cutoff_input, network,
+        network = create_network(**cutoff_input)
+        assert_network(
+            cutoff_input,
+            network,
             bait_nodes=pd.DataFrame(
                 [
                     ['bait1', None],
@@ -430,13 +437,13 @@ class TestCutoffs(object):
         
 class TestBaits(object):
      
-    def test_empty(self, session, trivial_input):
+    def test_empty(self, trivial_input):
         '''
         When empty, raise ValueError
         '''
         trivial_input['baits'] = pd.Series()
         with pytest.raises(ValueError) as ex:
-            create_network(session, **trivial_input)
+            create_network(**trivial_input)
         assert 'Must specify at least one bait' in str(ex.value)
          
     def test_not_in_any_matrix(self, session, trivial_input):
@@ -445,7 +452,7 @@ class TestBaits(object):
         '''
         trivial_input['baits'] = series_.split(session.get_genes_by_name(pd.Series(['bait_missing'])))
         with pytest.raises(ValueError) as ex:
-            create_network(session, **trivial_input)
+            create_network(**trivial_input)
         print(str(ex.value))
         assert (
             dedent('''\
@@ -480,7 +487,7 @@ class TestGeneFamilies(object):
         When gene families cover all genes and multiple families have a correlating gene
         '''
         # Add families
-        session.add_gene_families(pd.DataFrame(
+        gene_families = _interpret.gene_families(session, pd.DataFrame(
             [
                 ['fam1', 'bait1'],
                 ['fam1', 'bait2'],
@@ -491,10 +498,11 @@ class TestGeneFamilies(object):
             ],
             columns=('family', 'gene')
         ))
+        cutoff_input['gene_families'] = gene_families
         
         # Note: adjusted from test_cutoff 
-        network = create_network(session, **cutoff_input)
-        assert_network(session, 
+        network = create_network(**cutoff_input)
+        assert_network(
             cutoff_input,
             network,
             bait_nodes=pd.DataFrame(
@@ -541,7 +549,7 @@ class TestGeneFamilies(object):
         When gene families cover all genes and a family has multiple correlating genes
         '''        
         # Add families
-        session.add_gene_families(pd.DataFrame(
+        gene_families = _interpret.gene_families(session, pd.DataFrame(
             [
                 ['fam1', 'bait1'],
                 ['fam1', 'bait2'],
@@ -552,10 +560,11 @@ class TestGeneFamilies(object):
             ],
             columns=('family', 'gene')
         ))
+        cutoff_input['gene_families'] = gene_families
         
         # Note: adjusted from test_cutoff 
-        network = create_network(session, **cutoff_input)
-        assert_network(session, 
+        network = create_network(**cutoff_input)
+        assert_network(
             cutoff_input,
             network,
             bait_nodes=pd.DataFrame(
@@ -600,17 +609,18 @@ class TestGeneFamilies(object):
         When gene families cover only some of the genes, run fine
         '''
         # Add families
-        session.add_gene_families(pd.DataFrame(
+        gene_families = _interpret.gene_families(session, pd.DataFrame(
             [
                 ['fam1', 'bait1'],
                 ['fam2', 'gene1'],
             ],
             columns=('family', 'gene')
         ))
+        cutoff_input['gene_families'] = gene_families
         
         # Note: adjusted from test_cutoff 
-        network = create_network(session, **cutoff_input)
-        assert_network(session, 
+        network = create_network(**cutoff_input)
+        assert_network(
             cutoff_input,
             network,
             bait_nodes=pd.DataFrame(
@@ -656,7 +666,7 @@ class TestGeneFamilies(object):
         When a family has multiple genes correlating with the same bait, correct max_correlation
         '''
         # Add families
-        session.add_gene_families(pd.DataFrame(
+        gene_families = _interpret.gene_families(session, pd.DataFrame(
             [
                 ['fam1', 'bait1'],
                 ['fam1', 'bait2'],
@@ -667,11 +677,12 @@ class TestGeneFamilies(object):
             ],
             columns=('family', 'gene')
         ))
+        cutoff_input['gene_families'] = gene_families
         
         # Note: adjusted from test_cutoff
         cutoff_input['percentile_ranks'] = (50, 50)  # no cutoff
-        network = create_network(session, **cutoff_input)
-        assert_network(session, 
+        network = create_network(**cutoff_input)
+        assert_network(
             cutoff_input,
             network,
             bait_nodes=pd.DataFrame(
@@ -754,46 +765,48 @@ class TestExpressionMatrices(object):
             dtype=float
         )
      
-    def test_empty_list(self, session, trivial_input):
+    def test_empty_list(self, trivial_input):
         trivial_input['expression_matrices'] = []
         with pytest.raises(ValueError) as ex:
-            create_network(session, **trivial_input)
+            create_network(**trivial_input)
         assert 'Must provide at least one expression matrix' in str(ex.value)
          
     def test_no_bait_genes(self, session, trivial_input):
         '''
         When a matrix has no baits, raise ValueError
         '''
-        matrix = session.add_expression_matrix(
+        matrix = ExpressionMatrix('matrix', interpret.expression_matrix(
+            session,
             pd.DataFrame(
                 [[1,2], [3,4]],
                 columns=['condition1', 'condition2'],
                 index=['gene5', 'gene6'],
                 dtype=float
-            ),
-            name='matrix'
-        )
+            )
+        ))
         trivial_input['expression_matrices'].append(matrix)
         with pytest.raises(ValueError) as ex:
-            create_network(session, **trivial_input)
-        assert (
+            create_network(**trivial_input)
+        expected = (
             'Some expression matrices have no baits: {}. '
             'Each expression matrix must contain at least one bait. '
             'Either drop the matrices or add some of their genes to the baits list.'
-            .format(matrix) in str(ex.value)
+            .format(matrix)
         )
+        assert expected in str(ex.value), '\nActual\n{}\n\nExpected\n{}\n'.format(str(ex.value), expected)
 
-    def test_no_non_bait_genes(self, session, expression_matrix, correlation_matrix):
+    def test_no_non_bait_genes(self, session, expression_matrix, correlation_matrix, no_gene_families):
         '''
         When all rows are baits, run fine
         '''
-        matrix = session.add_expression_matrix(expression_matrix, 'matrix')
+        matrix = ExpressionMatrix('matrix', interpret.expression_matrix(session, expression_matrix))
         input_ = dict(
             baits=series_.split(session.get_genes_by_name(pd.Series(['bait1', 'bait2', 'gene1', 'gene2']))),
             expression_matrices=[matrix],
+            gene_families=no_gene_families,
             percentile_ranks=(14.6, 85)
         )
-        network = create_network(session, **input_)
+        network = create_network(**input_)
         significant_correlations = pd.DataFrame(
             [
                 ['bait1', 'bait2', 0.96076892283052284],
@@ -802,7 +815,7 @@ class TestExpressionMatrices(object):
             columns=['bait', 'gene', 'correlation']
         )
         correlation_edges = significant_correlations.rename(columns={'correlation' : 'max_correlation'})
-        assert_network(session, 
+        assert_network(
             input_, 
             network,
             bait_nodes=pd.DataFrame(
@@ -827,17 +840,18 @@ class TestExpressionMatrices(object):
             }
         )
          
-    def test_1_non_bait_gene_cor_1_bait(self, session, expression_matrix, correlation_matrix):
+    def test_1_non_bait_gene_cor_1_bait(self, session, expression_matrix, correlation_matrix, no_gene_families):
         '''
         When matrix has 1 non-bait which correlates with 1 bait, run fine
         '''
-        matrix = session.add_expression_matrix(expression_matrix.iloc[[0, 2]], 'matrix')
+        matrix = ExpressionMatrix('matrix', interpret.expression_matrix(session, expression_matrix.iloc[[0, 2]]))
         input_ = dict(
             baits=series_.split(session.get_genes_by_name(pd.Series(['bait1']))),
             expression_matrices=[matrix],
+            gene_families=no_gene_families,
             percentile_ranks=(20, 80)
         )
-        network = create_network(session, **input_)
+        network = create_network(**input_)
         significant_correlations = pd.DataFrame(
             [
                 ['bait1', 'gene1', 0.7559289460184544]
@@ -845,7 +859,7 @@ class TestExpressionMatrices(object):
             columns=['bait', 'gene', 'correlation']
         )
         correlation_edges = significant_correlations.rename(columns={'correlation' : 'max_correlation'})
-        assert_network(session, 
+        assert_network(
             input_, 
             network,
             bait_nodes=pd.DataFrame(
@@ -868,17 +882,18 @@ class TestExpressionMatrices(object):
             }
         )
         
-    def test_1_non_bait_gene_cor_2_baits(self, session, expression_matrix, correlation_matrix):
+    def test_1_non_bait_gene_cor_2_baits(self, session, expression_matrix, correlation_matrix, no_gene_families):
         '''
         When matrix has 1 non-bait which correlates with 2 baits, run fine
         '''
-        matrix = session.add_expression_matrix(expression_matrix.iloc[[0,1,2]], 'matrix')
+        matrix = ExpressionMatrix('matrix', interpret.expression_matrix(session, expression_matrix.iloc[[0,1,2]]))
         input_ = dict(
             baits=series_.split(session.get_genes_by_name(pd.Series(['bait1', 'bait2']))),
             expression_matrices=[matrix],
+            gene_families=no_gene_families,
             percentile_ranks=(0, 20)
         )
-        network = create_network(session, **input_)
+        network = create_network(**input_)
         significant_correlations = pd.DataFrame(
             [
                 ['bait1', 'bait2', 0.96076892283052284],
@@ -888,7 +903,7 @@ class TestExpressionMatrices(object):
             columns=['bait', 'gene', 'correlation']
         )
         correlation_edges = significant_correlations.rename(columns={'correlation' : 'max_correlation'})
-        assert_network(session, 
+        assert_network(
             input_, 
             network,
             bait_nodes=pd.DataFrame(
@@ -912,17 +927,18 @@ class TestExpressionMatrices(object):
             }
         )
          
-    def test_2_non_bait_genes_cor_1_bait(self, session, expression_matrix, correlation_matrix):
+    def test_2_non_bait_genes_cor_1_bait(self, session, expression_matrix, correlation_matrix, no_gene_families):
         '''
         When matrix has 2 non-baits which correlate with 1 bait, run fine
         '''
-        matrix = session.add_expression_matrix(expression_matrix.iloc[[0,2,3]], 'matrix')
+        matrix = ExpressionMatrix('matrix', interpret.expression_matrix(session, expression_matrix.iloc[[0,2,3]]))
         input_ = dict(
             baits=series_.split(session.get_genes_by_name(pd.Series(['bait1']))),
             expression_matrices=[matrix],
+            gene_families=no_gene_families,
             percentile_ranks=(30, 40)
         )
-        network = create_network(session, **input_)
+        network = create_network(**input_)
         significant_correlations = pd.DataFrame(
             [
                 ['bait1', 'gene1', 0.7559289460184544],
@@ -931,7 +947,7 @@ class TestExpressionMatrices(object):
             columns=['bait', 'gene', 'correlation']
         )
         correlation_edges = significant_correlations.rename(columns={'correlation' : 'max_correlation'})
-        assert_network(session, 
+        assert_network(
             input_, 
             network,
             bait_nodes=pd.DataFrame(
@@ -954,17 +970,18 @@ class TestExpressionMatrices(object):
             }
         )
          
-    def test_2_non_bait_genes_cor_2_baits(self, session, expression_matrix, correlation_matrix):
+    def test_2_non_bait_genes_cor_2_baits(self, session, expression_matrix, correlation_matrix, no_gene_families):
         '''
         When matrix has 2 non-baits which correlate with 2 baits, run fine
         '''
-        matrix = session.add_expression_matrix(expression_matrix, 'matrix')
+        matrix = ExpressionMatrix('matrix', interpret.expression_matrix(session, expression_matrix))
         input_ = dict(
             baits=series_.split(session.get_genes_by_name(pd.Series(['bait1', 'bait2']))),
             expression_matrices=[matrix],
+            gene_families=no_gene_families,
             percentile_ranks=(50, 50)
         )
-        network = create_network(session, **input_)
+        network = create_network(**input_)
         significant_correlations = pd.DataFrame(
             [
                 ['bait1', 'bait2', 0.96076892283052284],
@@ -976,7 +993,7 @@ class TestExpressionMatrices(object):
             columns=['bait', 'gene', 'correlation']
         )
         correlation_edges = significant_correlations.rename(columns={'correlation' : 'max_correlation'})
-        assert_network(session, 
+        assert_network(
             input_, 
             network,
             bait_nodes=pd.DataFrame(
@@ -1000,17 +1017,18 @@ class TestExpressionMatrices(object):
             }
         )
          
-    def test_none_correlate(self, session, expression_matrix, correlation_matrix):
+    def test_none_correlate(self, session, expression_matrix, correlation_matrix, no_gene_families):
         '''
         When none of the genes correlate with any bait, run fine
         '''
-        matrix = session.add_expression_matrix(expression_matrix, 'matrix')
+        matrix = ExpressionMatrix('matrix', interpret.expression_matrix(session, expression_matrix))
         input_ = dict(
             baits=series_.split(session.get_genes_by_name(pd.Series(['bait1', 'bait2', 'gene2']))),
             expression_matrices=[matrix],
+            gene_families=no_gene_families,
             percentile_ranks=(0, 100)
         )
-        network = create_network(session, **input_)
+        network = create_network(**input_)
         significant_correlations = pd.DataFrame(
             [
                 ['bait1', 'bait2', 0.96076892283052284],
@@ -1019,7 +1037,7 @@ class TestExpressionMatrices(object):
             columns=['bait', 'gene', 'correlation']
         )
         correlation_edges = significant_correlations.rename(columns={'correlation' : 'max_correlation'})
-        assert_network(session, 
+        assert_network(
             input_, 
             network,
             bait_nodes=pd.DataFrame(
@@ -1043,29 +1061,31 @@ class TestExpressionMatrices(object):
             }
         )
          
-    def test_zero_matrix(self, session):
+    def test_zero_matrix(self, session, no_gene_families):
         '''
         When matrix with 0-variance across all rows, more genes than baits, raise ValueError
         '''
-        matrix = session.add_expression_matrix(
-            pd.DataFrame(np.zeros([2,2]), index=['bait1', 'gene1']),
-            name='matrix'
-        )
+        matrix = ExpressionMatrix('matrix', interpret.expression_matrix(
+            session,
+            pd.DataFrame(np.zeros([2,2]), index=['bait1', 'gene1'])
+        ))
         input_ = dict(
             baits=series_.split(session.get_genes_by_name(pd.Series(['bait1']))),
-            expression_matrices=[matrix]
+            expression_matrices=[matrix],
+            gene_families=no_gene_families,
         )
         with pytest.raises(ValueError) as ex:
-            create_network(session, **input_)
+            create_network(**input_)
         assert 'After dropping rows with tiny standard deviation, {} has no rows.'.format(matrix) in str(ex.value)
          
-    def test_multiple_matrices(self, session):
+    def test_multiple_matrices(self, session, no_gene_families):
         '''
         When 2 matrices, use both
         '''
         genes = series_.split(session.get_genes_by_name(pd.Series(['bait1', 'bait2', 'gene1', 'gene2'])))
         matrices = [
-            session.add_expression_matrix(
+            ExpressionMatrix('matrix1', interpret.expression_matrix(
+                session,
                 pd.DataFrame(
                     [
                         [0, 1, 2],
@@ -1074,9 +1094,9 @@ class TestExpressionMatrices(object):
                     index=['bait1', 'gene1'],
                     dtype=float
                 ),
-                name='matrix1'
-            ),
-            session.add_expression_matrix(
+            )),
+            ExpressionMatrix('matrix2', interpret.expression_matrix(
+                session,
                 pd.DataFrame(
                     [
                         [0, 1, 4],
@@ -1085,8 +1105,7 @@ class TestExpressionMatrices(object):
                     index=['bait2', 'gene2'],
                     dtype=float
                 ),
-                name='matrix2'
-            ),
+            )),
         ]
         
         samples = [
@@ -1115,9 +1134,10 @@ class TestExpressionMatrices(object):
         
         input_ = dict(
             baits=series_.split(session.get_genes_by_name(pd.Series(['bait1', 'bait2']))),
-            expression_matrices=matrices
+            expression_matrices=matrices,
+            gene_families=no_gene_families,
         )
-        network = create_network(session, **input_)
+        network = create_network(**input_)
         significant_correlations = pd.DataFrame(
             [
                 ['bait1', 'gene1', 0.7559289460184544],
@@ -1126,7 +1146,7 @@ class TestExpressionMatrices(object):
             columns=['bait', 'gene', 'correlation']
         )
         correlation_edges = significant_correlations.rename(columns={'correlation' : 'max_correlation'})
-        assert_network(session, 
+        assert_network(
             input_,
             network,
             bait_nodes=pd.DataFrame(
@@ -1152,35 +1172,36 @@ class TestExpressionMatrices(object):
         )
          
     @pytest.mark.parametrize('is_bait', (True, False))
-    def test_overlap(self, session, is_bait):
+    def test_overlap(self, session, is_bait, no_gene_families):
         '''
         When 2 matrices' genes overlap, raise ValueError
         '''
-        matrix1 = session.add_expression_matrix(
+        matrix1 = ExpressionMatrix('matrix1', interpret.expression_matrix(
+            session,
             pd.DataFrame(
                 [[1,2],[3,4],[5,6]],
                 columns=['condition1', 'condition2'],
                 index=['bait1', 'gene1', 'gene_overlapping'],
                 dtype=float
-            ),
-            name='matrix1'
-        )
-        matrix2 = session.add_expression_matrix(
+            )
+        ))
+        matrix2 = ExpressionMatrix('matrix2', interpret.expression_matrix(
+            session,
             pd.DataFrame(
                 [[1,2],[3,4],[5,6]],
                 columns=['condition1', 'condition2'],
                 index=['bait2', 'gene2', 'gene_overlapping'],
                 dtype=float
-            ),
-            name='matrix2'
-        )
+            )
+        ))
         baits = ['bait1', 'bait2']
         if is_bait:
             baits.append('gene_overlapping')
         with pytest.raises(ValueError) as ex:
-            create_network(session, 
+            create_network(
                 baits=series_.split(session.get_genes_by_name(pd.Series(baits))),
-                expression_matrices=[matrix1, matrix2]
+                expression_matrices=[matrix1, matrix2],
+                gene_families=no_gene_families,
             )
         print(str(ex.value))
         if is_bait:
@@ -1214,8 +1235,9 @@ class TestCorrelationMethod(object):
     '''
     
     @pytest.fixture
-    def input_(self, session):
-        matrix = session.add_expression_matrix(
+    def input_(self, session, no_gene_families):
+        matrix = ExpressionMatrix('matrix', interpret.expression_matrix(
+            session,
             pd.DataFrame(
                 [
                     [1, 2, 3],
@@ -1225,12 +1247,12 @@ class TestCorrelationMethod(object):
                 ],
                 index=['gene1', 'gene2', 'gene3', 'gene4'],
                 dtype=float
-            ),
-            name='matrix1'
-        )
+            )
+        ))
         return dict(
             baits=series_.split(session.get_genes_by_name(pd.Series(['gene1', 'gene2']))),
-            expression_matrices=[matrix]
+            expression_matrices=[matrix],
+            gene_families=no_gene_families
         )
         
     @pytest.fixture
@@ -1239,8 +1261,10 @@ class TestCorrelationMethod(object):
      
     def test_pearson(self, session, input_, genes):
         input_['correlation_function'] = correlation.pearson_df
-        network = create_network(session, **input_)
-        assert_network(session, input_, network,
+        network = create_network(**input_)
+        assert_network(
+            input_,
+            network,
             correlation_matrices=[pd.DataFrame(
                 [
                     [1, -1],
@@ -1254,10 +1278,12 @@ class TestCorrelationMethod(object):
             )]
         )
         
-    def test_mutual_information(self, session, input_, genes):
+    def test_mutual_information(self, input_, genes):
         input_['correlation_function'] = correlation.mutual_information_df
-        network = create_network(session, **input_)
-        assert_network(session, input_, network,
+        network = create_network(**input_)
+        assert_network(
+            input_,
+            network,
             correlation_matrices=[pd.DataFrame(
                 [
                     [1.0986122886681096, 1.0986122886681096],

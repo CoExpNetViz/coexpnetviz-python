@@ -21,6 +21,7 @@ from enum import Enum
 import numpy as np
 from numpy.linalg import norm
 from chicken_turtle_util.algorithms import spread_points_in_hypercube
+import attr
 
 _network_attrs = ('nodes', 'homology_edges', 'correlation_edges', 'significant_correlations', 'samples', 'percentiles', 'correlation_matrices')
 Network = namedtuple('Network', _network_attrs)
@@ -43,9 +44,9 @@ nodes : pd.DataFrame
         If a bait node, the bait gene. If a family node, each gene of the family
         that correlates with a bait. If a gene node, the gene, which correlates
         with a bait.
-    family : deep_genome.core.entities.GeneFamily or null
-        If a bait node, family which the bait gene is part of, if any. If a
-        family node, the corresponding family. Else, null (`np.nan` or ``None``).
+    family : str or null
+        If a bait node, family name which the bait gene is part of, if any. If a
+        family node, the corresponding family name. Else, null (`np.nan` or ``None``).
     colour : deep_genome.core.util.RGB
         Colour of the node
     partition_id : int
@@ -209,4 +210,24 @@ def get_distinct_colours(n):
     # to valid rgb values and hoping you are left with enough points.
 #     # TODO to avoid black or white, scale down the Y component to [0.1, 0.9]
 #     return yuv_to_rgb(points)
+
+#TODO name validation (see deleted code)
+# here: non-empty str, no \0 chars
+@attr.s(frozen=True, repr=False)
+class ExpressionMatrix(object):
+    
+    '''
+    Parameters
+    ----------
+    name : str
+        Unique name of the matrix
+    data : pd.DataFrame({condition_name => [gene_expression :: float]}, index=[Gene])
+        Gene expression data
+    '''
+    
+    name = attr.ib()
+    data = attr.ib()
+    
+    def __repr__(self):
+        return 'ExpressionMatrix({!r})'.format(self.name)
     
