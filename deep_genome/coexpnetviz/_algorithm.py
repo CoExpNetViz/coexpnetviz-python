@@ -29,61 +29,6 @@ logger = logging.getLogger(__name__)
 # TODO refactor: inplace does not necessarily improve performance. Remove unnecessary use of inplace. Check performance before vs after though, manually, couple of reruns; or simply check it remains acceptable
 # TODO XXX is higher priority than TODO, so s/XXX/TODO or something low priority
 
-def _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, percentile_ranks):
-    '''
-    Get upper and lower correlation cutoffs for coexpnetviz
-    
-    Takes the 5th and 95th percentile of a sample similarity matrix of
-    `expression_matrix`, returning these as the lower and upper cut-off
-    respectively.
-    
-    Parameters
-    ----------
-    expression_matrix : Expressionmatrix
-    expression_matrix_
-        exp mat data
-    correlation_function
-        Vectorised correlation function with DataFrame input/output
-    
-    Returns
-    -------
-    sample : pd.DataFrame
-    np.array((lower, upper))
-        Cut-offs
-    '''
-    # TODO we took a sample of the population of correlations, so take into
-    # account statistics when drawing conclusions from it... In fact, that's how
-    # we should determine our sample size, probably.
-    #
-    # Before that, take a step back and compare some form of significance vs using a percentile of a sample as cutoff
-    #TODO ask stats people
-    
-    #TODO should also take into account the sample size, e.g. if in some freak case we have only 2 rows in the matrix, we won't be able to tell much this way
-    
-    sample_size = min(len(expression_matrix_), 800)
-    sample = np.random.choice(len(expression_matrix_), sample_size, replace=False) #TODO if replace was missing from old CENV, that's an inaccuracy to note in the changelog
-    sample = expression_matrix_.iloc[sample]
-    sample.sort_index(inplace=True)
-    sample = correlation_function(sample, sample)
-    sample_ = sample.values.copy()
-    nan_count = np.isnan(sample_).sum()
-    np.fill_diagonal(sample_, np.nan)
-    sample_ = sample_[~np.isnan(sample_)].ravel()
-    
-    size = sample.size - len(sample)  # minus the diagonal, as it's not part of sample_
-    if nan_count > .1 * size: # XXX 10% is arbitrary pick
-        logger.warning('Correlation sample of {} contains more than 10% NaN values, specifically {} values out of a sample matrix of {} values are NaN'.format(expression_matrix, nan_count, size))
-    
-    # Return result
-    return sample, np.percentile(sample_, percentile_ranks)
-
-def _std_0_causes_nan(correlation_function):
-    '''
-    A heuristic to see whether the correlation function produces NaN upon zero std functions
-    '''
-    df = pd.DataFrame([[1, 1], [2, 3]], dtype=float)
-    return correlation_function(df, df).isnull().any().any()
-
 def create_network(baits, expression_matrices, gene_families, correlation_function=correlation.pearson_df, percentile_ranks=(5, 95)):
     '''
     Create a comparative co-expression network
@@ -244,6 +189,61 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
     network.correlation_edges = _get_correlation_edges(network.nodes, correlations)
     
     return Network(**network._asdict())
+
+def _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, percentile_ranks):
+    '''
+    Get upper and lower correlation cutoffs for coexpnetviz
+    
+    Takes the 5th and 95th percentile of a sample similarity matrix of
+    `expression_matrix`, returning these as the lower and upper cut-off
+    respectively.
+    
+    Parameters
+    ----------
+    expression_matrix : Expressionmatrix
+    expression_matrix_
+        exp mat data
+    correlation_function
+        Vectorised correlation function with DataFrame input/output
+    
+    Returns
+    -------
+    sample : pd.DataFrame
+    np.array((lower, upper))
+        Cut-offs
+    '''
+    # TODO we took a sample of the population of correlations, so take into
+    # account statistics when drawing conclusions from it... In fact, that's how
+    # we should determine our sample size, probably.
+    #
+    # Before that, take a step back and compare some form of significance vs using a percentile of a sample as cutoff
+    #TODO ask stats people
+    
+    #TODO should also take into account the sample size, e.g. if in some freak case we have only 2 rows in the matrix, we won't be able to tell much this way
+    
+    sample_size = min(len(expression_matrix_), 800)
+    sample = np.random.choice(len(expression_matrix_), sample_size, replace=False) #TODO if replace was missing from old CENV, that's an inaccuracy to note in the changelog
+    sample = expression_matrix_.iloc[sample]
+    sample.sort_index(inplace=True)
+    sample = correlation_function(sample, sample)
+    sample_ = sample.values.copy()
+    nan_count = np.isnan(sample_).sum()
+    np.fill_diagonal(sample_, np.nan)
+    sample_ = sample_[~np.isnan(sample_)].ravel()
+    
+    size = sample.size - len(sample)  # minus the diagonal, as it's not part of sample_
+    if nan_count > .1 * size: # XXX 10% is arbitrary pick
+        logger.warning('Correlation sample of {} contains more than 10% NaN values, specifically {} values out of a sample matrix of {} values are NaN'.format(expression_matrix, nan_count, size))
+    
+    # Return result
+    return sample, np.percentile(sample_, percentile_ranks)
+
+def _std_0_causes_nan(correlation_function):
+    '''
+    A heuristic to see whether the correlation function produces NaN upon zero std functions
+    '''
+    df = pd.DataFrame([[1, 1], [2, 3]], dtype=float)
+    return correlation_function(df, df).isnull().any().any()
 
 def _get_nodes(baits, correlations, gene_families):
     # bait nodes
