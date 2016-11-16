@@ -3,3 +3,6 @@
 -e /home/limyreth/doc/eclipse_workspace/deep_genome_core
 matplotlib
 attrs
+numpy
+pandas
+plumbum

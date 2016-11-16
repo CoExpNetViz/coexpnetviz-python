@@ -44,6 +44,7 @@ setup(
     'extras_require': {   'dev': ['numpydoc', 'sphinx', 'sphinx-rtd-theme'],
                           'test': [   'coverage-pth',
                                       'pytest',
+                                      'pytest-capturelog',
                                       'pytest-cov',
                                       'pytest-env',
                                       'pytest-mock',
@@ -51,7 +52,10 @@ setup(
     'install_requires': [   'attrs',
                             'chicken-turtle-util[sqlalchemy,data_frame,series,algorithms,configuration]',
                             'deep-genome-core',
-                            'matplotlib'],
+                            'matplotlib',
+                            'numpy',
+                            'pandas',
+                            'plumbum'],
     'keywords': 'bioinformatics coexpression guilt-by-association',
     'license': 'LGPL3',
     'long_description': 'TODO\n'
@@ -88,24 +92,38 @@ setup(
                         'Change log\n'
                         '==========\n'
                         '\n'
+                        'Starting with v5.0.0, `semantic versioning`_ is used.\n'
+                        '\n'
                         'v5.0.0\n'
                         '------\n'
+                        '\n'
+                        'TODO See current output file and compare to what we have here to get an idea\n'
+                        '\n'
+                        'output files (renamed and added)\n'
+                        '\n'
+                        'log file\n'
+                        '\n'
+                        'changed CLI:\n'
+                        '# --baits-file -> --baits; --correlation-method -> --correlation-function; '
+                        '--lower-percentile-rank, --upper-percentile-rank -> --percentile-ranks\n'
+                        '# --configuration {conf file} instead of --database-*\n'
+                        '\n'
+                        '# output file names changed: *.sim_mat.txt -> *.correlations.txt; *.corr_sample_histogram.png '
+                        '-> *.sample_histogram.png; *.corr_sample_cdf.png -> *.sample_cdf.png\n'
+                        '# files added: *.sample_matrix.txt\n'
                         '\n'
                         '- \n'
                         '- Added tests increasing coverage from 0% to TODO%\n'
                         '\n'
                         'Older versions\n'
                         '--------------\n'
-                        'No change log\n',
+                        'No change log\n'
+                        '\n'
+                        '.. _semantic versioning: http://semver.org/spec/v2.0.0.html',
     'name': 'deep-genome-coexpnetviz',
     'package_data': {   'deep_genome.coexpnetviz': [   'data/README.txt',
                                                        'data/coexpnetviz_style.xml',
-                                                       'data/todo_cli.defaults.conf'],
-                        'deep_genome.coexpnetviz.tests': [   'data/test_share_2_baits/Eggplant.txt',
-                                                             'data/test_share_2_baits/Orth.txt',
-                                                             'data/test_share_2_baits/TODO',
-                                                             'data/test_share_2_baits/Tomato.txt',
-                                                             'data/test_share_2_baits/baits.txt']},
+                                                       'data/todo_cli.defaults.conf']},
     'packages': ['deep_genome', 'deep_genome.coexpnetviz', 'deep_genome.coexpnetviz.tests'],
     'url': 'https://gitlab.psb.ugent.be/deep_genome/coexpnetviz.git',
     'version': '0.0.0'}

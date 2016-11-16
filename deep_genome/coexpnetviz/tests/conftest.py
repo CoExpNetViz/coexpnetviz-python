@@ -12,9 +12,13 @@ initialise()
 
 # TODO test_conf, cli_test_args, context fixture, session fixture, database (db) fixture are all recurring things across all the algos. Maybe add a core.test with util
 
+@pytest.fixture()
+def test_conf_path(pytestconfig):
+    return Path(str(pytestconfig.rootdir / 'test.conf'))
+
 @pytest.yield_fixture
-def context(pytestconfig):
-    context = Context(Path(str(pytestconfig.rootdir / 'test.conf')))
+def context(test_conf_path):
+    context = Context(test_conf_path)
     yield context
     context.dispose()
 

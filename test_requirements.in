@@ -4,3 +4,4 @@ pytest-xdist
 pytest-cov
 coverage-pth
 pytest-mock
+pytest-capturelog
