@@ -17,3 +17,4 @@ last_test_runs
 dist
 .cache
 test.conf
+py.test_midas
