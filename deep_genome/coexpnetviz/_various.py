@@ -63,11 +63,11 @@ correlation_edges : pd.DataFrame(dict(bait_node=[node_id :: int], node=[node_id 
     ``max(correlation(any bait, gene))``. There are no self edges
     (``bait_node==node``), no synonymous edges (one edge being the same as another
     edge when swapping `bait_node` and `node`) and no duplicates.
-significant_correlations : pd.DataFrame(dict(bait=[Gene], gene=[Gene], correlation=[float]))
+significant_correlations : pd.DataFrame({'bait' => [Gene], 'gene' => [Gene], 'correlation' => [float]})
     Gene correlations after percentile-based cut-off. There are no self edges
     (``bait==gene``), no synonymous edges (one edge being the same as another edge
     when swapping `bait` and `gene`) and no duplicates.
-samples : (pd.DataFrame([[correlation :: float]]), ...)
+samples : (pd.DataFrame([[correlation :: float]], index=[Gene], columns=[Gene]), ...)
     ``samples[i]`` is the correlation matrix derived from a sample of
     ``expression_matrices[i]`` and was used to generate ``percentiles[i]``. Its
     `columns` and `index` are a subset of `expression_matrices[i].index` and

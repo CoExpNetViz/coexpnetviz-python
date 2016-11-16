@@ -27,7 +27,7 @@ import attr
 
 logger = logging.getLogger(__name__)
 
-# TODO refactor: inplace does not necessarily improve performance. Remove unnecessary use of inplace. Check performance before vs after though, manually, couple of reruns; or simply check it remains acceptable
+# TODO refactor: inplace does not necessarily improve performance. Remove unnecessary use of inplace.
 # TODO XXX is higher priority than TODO, so s/XXX/TODO or something low priority
 
 def create_network(baits, expression_matrices, gene_families, correlation_function=correlation.pearson_df, percentile_ranks=(5, 95)):
@@ -337,16 +337,3 @@ def _get_correlation_edges(nodes, correlations):
         return correlations
     else:
         return pd.DataFrame(columns=('bait_node', 'node', 'max_correlation'))
-    
-#TODO for the cli:
-#
-# import matplotlib.pyplot as plt
-#     for network.samples, network.percentiles:
-#         # Save a histogram
-#         plt.clf()
-#         pd.Series(sample).plot.hist(bins=30)
-#         plt.title('Correlations between sample of {} genes in exp-mat'.format(sample_size))
-#         plt.xlabel(correlation_function.__name__)
-#         plt.savefig('{}.corr_sample_histogram.png'.format(expression_matrix.name))
-#     for network.correlation_matrices:
-#         corrs.to_string(expression_matrix.name + '.sim_mat.txt')
