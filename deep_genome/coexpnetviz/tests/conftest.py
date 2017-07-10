@@ -5,8 +5,8 @@ from deep_genome.coexpnetviz import initialise
 from pathlib import Path
 
 # http://stackoverflow.com/a/30091579/1031434
-from signal import signal, SIGPIPE, SIG_DFL
-signal(SIGPIPE, SIG_DFL) # Ignore SIGPIPE
+from signal import signal, SIGPIPE, SIG_IGN
+signal(SIGPIPE, SIG_IGN) # Ignore SIGPIPE
 
 initialise()
 
