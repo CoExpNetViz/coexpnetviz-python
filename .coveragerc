@@ -1,3 +1,4 @@
 [run]
-omit = deep_genome/coexpnetviz/tests/*
-
+omit =
+    coexpnetviz/tests/*
+    venv/*

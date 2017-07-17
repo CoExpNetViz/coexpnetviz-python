@@ -1,25 +1,25 @@
 # Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
-# 
-# This file is part of Deep Genome.
-# 
-# Deep Genome is free software: you can redistribute it and/or modify
+#
+# This file is part of CoExpNetViz.
+#
+# CoExpNetViz is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
-# Deep Genome is distributed in the hope that it will be useful,
+#
+# CoExpNetViz is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Lesser General Public License
-# along with Deep Genome.  If not, see <http://www.gnu.org/licenses/>.
+# along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
 import pandas as pd
 import numpy as np
-from chicken_turtle_util import series as series_, data_frame as df_
-from deep_genome.coexpnetviz._various import Network, MutableNetwork, NodeType, get_distinct_colours, RGB
-from deep_genome.core import correlation
+from pytil import data_frame as df_
+from coexpnetviz._various import Network, MutableNetwork, NodeType, get_distinct_colours, RGB
+from varbio import correlation
 from itertools import product
 from textwrap import dedent
 import logging
@@ -33,19 +33,19 @@ logger = logging.getLogger(__name__)
 def create_network(baits, expression_matrices, gene_families, correlation_function=correlation.pearson_df, percentile_ranks=(5, 95)):
     '''
     Create a comparative co-expression network
-    
+
     Parameters
     ----------
-    baits : pd.Series([deep_genome.core.database.entities.Gene])
+    baits : pd.Series([gene :: str])
         Genes to which all genes are compared
-    expression_matrices : Sequence(deep_genome.coexpnetviz.ExpressionMatrix)
+    expression_matrices : Sequence(coexpnetviz.ExpressionMatrix)
         Gene expression matrices containing at least one bait
     gene_families : pd.DataFrame({'family' => [str], 'gene' => [Gene]})
         Gene families (to make family nodes with)
     correlation_function
         A vectorised correlation function with DataFrame input/output. The
         expected function is exactly like
-        :func:`deep_genome.core.correlation.generic_df` with a `correlation_function`
+        :func:`varbio.core.correlation.generic_df` with a `correlation_function`
         already applied.
     percentile_ranks : array_like(lower :: float, upper :: float)
         Percentile ranks to use as cutoff. For each matrix, 2 percentiles are
@@ -55,7 +55,7 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
         constructing a correlation matrix of all vs all genes in the sample and
         forming a distribution with all the correlations of the correlation
         matrix.
-        
+
     Returns
     -------
     Network
@@ -64,11 +64,11 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
         with a bait. Similarly, only gene nodes which correlate with a bait are included.
     '''
     network = MutableNetwork(None, None, None, None, samples=[], percentiles=[], correlation_matrices=[])
-    
+
     # Validate baits (more complex validate below)
     if baits.empty:
         raise ValueError('Must specify at least one bait, got: {}'.format(baits))
-    
+
     # Validate percentile ranks
     percentile_ranks = np.array(percentile_ranks)
     out_of_bounds = (percentile_ranks < 0) | (percentile_ranks > 100)
@@ -76,20 +76,22 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
         raise ValueError('Percentile ranks must be in range of [0, 100], got: {}'.format(percentile_ranks))
     if percentile_ranks[0] > percentile_ranks[1]:
         raise ValueError('Lower percentile rank must be less or equal to upper percentile rank, got: {}'.format(percentile_ranks))
-    
+
     # Validate expression_matrices
     if not expression_matrices:
         raise ValueError('Must provide at least one expression matrix, got: {}'.format(expression_matrices))
-    
+    names = [matrix.name for matrix in expression_matrices]
+    if len(expression_matrices) != len(set(names)):
+        raise ValueError('Expression matrices must have unique name, got: {}'.format(sorted(names)))
+
     # Check each bait occurs in exactly one matrix
     bait_presence = np.array([bait in matrix.data.index for matrix, bait in product(expression_matrices, baits)])
     bait_presence = bait_presence.reshape(len(expression_matrices), len(baits))
     missing_bait_matrix = pd.DataFrame(bait_presence, index=expression_matrices, columns=baits).loc[:,bait_presence.sum(axis=0) != 1]
     if not missing_bait_matrix.empty:
         missing_bait_matrix = missing_bait_matrix.applymap(lambda x: 'present' if x else 'absent')
-        missing_bait_matrix.index = missing_bait_matrix.index.map(lambda x: x.name)
+        missing_bait_matrix.index = missing_bait_matrix.index.map(lambda matrix: matrix.name)
         missing_bait_matrix.index.name = 'Matrix name'
-        missing_bait_matrix.columns = missing_bait_matrix.columns.map(lambda gene: gene.name)
         missing_bait_matrix.columns.name = 'Gene name'
         raise ValueError(dedent('''\
             Each of the following baits is either missing from all or present in
@@ -101,7 +103,7 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
             multiple matrices have multiple "present" values in a column.''')
             .format(missing_bait_matrix.to_string())
         )
-    
+
     # and each matrix has at least one bait
     is_baitless = bait_presence.sum(axis=1) == 0
     if is_baitless.any():
@@ -113,7 +115,7 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
             'Either drop the matrices or add some of their genes to the baits list.'
             .format(matrices)
         )
-        
+
     # Check the matrices don't overlap (same gene in multiple matrices)
     all_genes = pd.Series(sum((list(matrix.data.index) for matrix in expression_matrices), []))
     overlapping_genes = all_genes[all_genes.duplicated()]
@@ -122,14 +124,14 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
             'The following genes appear in multiple expression matrices: {}. '
             'CoExpNetViz does not support gene expression data from different matrices for the same gene. '
             'Please remove rows from the given matrices such that no gene appears in multiple matrices.'
-            .format(', '.join(x.name for x in overlapping_genes))
+            .format(', '.join(overlapping_genes))
         )
-        
+
     # Calculate correlations
     correlations = []
     for expression_matrix in expression_matrices:
         expression_matrix_ = expression_matrix.data
-        
+
         # Remove rows with no variance if using a correlation function that yields nan for it
         # Note: we only drop the absolutely necessary so that the user can
         # choose how to clean the expression matrices instead of the algorithm
@@ -139,7 +141,7 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
             tiny_stds = expression_matrix_.std(axis=1) < np.finfo(float).tiny
             rows_dropped = sum(tiny_stds)
             if rows_dropped:
-                expression_matrix_ = expression_matrix_[~tiny_stds]  
+                expression_matrix_ = expression_matrix_[~tiny_stds]
                 logger.warning(
                     'Dropped {} out of {} rows from {} due to having (near) 0 standard deviation. '
                     'These rows have a NaN correlation with any other row.'
@@ -151,56 +153,56 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
                         'Please check the expression matrix for errors or drop it from the input.'
                         .format(expression_matrix)
                     )
-        
+
         # Get cutoffs
         sample, percentiles = _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, percentile_ranks)
         network.samples.append(sample)
         network.percentiles.append(tuple(percentiles))
         lower_cutoff, upper_cutoff = percentiles
-        
+
         # Baits present in matrix
         baits_ = expression_matrix_.loc[baits].dropna()
-        
+
         # Correlation matrix
         corrs = correlation_function(expression_matrix_, baits_)
         corrs.index.name = None
         corrs.columns.name = None
         network.correlation_matrices.append(corrs)
-        
+
         # Apply cutoff
         corrs = corrs[(corrs <= lower_cutoff) | (corrs >= upper_cutoff)]
         corrs.dropna(how='all', inplace=True)  # TODO not sure if aids performance. If not, this is unnecessary
-        
+
         # Reformat to relational (DB) format
         corrs.index.name = 'gene'
         corrs.reset_index(inplace=True)
         corrs = pd.melt(corrs, id_vars=['gene'], var_name='bait', value_name='correlation')
         corrs.dropna(subset=['correlation'], inplace=True)
         correlations.append(corrs)
-    
+
     network.samples = tuple(network.samples)
     network.percentiles = tuple(network.percentiles)
     network.correlation_matrices = tuple(network.correlation_matrices)
     correlations = pd.concat(correlations)
     correlations = correlations[correlations['bait'] < correlations['gene']]  # drop self comparisons
     correlations = correlations.reindex(columns=('bait', 'gene', 'correlation'))
-    
+
     # Format as Network
     network.significant_correlations = correlations
     network.nodes = _get_nodes(baits, correlations, gene_families)
     network.homology_edges = _get_homology_edges(network.nodes)
     network.correlation_edges = _get_correlation_edges(network.nodes, correlations)
-    
+
     return Network(**attr.asdict(network))
 
 def _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, percentile_ranks):
     '''
     Get upper and lower correlation cutoffs for coexpnetviz
-    
+
     Takes the 5th and 95th percentile of a sample similarity matrix of
     `expression_matrix`, returning these as the lower and upper cut-off
     respectively.
-    
+
     Parameters
     ----------
     expression_matrix : Expressionmatrix
@@ -208,7 +210,7 @@ def _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, pe
         exp mat data
     correlation_function
         Vectorised correlation function with DataFrame input/output
-    
+
     Returns
     -------
     sample : pd.DataFrame
@@ -221,9 +223,9 @@ def _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, pe
     #
     # Before that, take a step back and compare some form of significance vs using a percentile of a sample as cutoff
     #TODO ask stats people
-    
+
     #TODO should also take into account the sample size, e.g. if in some freak case we have only 2 rows in the matrix, we won't be able to tell much this way
-    
+
     sample_size = min(len(expression_matrix_), 800)
     sample = np.random.choice(len(expression_matrix_), sample_size, replace=False) #TODO if replace was missing from old CENV, that's an inaccuracy to note in the changelog
     sample = expression_matrix_.iloc[sample]
@@ -233,11 +235,11 @@ def _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, pe
     nan_count = np.isnan(sample_).sum()
     np.fill_diagonal(sample_, np.nan)
     sample_ = sample_[~np.isnan(sample_)].ravel()
-    
+
     size = sample.size - len(sample)  # minus the diagonal, as it's not part of sample_
     if nan_count > .1 * size: # XXX 10% is arbitrary pick
         logger.warning('Correlation sample of {} contains more than 10% NaN values, specifically {} values out of a sample matrix of {} values are NaN'.format(expression_matrix, nan_count, size))
-    
+
     # Return result
     return sample, np.percentile(sample_, percentile_ranks)
 
@@ -256,12 +258,12 @@ def _get_nodes(baits, correlations, gene_families):
     bait_nodes['type'] = NodeType.bait
     bait_nodes = pd.merge(bait_nodes, gene_families, left_on='genes', right_on='gene', how='left')
     del bait_nodes['gene']
-    bait_nodes['label'] = bait_nodes['genes'].apply(lambda gene: gene.name)
+    bait_nodes['label'] = bait_nodes['genes']
     bait_nodes['genes'] = bait_nodes['genes'].apply(lambda gene: frozenset({gene}))
     bait_nodes['colour'] = [RGB((255, 255, 255))] * len(bait_nodes)
     bait_nodes['partition_id'] = hash(frozenset())
     assert not bait_nodes.empty
-    
+
     # other nodes
     correlations = correlations[~correlations['gene'].isin(baits)].copy()  # no baits
     if not correlations.empty:
@@ -270,7 +272,7 @@ def _get_nodes(baits, correlations, gene_families):
         orphans = correlations[correlations['family'].isnull()].copy()
         correlations.dropna(inplace=True)  # no orphans
         nodes = []
-        
+
         # family nodes
         if not correlations.empty:
             family_nodes = correlations.groupby('family')[['bait','gene']].agg(lambda x: frozenset(x)).reset_index()
@@ -278,20 +280,20 @@ def _get_nodes(baits, correlations, gene_families):
             family_nodes['type'] = NodeType.family
             family_nodes['label'] = family_nodes['family']
             nodes.append(family_nodes)
-        
+
         # gene nodes
         if not orphans.empty:
             orphans = orphans.groupby('gene')[['bait']].agg(lambda x: frozenset(x)).reset_index()
             orphans.columns = ('gene', 'baits')
-            orphans['label'] = orphans['gene'].apply(lambda gene: gene.name)
+            orphans['label'] = orphans['gene']
             orphans['type'] = NodeType.gene
             orphans['genes'] = orphans['gene'].apply(lambda gene: frozenset({gene}))
             orphans.drop('gene', axis=1, inplace=True)
             nodes.append(orphans)
-        
+
         # concat gene and family nodes
         nodes = pd.concat(nodes, ignore_index=True)
-        
+
         # partitions and colours
         nodes['partition_id'] = nodes['baits'].apply(hash)
         nodes.drop('baits', axis=1, inplace=True)
@@ -300,17 +302,17 @@ def _get_nodes(baits, correlations, gene_families):
         colours = np.random.permutation([RGB.from_float(x) for x in colours])  # shuffle the colours so distinct colours are less likely to be put next to each other
         partitions['colour'] = colours
         nodes = pd.merge(nodes, partitions, on='partition_id')
-        
+
         # concat bait nodes to other nodes
         nodes = pd.concat((nodes, bait_nodes), ignore_index=True)
     else:
         nodes = bait_nodes
-    
+
     # assign ids
     nodes.index.name = 'id'
     nodes.reset_index(inplace=True)
     nodes = nodes.reindex(columns=('id', 'label', 'type', 'genes', 'family', 'colour', 'partition_id'))
-    
+
     return nodes
 
 def _get_homology_edges(nodes):
@@ -320,7 +322,7 @@ def _get_homology_edges(nodes):
     del homology_edges['family']
     homology_edges = homology_edges[homology_edges['bait_node1'] < homology_edges['bait_node2']].copy()
     return homology_edges
-    
+
 def _get_correlation_edges(nodes, correlations):
     if not correlations.empty:
         correlations = correlations.copy()

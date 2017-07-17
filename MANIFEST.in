@@ -1,3 +1,1 @@
-recursive-include docs *
-recursive-exclude docs/build *
-include README.rst
+include LICENSE.txt
