@@ -19,9 +19,28 @@ from varbio import parse
 from pytil import data_frame as df_
 import pandas as pd
 
+def baits(reader):
+    '''
+    Parse baits file
+
+    TODO refer to file formats
+
+    Parameters
+    ----------
+    reader : file object
+        Text reader whose content is a baits file
+
+    Returns
+    -------
+    pd.Series([gene :: str])
+    '''
+    return pd.Series(reader.read().replace(',', ' ').split())
+
 def gene_families(reader, name_index=0):
     '''
-    Import gene families file into database
+    Parse gene families file
+
+    TODO refer to file formats
 
     Parameters
     ----------
