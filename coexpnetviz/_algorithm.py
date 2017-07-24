@@ -229,7 +229,7 @@ def _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, pe
     sample_size = min(len(expression_matrix_), 800)
     sample = np.random.choice(len(expression_matrix_), sample_size, replace=False) #TODO if replace was missing from old CENV, that's an inaccuracy to note in the changelog
     sample = expression_matrix_.iloc[sample]
-    sample.sort_index(inplace=True)
+    sample = sample.sort_index()
     sample = correlation_function(sample, sample)
     sample_ = sample.values.copy()
     nan_count = np.isnan(sample_).sum()
