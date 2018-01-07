@@ -1,30 +1,18 @@
-Command line interface guide
-============================
+Command line interface documentation
+====================================
+Please first read the :doc:`general description of CoExpNetViz <general>`, then
+we'll get into the specifics of this interface below.
 
-If you have not installed the ``deep-genome-coexpnetviz`` package yet, please
-follow the `installation instructions`_ first.
+To use the CLI, first install the CoExpNetViz PyPI package with `pip`_ by
+running ``pip install --user coexpnetviz`` on the command line.
 
-Further install/setup
----------------------
-The CLI requires a MySQL database for gene information. To create the database,
-either use phpMyAdmin (if available) or connect to your server using ``mysql
--h $DATABASE_HOST -u $DATABASE_USER -p``. Then run the
-CREATE db, you can choose name
-CREATE user (no create/grant if default user works fine)
-GRANT permission to the user on db
+A full list of options can be obtained by running ``coexpnetviz --help``.
 
-Next, we configure CoExpNetViz to use the database we just created by writing a
-configuration file ``~/?/TODO`` containing::
+Let us run CoExpNetViz on the example data with the API. First `download the
+example data <example data_>`_ and unpack it. Inside the unpacked
+``coexpnetviz_example`` directory, run ``coexpnetviz --baits
+baits_two_species.txt -e arabidopsis_dataset.txt -e tomato_dataset.txt``. This
+creates a new directory ``output`` with all output.
 
-    contents
-
-.. TODO Test this on our system with dev and final version
-
-With this, CoExpNetViz is all set up.
-
-For reference, a full list of options can be obtained by running ``coexpnetviz
---help``. We will now walk through an example of its usage.
-
-TODO usage example
-
-.. _installation instructions: installation.html
+.. _pip: https://pip.pypa.io/en/stable/quickstart/
+.. _example data: http://bioinformatics.psb.ugent.be/webtools/coexpr/index.php?__controller=ui&__action=get_example_files

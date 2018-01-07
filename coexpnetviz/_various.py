@@ -16,113 +16,165 @@
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
 from enum import Enum
+from math import floor, sqrt
 import numpy as np
-from numpy.linalg import norm
-from pytil.algorithms import spread_points_in_hypercube
 import attr
 
 _network_attrs = ('nodes', 'homology_edges', 'correlation_edges', 'significant_correlations', 'samples', 'percentiles', 'correlation_matrices')
 Network = attr.make_class('Network', _network_attrs, frozen=True)
-'''
-Network (aka a graph) result of CoExpNetViz
+Network.__doc__ = '''
+    Network (aka a graph) result of CoExpNetViz.
 
-Attributes
-----------
-nodes : pd.DataFrame
-    The data frame's columns are:
+    Parameters
+    ----------
+    nodes : ~pandas.DataFrame
+        Nodes of the network as a data frame with the following columns:
 
-    id : int
-        Unique node id.
-    label : str
-        Short description of the node. Labels are unique (but often don't make
-        legal identifiers, e.g. they may contain spaces).
-    type : NodeType
-        The type of the node.
-    genes : frozenset({str})
-        If a bait node, the bait gene. If a family node, each gene of the family
-        that correlates with a bait. If a gene node, the gene, which correlates
-        with a bait.
-    family : str or null
-        If a bait node, family name which the bait gene is part of, if any. If a
-        family node, the corresponding family name. Else, null (`np.nan` or ``None``).
-    colour : RGB
-        Colour of the node
-    partition_id : int
-        Partition id. Bait nodes form a partition. Other nodes are partitioned
-        according to the subset of baits they correlate with.
+        id
+            `int` -- unique node id.
+        label
+            `str` -- short description of the node. Labels are unique (but often
+            don't make legal identifiers, e.g. they may contain spaces).
+        type
+            `NodeType` -- the type of the node.
+        genes
+            :py:class:`~typing.FrozenSet` of `str` -- if a bait node, the bait gene. If a family node,
+            each gene of the family that correlates with a bait. If a gene node,
+            the gene, which correlates with a bait.
+        family
+            `str` or `None` -- if a bait node, family name which the bait
+            gene is part of, if any. If a family node, the corresponding family
+            name. Else, `None`.
+        colour
+            `RGB` -- colour of the node.
+        partition_id
+            `int` -- partition id. Bait nodes form a partition. Other nodes are
+            partitioned according to the subset of baits they correlate with.
 
-    Each Gene is assigned to at most 1 node.
+        Each gene is assigned to at most 1 node.
 
-homology_edges : pd.DataFrame(dict(bait_node1=[node_id :: int], bait_node2=[node_id :: int]))
-    Homology edges indicating homologous baits. There are no self edges
-    (``bait_node1==bait_node2``), no synonymous edges (one edge being the same as another edge
-    when swapping `bait_node1` and `bait_node2`) and no duplicates.
-correlation_edges : pd.DataFrame(dict(bait_node=[node_id :: int], node=[node_id :: int], max_correlation=[float]))
-    Correlation edges between bait nodes and between bait and family nodes.
-    `max_correlation` is the the correlation of the gene of the family with
-    ``max(correlation(any bait, gene))``. There are no self edges
-    (``bait_node==node``), no synonymous edges (one edge being the same as another
-    edge when swapping `bait_node` and `node`) and no duplicates.
-significant_correlations : pd.DataFrame({'bait' => [str], 'gene' => [str], 'correlation' => [float]})
-    Gene correlations after percentile-based cut-off. There are no self edges
-    (``bait==gene``), no synonymous edges (one edge being the same as another edge
-    when swapping `bait` and `gene`) and no duplicates.
-samples : (pd.DataFrame([[correlation :: float]], index=[gene :: str], columns=[gene :: str]), ...)
-    ``samples[i]`` is the correlation matrix derived from a sample of
-    ``expression_matrices[i]`` and was used to generate ``percentiles[i]``. Its
-    `columns` and `index` are a subset of `expression_matrices[i].index` and
-    ``columns.equals(index)``.
-percentiles : ((lower_percentile :: float, upper_percentile :: float), ...)
-    ``percentiles[i]`` are the percentiles used as cutoff on
-    ``correlation_matrices[i]``.
-correlation_matrices : (pd.DataFrame([[correlation :: float]], columns=baits, index=expression_matrices[i].index), ...)
-    ``correlation_matrices[i]`` is the correlation matrix derived from
-    ``expression_matrices[i]`` before any values have been cut off.
+    homology_edges : ~pandas.DataFrame
+        Homology edges indicating homologous baits. There are no self edges
+        (``bait_node1==bait_node2``), no synonymous edges (one edge being the
+        same as another edge when swapping ``bait_node1`` and ``bait_node2``) and no
+        duplicates.
 
-See also
---------
-coexpnetviz : Create a comparative coexpression network
-'''
+        The data frame has the following columns:
+
+        bait_node1
+            `int` -- Node id of the first bait of the edge.
+        bait_node2
+            `int` -- Node id of the other bait of the edge.
+
+    correlation_edges : ~pandas.DataFrame
+        Correlation edges between bait nodes and all nodes (including baits again).
+        There are no self edges (``bait_node==node``), no synonymous edges (one
+        edge being the same as another edge when swapping ``bait_node`` and
+        ``node``) and no duplicates.
+
+        The data frame has the following columns:
+
+        bait_node
+            `int` -- Node id of the bait of the edge.
+        node
+            `int` -- Node id of the other node (of any type) of the edge.
+        max_correlation
+            `float` -- If node is a family node, the highest of all correlations
+            between bait and family genes (``max(correlation(bait, gene) for
+            gene in family)``). Otherwise, simply the correlation between the
+            bait gene and the gene of the other node.
+
+    significant_correlations : ~pandas.DataFrame
+        Gene correlations after percentile-based cut-off. There are no self edges
+        (``bait==gene``), no synonymous edges (one edge being the same as another edge
+        when swapping ``bait`` and ``gene``) and no duplicates.
+
+        The data frame has the following columns:
+
+        bait
+            `str` -- Bait gene.
+        gene
+            `str` -- Correlating gene (can be a bait as well).
+        correlation
+            `float` -- Correlation between ``bait`` and ``gene``.
+
+    samples : ~typing.Tuple[~pandas.DataFrame]
+        ``samples[i]`` is the correlation matrix derived from a sample of
+        ``expression_matrices[i]`` (referring to the argument given to
+        `create_network`) and was used to generate ``percentiles[i]``. Its
+        columns and index are a subset of ``expression_matrices[i].index`` and
+        ``columns.equals(index)``. Each data frame's is a matrix of correlations
+        of type `float`, its index and columns are genes of type `str`.
+
+    percentiles : ~typing.Tuple[float, float]
+        ``percentiles[i]`` are the lower and upper percentiles, respectively,
+        used as cutoff on ``correlation_matrices[i]``.
+
+    correlation_matrices : ~typing.Tuple[~pandas.DataFrame]
+        ``correlation_matrices[i]`` is the correlation matrix derived from
+        ``expression_matrices[i]`` before any values have been cut off. Each
+        data frame's is a matrix of correlations of type `float`, its columns
+        are bait genes of type `str`, its index are genes of type `str`.
+
+    See also
+    --------
+    create_network : Create a comparative coexpression network.
+    '''
 
 MutableNetwork = attr.make_class('MutableNetwork', _network_attrs)  # internal class
 
 class NodeType(Enum):
+
     '''
-    Type of a node in a Network.
+    Type of a node in a `Network`.
 
     Bait nodes represent a bait gene. Family nodes represent the genes of the family
     that correlate with a bait. Gene nodes represent a non-bait gene that has no
     family but does correlate with a bait.
     '''
+
     bait = 'bait'
     family = 'family'
     gene = 'gene'
 
-class RGB(object): #TODO somewhere someone must have written some color classes before in Python
+class RGB(object):
 
     '''
-    Color as red green blue sequence color components
+    Colour as sequence of red, green, blue colour components.
 
-    Each component is an integer in the range of [0, 255].
+    Each component is an integer between 0 and 255, inclusive. The class is
+    immutable.
+
+    Parameters
+    ----------
+    rgb : ~pytil.numpy.ArrayLike[int]
+
+    Attributes
+    ----------
+    r : int
+        Red colour component.
+    g : int
+        Green colour component.
+    b : int
+        Blue colour component.
     '''
+
     def __init__(self, rgb):
-        '''
-        Parameters
-        ----------
-        rgb : array-like
-        '''
         self._rgb = np.array(rgb)
         if ((self._rgb < 0) | (self._rgb > 255)).any():
-            raise ValueError('Invalid color component value(s). Given rgb: {}'.format(self._rgb))
+            raise ValueError('Invalid colour component value(s). Given rgb: {}'.format(self._rgb))
         if self._rgb.dtype != int:
-            raise ValueError('Color component value(s) must be int. Given values have type {}'.format(self._rgb.dtype))
+            raise ValueError('Colour component value(s) must be int. Given values have type {}'.format(self._rgb.dtype))
 
     @staticmethod
     def from_float(rgb):
         '''
+        Create RGB from float array-like.
+
         Parameters
         ----------
-        rgb : array-like
+        rgb : ~pytil.numpy.ArrayLike[float]
+            ``(red, green, blue)`` array with values between 0 and 1.
         '''
         rgb = np.array(rgb)
         if ((rgb < 0.0) | (rgb > 1.0)).any():
@@ -154,73 +206,108 @@ class RGB(object): #TODO somewhere someone must have written some color classes 
         return repr(self)
 
     def to_hex(self):
+        '''
+        Hex formatted colour, i.e. ``#RRGGBB``.
+        '''
         return '#{:02x}{:02x}{:02x}'.format(*self._rgb)
 
-# # TODO get_distinct_colours based on YUV as to get the most visually distinct colours (instead of simply most distinct/orthogonal RGB values)
-# # See https://en.wikipedia.org/wiki/YUV#HDTV_with_BT.601
-# _yuv_to_rgb = np.matrix([
-#     [1, 0, 1.28033],
-#     [1, -0.21482, -0.38059],
-#     [1, 2.12798, 0]
-# ]).T
-# 
-# def yuv_to_rgb(yuv):
-#     '''
-#     HDTV-Y'UV point to RGB color point
-#     
-#     Note that not all YUV values between [0,0,0] and [1,1,1] map to valid rgb
-#     values (i.e. some fall outside the [0,1] range) (see p30 http://www.compression.ru/download/articles/color_space/ch03.pdf)
-#     
-#     Parameters
-#     ----------
-#     yuv : array-like
-#         An (n,3) shaped array. YUV point per row.
-#     
-#     Returns
-#     -------
-#     array-like
-#         RGB point per row.
-#     '''
-#     return yuv * _yuv_to_rgb
+# Convert HDTV Y'UV to RGB. See http://www.equasys.de/colorconversion.html
+_yuv_to_rgb = np.matrix([
+    [1, 0, 1.14],
+    [1, -0.395, -0.581],
+    [1, 2.032, 0]
+]).T
 
-def get_distinct_colours(n):
+def distinct_colours(n):
     '''
-    Get `n` most distinguishably colours as perceived by human vision.
+    Get n approximately most distinguishable colours as perceived by human vision.
 
-    No returned colour is entirely black, nor entirely white.
+    Colours close to white or black are excluded.
 
-    Based on: http://stackoverflow.com/a/30881059/1031434
+    Parameters
+    ----------
+    n : int
+        Number of colours to return.
 
     Returns
     -------
-    np.array(shape=(n, 3))
-        n raw RGB float colours
-    ''' 
-    points = spread_points_in_hypercube(n+2, 3)
-    lightest = norm(points, axis=1).argmax()
-    darkest = norm(points - np.array([1,1,1]), axis=1).argmax()
-    points = np.delete(points, np.array([lightest,darkest]), axis=0)
-    return points
-    # TODO use CIEDE2000 or the simpler CMC l:c.
-    # https://en.wikipedia.org/wiki/Color_difference
-    # The trick lies in
-    # intersecting a regular space to the part of the color space that maps back
-    # to valid rgb values and hoping you are left with enough points.
-#     # TODO to avoid black or white, scale down the Y component to [0.1, 0.9]
-#     return yuv_to_rgb(points)
+    ~pytil.numpy.ArrayLike[float]
+        ``(n, 3)`` shaped array of RGB colours as rows.
 
-#TODO name validation (see deleted code)
-# here: non-empty str, no \0 chars
+    Notes
+    -----
+    - Other approaches `<http://stackoverflow.com/a/30881059/1031434>`_.
+    - YUV conversion info: http://www.equasys.de/colorconversion.html. When
+      transforming RGB to YUV, the result is not a cube as the link seems to
+      suggest, it's actually a parallelepiped.
+    - Distance in YUV is perceptional distance in humans, making it ideal for
+      finding a set of most visually distinct colours.
+    - YUV = Y'UV
+    - Y C_r C_b is not the same as YUV. It uses integers, shifted by an amount,
+      while YUV are floats using the whole space.
+    '''
+    # YUV extrema in which we'll generate points
+    yuv_extrema = np.array([
+        # min max
+        [.4, .8],  # y, limited range to eliminate too dark/bright colours
+        [-.436, .436],  # u, limited to values for which a y,v exists that yields a valid RGB
+        [-.615, .615]  # v, limited to values for which a y,u exists that yields a valid RGB
+    ])
+
+    # Volume of the YUV cube we generate points in
+    yuv_volume = np.prod(yuv_extrema[:,1] - yuv_extrema[:,0])
+
+    # Volume of the RGB cube mapped into YUV space, i.e. a parallelepiped
+    mapped_rgb_volume = .2357
+
+    # Estimate number of points to generate in YUV cube to have enough that map to RGB
+    yuv_points = n / mapped_rgb_volume * yuv_volume
+
+    # Derive initial number of points to place per side of the 3D YUV grid to
+    # generate
+    side = np.ceil(yuv_points**(1/3))
+
+    # Generate grids, increasing side each time, until its RGB mapping has at least
+    # n valid points
+    random = np.random.RandomState(seed=0)  # be deterministic
+    y_side = max(2, floor(sqrt(n))-1)
+    while True:
+        # Generate YUV points
+        y = np.linspace(*yuv_extrema[0], y_side)
+        u = np.linspace(*yuv_extrema[1], side)
+        v = np.linspace(*yuv_extrema[2], side)
+        yuv = np.array(np.meshgrid(y, u, v)).reshape(3,-1).T
+
+        # Map to RGB
+        rgb = (yuv * _yuv_to_rgb).A
+
+        # Drop invalid points
+        valid_values = (rgb >= 0) & (rgb <= 1)
+        valid_rows = valid_values.all(axis=1)
+        rgb = rgb[valid_rows,:]
+
+        # If enough points, drop extra points by returning a random selection
+        if len(rgb) > n:
+            indices = random.choice(len(rgb), n, replace=False)
+            return rgb[indices]
+
+        # Else, continue with increased side
+        side += 1
+
 @attr.s(frozen=True, repr=False)
 class ExpressionMatrix(object):
 
     '''
+    Gene expression matrix.
+
     Parameters
     ----------
     name : str
-        Unique name of the matrix
-    data : pd.DataFrame({condition_name => [gene_expression :: float]}, index=Index([str], name='gene'))
-        Gene expression data
+        Unique name of the matrix.
+    data : ~pandas.DataFrame
+        Gene expression data. The data frame is a matrix of gene expression of
+        type `float` with genes as index of type `str`. The index is named
+        ``gene``.
     '''
 
     name = attr.ib()
@@ -228,3 +315,14 @@ class ExpressionMatrix(object):
 
     def __repr__(self):
         return 'ExpressionMatrix({!r})'.format(self.name)
+
+    @name.validator
+    def _validate_name(self, _, name):
+        if '\0' in name:
+            raise ValueError('Name must not contain "\0" (nul character)')
+        if not name:
+            raise ValueError('Name must not be empty')
+        if not name.strip():
+            raise ValueError('Name must not be whitespace only')
+        if name != name.strip():
+            raise ValueError('Name must not be surrounded in whitespace')

@@ -16,11 +16,7 @@
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
-CLI and API for generating (Cytoscape) networks of the co-expression
-between a group of genes and all other genes of one or more species;
-optionally, grouping nodes by gene families.
-
-See the README.rst for further information.
+Main classes and functions.
 '''
 
 from coexpnetviz._various import Network, NodeType, RGB, ExpressionMatrix

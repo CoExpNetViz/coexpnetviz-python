@@ -15,14 +15,14 @@ setup_args = dict(
     keywords='bioinformatics coexpression guilt-by-association',
     packages=find_packages(),
     install_requires=[
-        'attrs==16.*',
-        'pytil[sqlalchemy,data_frame,series,algorithms,configuration]==5.*',
-        'varbio',
+        'attrs==17.*',
+        'pytil[data_frame,series,numpy,click,path]==6.*',
+        'varbio==2.*',
         'matplotlib==1.*',
         'numpy==1.*',
         'pandas~=0.19',
         'plumbum~=1.6',
-        'more_itertools==2.*',
+        'more_itertools==3.*',
     ],
     extras_require={
         'dev': [
@@ -33,6 +33,7 @@ setup_args = dict(
             'pytest==3.*',
             'pytest-cov==2.*',
             'pytest-env==0.*',
+            'pytil[test]==6.*',
         ],
     },
     entry_points={'console_scripts': [

@@ -1,14 +1,19 @@
 API reference
 =============
-The API (aplication programmer interface; i.e. a library) consists of a single
-module, ``coexpnetviz``, documented below.
+See also :doc:`varbio's API reference <varbio:api_reference>`.
 
-The API reference makes use of a `type language`_; for example, to
-describe exactly what arguments can be passed to a function.  
+Modules
+-------
 
+.. autosummary::
+
+    coexpnetviz
+    coexpnetviz.parse
+
+Module content overview
+-----------------------
+.. rubric:: coexpnetviz
 .. currentmodule:: coexpnetviz
-.. automodule:: coexpnetviz
-
 .. autosummary::
    :nosignatures:
 
@@ -19,6 +24,19 @@ describe exactly what arguments can be passed to a function.
    RGB
    write_cytoscape
 
+.. rubric:: coexpnetviz.parse
+.. currentmodule:: coexpnetviz.parse
+.. autosummary::
+   :nosignatures:
+
+   baits
+   gene_families
+
+coexpnetviz
+-----------
+.. currentmodule:: coexpnetviz
+.. automodule:: coexpnetviz
+
 .. autofunction:: create_network
 .. autoclass:: ExpressionMatrix
 .. autoclass:: Network
@@ -26,4 +44,6 @@ describe exactly what arguments can be passed to a function.
 .. autoclass:: RGB
 .. autofunction:: write_cytoscape
 
-.. _type language: http://pytil.readthedocs.io/en/5.0.0/type_language.html
+coexpnetviz.parse
+-----------------
+.. automodule:: coexpnetviz.parse

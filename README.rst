@@ -1,4 +1,7 @@
-CoExpNetViz is a comparative co-expression network construction and visualisation tool.
+CoExpNetViz is an algorithm which produces a (Cytoscape) network from a set
+of bait genes, one or more pre-processed gene expression matrices and,
+optionally, a set of gene families. CoExpNetViz is short for comparative
+co-expression network construction and visualisation.
 
 Links
 =====

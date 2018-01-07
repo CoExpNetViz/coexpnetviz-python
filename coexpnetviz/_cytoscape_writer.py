@@ -20,104 +20,108 @@ from pkg_resources import resource_string  # @UnresolvedImport
 from more_itertools import one
 from ._various import NodeType
 
-def write_cytoscape(network, name):
+def write_cytoscape(network, name, output_dir):
     '''
-    Write a cytoscape network
+    Write a Cytoscape network.
 
-    Creates the following files:
+    The outputted network consists of the following files:
 
-    $name.sif
+    {name}.sif
         The network structure: list of nodes and the edges between them.
-    $name.node.attr
-        Node attributes
-    $name.edge.attr
-        Edge attributes
+    {name}.node.attr
+        Node attributes.
+    {name}.edge.attr
+        Edge attributes.
     coexpnetviz_style.xml
-        Style to display the network with
+        Style to display the network with.
 
     Parameters
     ----------
     network : Network
-        The network to write
+        The network to write.
     name : str
         Name of the network.
+    output_dir : ~pathlib.Path
+        Directory to write the network files to. The directory must already
+        exist.
     '''
+    def write_node_attr():
+        nodes = network.nodes.copy()
+
+        # Bait nodes
+        bait_nodes = nodes[nodes['type'] == NodeType.bait]
+        nodes['bait_gene'] = bait_nodes['genes'].apply(one)
+        nodes['families'] = bait_nodes['family']
+
+        # Family/gene nodes
+        family_nodes = nodes[nodes['type'] != NodeType.bait]
+        nodes['family'] = family_nodes['family']
+        nodes['correlating_genes_in_family'] = family_nodes['genes'].apply(lambda genes: ', '.join(sorted(genes)))
+
+        # Gene nodes
+        gene_nodes = nodes[nodes['type'] == NodeType.gene]
+        nodes['family'].update(gene_nodes['correlating_genes_in_family'])
+
+        # Any node
+        nodes['id'] = nodes['id'].apply(_format_node_id)
+        nodes['type'] = nodes['type'].apply(lambda x: 'bait node' if x == NodeType.bait else 'family node')
+        nodes['colour'] = nodes['colour'].apply(lambda x: x.to_hex())
+        nodes['species'] = None
+        del nodes['genes']
+
+        # Write
+        nodes = nodes.reindex(columns=('id', 'label', 'colour', 'type', 'bait_gene', 'species', 'families', 'family', 'correlating_genes_in_family', 'partition_id'))
+        nodes.to_csv(str(output_dir / '{}.node.attr'.format(name)), sep='\t', index=False)
+
+    def write_edge_attr():
+        if network.correlation_edges.empty:
+            return
+        edges = network.correlation_edges.copy()
+        edges.insert(0, 'edge', edges[['bait_node', 'node']].applymap(_format_node_id).apply(lambda nodes: '{} (cor) {}'.format(*nodes), axis=1))
+        del edges['bait_node']
+        del edges['node']
+        edges.to_csv(str(output_dir / '{}.edge.attr'.format(name)), sep='\t', index=False)
+
+    def write_sif():
+        edges = []
+
+        # Bait nodes
+        nodes = network.nodes
+        edges_ = nodes[nodes.type == NodeType.bait]['id'].to_frame('node1')
+        edges.append(edges_)
+
+        # Correlation edges
+        if not network.correlation_edges.empty:
+            edges_ = network.correlation_edges[['bait_node', 'node']].copy()
+            edges_.columns = ('node1', 'node2')
+            edges_['type'] = 'cor'
+            edges.append(edges_)
+
+        # Homology edges
+        if not network.homology_edges.empty:
+            edges_ = network.homology_edges.copy()
+            edges_.columns = ('node1', 'node2')
+            edges_['type'] = 'hom'
+            edges.append(edges_)
+
+        # Concat
+        sif = pd.concat(edges, ignore_index=True)
+        sif = sif.reindex(columns=('node1', 'type', 'node2'))
+        sif[['node1', 'node2']] = sif[['node1', 'node2']].applymap(_format_node_id)
+        sif.to_csv(str(output_dir / '{}.sif'.format(name)), sep='\t', header=False, index=False)
+
     if network.nodes.empty:
         raise ValueError('network.nodes is empty. Cytoscape networks must have at least one node.')
 
-    _write_node_attr(network, name)
-    _write_edge_attr(network, name)
-    _write_sif(network, name)
+    write_node_attr()
+    write_edge_attr()
+    write_sif()
 
     # Copy additional files
     # Note: can't do a plain file copy as resource might be in an egg
-    with open('coexpnetviz_style.xml', 'wb') as f:
-        f.write(resource_string('coexpnetviz', 'data/coexpnetviz_style.xml'))
-
-def _write_node_attr(network, network_name):
-    nodes = network.nodes.copy()
-
-    # bait nodes
-    bait_nodes = nodes[nodes['type'] == NodeType.bait]
-    nodes['bait_gene'] = bait_nodes['genes'].apply(one)
-    nodes['families'] = bait_nodes['family']
-
-    # family/gene nodes
-    family_nodes = nodes[nodes['type'] != NodeType.bait]
-    nodes['family'] = family_nodes['family']
-    nodes['correlating_genes_in_family'] = family_nodes['genes'].apply(lambda genes: ', '.join(sorted(genes)))
-
-    # gene nodes
-    gene_nodes = nodes[nodes['type'] == NodeType.gene]
-    nodes['family'].update(gene_nodes['correlating_genes_in_family'])
-
-    # any node
-    nodes['id'] = nodes['id'].apply(_format_node_id)
-    nodes['type'] = nodes['type'].apply(lambda x: 'bait node' if x == NodeType.bait else 'family node')
-    nodes['colour'] = nodes['colour'].apply(lambda x: x.to_hex())
-    nodes['species'] = None
-    del nodes['genes']
-
-    # write
-    nodes = nodes.reindex(columns=('id', 'label', 'colour', 'type', 'bait_gene', 'species', 'families', 'family', 'correlating_genes_in_family', 'partition_id'))
-    nodes.to_csv('{}.node.attr'.format(network_name), sep='\t', index=False)
-
-def _write_edge_attr(network, network_name):
-    if network.correlation_edges.empty:
-        return
-    edges = network.correlation_edges.copy()
-    edges.insert(0, 'edge', edges[['bait_node', 'node']].applymap(_format_node_id).apply(lambda nodes: '{} (cor) {}'.format(*nodes), axis=1))
-    del edges['bait_node']
-    del edges['node']
-    edges.to_csv('{}.edge.attr'.format(network_name), sep='\t', index=False)
-
-def _write_sif(network, network_name):
-    edges = []
-
-    # bait nodes
-    nodes = network.nodes
-    edges_ = nodes[nodes.type == NodeType.bait]['id'].to_frame('node1')
-    edges.append(edges_)
-
-    # correlation edges
-    if not network.correlation_edges.empty:
-        edges_ = network.correlation_edges[['bait_node', 'node']].copy()
-        edges_.columns = ('node1', 'node2')
-        edges_['type'] = 'cor'
-        edges.append(edges_)
-
-    # homology edges
-    if not network.homology_edges.empty:
-        edges_ = network.homology_edges.copy()
-        edges_.columns = ('node1', 'node2')
-        edges_['type'] = 'hom'
-        edges.append(edges_)
-
-    # concat
-    sif = pd.concat(edges, ignore_index=True)
-    sif = sif.reindex(columns=('node1', 'type', 'node2'))
-    sif[['node1', 'node2']] = sif[['node1', 'node2']].applymap(_format_node_id)
-    sif.to_csv('{}.sif'.format(network_name), sep='\t', header=False, index=False)
+    (output_dir / 'coexpnetviz_style.xml').write_bytes(
+        resource_string('coexpnetviz', 'data/coexpnetviz_style.xml')
+    )
 
 def _format_node_id(node_id):
     if pd.isnull(node_id):

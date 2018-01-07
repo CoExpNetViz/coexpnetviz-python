@@ -18,7 +18,7 @@
 import pandas as pd
 import numpy as np
 from pytil import data_frame as df_
-from coexpnetviz._various import Network, MutableNetwork, NodeType, get_distinct_colours, RGB
+from coexpnetviz._various import Network, MutableNetwork, NodeType, distinct_colours, RGB
 from varbio import correlation
 from itertools import product
 from textwrap import dedent
@@ -28,40 +28,49 @@ import attr
 logger = logging.getLogger(__name__)
 
 # TODO refactor: inplace does not necessarily improve performance. Remove unnecessary use of inplace.
-# TODO XXX is higher priority than TODO, so s/XXX/TODO or something low priority
 
 def create_network(baits, expression_matrices, gene_families, correlation_function=correlation.pearson_df, percentile_ranks=(5, 95)):
     '''
-    Create a comparative co-expression network
+    Create a comparative co-expression network.
 
     Parameters
     ----------
-    baits : pd.Series([gene :: str])
-        Genes to which all genes are compared
-    expression_matrices : Sequence(coexpnetviz.ExpressionMatrix)
-        Gene expression matrices containing at least one bait
-    gene_families : pd.DataFrame({'family' => [str], 'gene' => [Gene]})
-        Gene families (to make family nodes with)
+    baits : ~pandas.Series[str]
+        Genes to which all genes are compared.
+    expression_matrices : ~typing.Sequence[~coexpnetviz.ExpressionMatrix]
+        Gene expression matrices containing at least one bait.
+    gene_families : ~pandas.DataFrame
+        Gene families (to make family nodes with) as data frame with columns:
+
+        family
+            `str` -- Family name.
+        gene
+            `str` -- A gene in the family.
+
+        There should be no duplicate rows.
+
     correlation_function
         A vectorised correlation function with DataFrame input/output. The
         expected function is exactly like
-        :func:`varbio.core.correlation.generic_df` with a `correlation_function`
-        already applied.
-    percentile_ranks : array_like(lower :: float, upper :: float)
-        Percentile ranks to use as cutoff. For each matrix, 2 percentiles are
-        derived. Genes are only considered co-expressed when their correlation
-        value lies outside of ``(lower percentile, upper percentile)``. The
-        percentiles are derived by taking a sample of rows from the matrix,
-        constructing a correlation matrix of all vs all genes in the sample and
-        forming a distribution with all the correlations of the correlation
-        matrix.
+        :py:func:`~varbio.correlation.generic_df` with a
+        :py:func:`~varbio.correlation.vectorised_correlation_function` already applied.
+
+    percentile_ranks : ~pytil.numpy.ArrayLike[float]
+        Lower and upper percentile ranks respectively to use as cutoff. For each
+        matrix, 2 percentiles are derived. Genes are only considered
+        co-expressed when their correlation value does not lie between the lower
+        and upper percentile. The percentiles are derived by taking a sample of
+        rows from the matrix, constructing a correlation matrix of all vs all
+        genes in the sample and forming a distribution with all the correlations
+        of the correlation matrix.
 
     Returns
     -------
-    Network
+    ~coexpnetviz.Network
         The created network. A bait node for each bait is included. However,
         family nodes are only included if at least one of their genes correlates
-        with a bait. Similarly, only gene nodes which correlate with a bait are included.
+        with a bait. Similarly, only gene nodes which correlate with a bait are
+        included.
     '''
     network = MutableNetwork(None, None, None, None, samples=[], percentiles=[], correlation_matrices=[])
 
@@ -136,8 +145,8 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
         # Note: we only drop the absolutely necessary so that the user can
         # choose how to clean the expression matrices instead of the algorithm
         # doing it for them
-        #TODO ask statistics whether -or google- there is a corr func for which corr([1,1], other) ever yields other than nan
-        if _std_0_causes_nan(correlation_function): #TODO is mutual information score a correlation function? It appears to be a metric instead. Hence we check here 
+        # TODO once mutual_information is no longer allowed, remove this as any corr func will nan when std == 0
+        if _std_0_causes_nan(correlation_function):
             tiny_stds = expression_matrix_.std(axis=1) < np.finfo(float).tiny
             rows_dropped = sum(tiny_stds)
             if rows_dropped:
@@ -220,14 +229,14 @@ def _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, pe
     # TODO we took a sample of the population of correlations, so take into
     # account statistics when drawing conclusions from it... In fact, that's how
     # we should determine our sample size, probably.
-    #
-    # Before that, take a step back and compare some form of significance vs using a percentile of a sample as cutoff
-    #TODO ask stats people
+    # Or simply ask a stats person to review the stats used in CoExpNetViz
 
-    #TODO should also take into account the sample size, e.g. if in some freak case we have only 2 rows in the matrix, we won't be able to tell much this way
+    # TODO should also take into account the sample size, e.g. if in some freak
+    # case we have only 2 rows in the matrix, we won't be able to tell much this
+    # way
 
     sample_size = min(len(expression_matrix_), 800)
-    sample = np.random.choice(len(expression_matrix_), sample_size, replace=False) #TODO if replace was missing from old CENV, that's an inaccuracy to note in the changelog
+    sample = np.random.choice(len(expression_matrix_), sample_size, replace=False)
     sample = expression_matrix_.iloc[sample]
     sample = sample.sort_index()
     sample = correlation_function(sample, sample)
@@ -247,6 +256,10 @@ def _std_0_causes_nan(correlation_function):
     '''
     A heuristic to see whether the correlation function produces NaN upon zero std functions
     '''
+    # TODO probably all actual corr functions would produce NaN, after all what
+    # could possibly be the correlation when one of the vars does not vary. So
+    # this function is unnecessary. Problem lies in using mutual information
+    # func as if it's a correlation function
     df = pd.DataFrame([[1, 1], [2, 3]], dtype=float)
     return correlation_function(df, df).isnull().any().any()
 
@@ -298,7 +311,7 @@ def _get_nodes(baits, correlations, gene_families):
         nodes['partition_id'] = nodes['baits'].apply(hash)
         nodes.drop('baits', axis=1, inplace=True)
         partitions = nodes[['partition_id']].drop_duplicates()
-        colours = get_distinct_colours(len(partitions))
+        colours = distinct_colours(len(partitions))
         colours = np.random.permutation([RGB.from_float(x) for x in colours])  # shuffle the colours so distinct colours are less likely to be put next to each other
         partitions['colour'] = colours
         nodes = pd.merge(nodes, partitions, on='partition_id')
@@ -312,6 +325,7 @@ def _get_nodes(baits, correlations, gene_families):
     nodes.index.name = 'id'
     nodes.reset_index(inplace=True)
     nodes = nodes.reindex(columns=('id', 'label', 'type', 'genes', 'family', 'colour', 'partition_id'))
+    nodes = df_.replace_na_with_none(nodes)
 
     return nodes
 

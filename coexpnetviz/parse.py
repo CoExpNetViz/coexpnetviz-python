@@ -15,46 +15,55 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
+'''
+File parsing.
+'''
+
 from varbio import parse
 from pytil import data_frame as df_
 import pandas as pd
 
-def baits(reader):
+def baits(file):
     '''
-    Parse baits file
+    Parse baits file.
 
-    TODO refer to file formats
+    For a description of the file format, see the :ref:`Baits file` section in
+    the documentation.
 
     Parameters
     ----------
-    reader : file object
-        Text reader whose content is a baits file
+    file : ~typing.TextIO
+        Baits file object.
 
     Returns
     -------
-    pd.Series([gene :: str])
+    ~pandas.Series[str]
+        Bait genes.
     '''
-    return pd.Series(reader.read().replace(',', ' ').split())
+    return pd.Series(file.read().replace(',', ' ').split())
 
-def gene_families(reader, name_index=0):
+
+def gene_families(file, name_index=0):
     '''
-    Parse gene families file
+    Parse gene families file.
 
-    TODO refer to file formats
+    For a description of the file format, see the :ref:`Gene families file` section in
+    the documentation.
 
     Parameters
     ----------
-    reader : file object
-        Text reader whose content is a gene families file, i.e. a clustering
-        with families as clusters
+    file : ~typing.TextIO
+        Gene families file object.
     name_index : int
-        The index of the gene family name field on each row. See `varbio.parse.clustering`
+        The index of the gene family name field on each row. See
+        :py:func:`~varbio.parse.clustering`.
 
     Returns
     -------
-    pd.DataFrame({'family' => [str], 'gene' => [str]})
+    ~pandas.DataFrame
+        Data frame with a ``family`` and ``gene`` `str` column.
     '''
-    clustering = parse.clustering(reader, name_index)
+    clustering = parse.clustering(file, name_index)
     clustering = pd.DataFrame(list(clustering.items()), columns=('family', 'gene'))
     clustering['gene'] = clustering['gene'].apply(list)
     clustering = df_.split_array_like(clustering, 'gene')
@@ -63,12 +72,12 @@ def gene_families(reader, name_index=0):
 
 def _validate_gene_families(gene_families):
     '''
-    Validate gene families
+    Validate gene families.
 
     Parameters
     ----------
-    gene_families : pd.DataFrame({'family' => [str], 'gene' => [str]})
-        Gene families to validate
+    gene_families : ~pandas.DataFrame
+        Gene families to validate. Must have ``family``, ``gene`` `str` columns.
 
     Raises
     ------

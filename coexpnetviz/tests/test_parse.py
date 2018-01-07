@@ -16,10 +16,10 @@
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
 '''
-Test coexpnetviz._parse
+Test coexpnetviz.parse
 '''
 
-from coexpnetviz import _parse
+from coexpnetviz import parse
 from pytil import data_frame as df_
 from pytil.test import assert_text_contains
 from textwrap import dedent
@@ -30,9 +30,9 @@ import pytest
 class TestValidateGeneFamilies(object):
 
     '''
-    Test _parse._validate_gene_families
+    Test parse._validate_gene_families
 
-    This is assumed to be called by _parse.gene_families
+    This is assumed to be called by parse.gene_families
     '''
 
     def test_happy_days(self):
@@ -49,7 +49,7 @@ class TestValidateGeneFamilies(object):
             columns=['family', 'gene']
         )
         df = original.copy()
-        _parse._validate_gene_families(df)
+        parse._validate_gene_families(df)
         df_.assert_equals(df, original)  # did not modify input
 
     parameters = {
@@ -119,7 +119,7 @@ class TestValidateGeneFamilies(object):
         When invalid, raise ValueError
         '''
         with pytest.raises(ValueError) as ex:
-            _parse._validate_gene_families(pd.DataFrame(
+            parse._validate_gene_families(pd.DataFrame(
                 families, columns=['family', 'gene']
             ))
         assert_text_contains(ex.value.args[0], dedent(error.rstrip()))

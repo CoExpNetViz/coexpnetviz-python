@@ -25,7 +25,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from pytil import data_frame as df_, path as path_
+from pytil import data_frame as df_
 from coexpnetviz._various import MutableNetwork
 from coexpnetviz import NodeType, write_cytoscape, Network, RGB
 from pkg_resources import resource_string  # @UnresolvedImport
@@ -72,7 +72,7 @@ def assert_(network):
         homology_edges and/or correlation_edges made empty
     '''
     network_name = 'amazing network'
-    write_cytoscape(Network(**attr.asdict(network)), network_name)
+    write_cytoscape(Network(**attr.asdict(network)), network_name, output_dir=Path())
 
     node_attr_file = Path(network_name + '.node.attr')
     edge_attr_file = Path(network_name + '.edge.attr')
@@ -91,13 +91,8 @@ def assert_(network):
             ['n20', 'label20', '#FFFFFF', 'bait node', 'bait3', None, None, None, None, 10],
         ],
         columns=('id', 'label', 'colour', 'type', 'bait_gene', 'species', 'families', 'family', 'correlating_genes_in_family', 'partition_id')
-        #TODO in a release after this one, together with adjusting Cytoscape plugin:
-        # - only these in the future (after cytoscape plugin has been updated). 'id', 'label', 'type', 'genes', 'family', 'color', 'partition_id'
-        # - introduce gene nodes in style and plugin
-        # - don't add ' node' suffix
     )
     node_attr['colour'] = node_attr['colour'].str.upper()
-    node_attr = df_.replace_na_with_none(node_attr)#TODO rm
     df_.assert_equals(node_attr, expected, ignore_indices={0,1}, ignore_order={0})
 
     # edge.attr
@@ -141,7 +136,9 @@ def assert_(network):
     df_.assert_equals(actual, expected, ignore_indices={0,1}, ignore_order={0,1})
 
     # other files copied verbatim
-    assert resource_string('coexpnetviz', 'data/coexpnetviz_style.xml').decode('utf-8') == path_.read(Path('coexpnetviz_style.xml'))
+    actual = resource_string('coexpnetviz', 'data/coexpnetviz_style.xml')
+    expected = Path('coexpnetviz_style.xml').read_bytes()
+    assert actual == expected
 
 @pytest.fixture
 def network():
@@ -190,7 +187,7 @@ def test_empty_network(network):
     '''
     network.nodes = pd.DataFrame(columns=network.nodes.columns)
     with pytest.raises(ValueError) as ex:
-        write_cytoscape(network, 'name')
+        write_cytoscape(network, 'name', Path())
     assert 'network.nodes is empty. Cytoscape networks must have at least one node.' in str(ex.value)
 
 def test_empty_homology_edges(network):

@@ -1,23 +1,37 @@
 Welcome to CoExpNetViz's documentation!
 =======================================
-For an introduction and general concepts of CoExpNetViz, see `this page`_.
+CoExpNetViz allows visualising, as a (Cytoscape) network, the co-expression
+between a group of genes and all other genes of one or more species;
+optionally, grouping nodes by gene families.
 
-The PyPI package contains the following interfaces:
+CoExpNetViz can be used through one of the following interfaces:
 
-- `Command line interface (CLI) <cli_>`_: Run CoExpNetViz locally on the
-  command line. For more information, see the `command line interface
-  documentation <cli_>`_.
+- `Website`_: Run CoExpNetViz on our server with a web form. If your data is
+  confidential, consider using the command line interface or API instead.
 
-- `Python API (application programmer interface) <api guide_>_`: Run CoExpNetViz
-  locally in your Python code using the ``deep_genome.coexpnetviz`` package.
-  For more information, see the `API guide`_ or the `API reference`_.
+- `Cytoscape app`_: Run CoExpNetViz on our server with a Cytoscape plugin which
+  immediately opens the result in Cytoscape. If your data is confidential,
+  consider using the command line interface or API instead.
 
-Contents:
+- :doc:`Command line interface (CLI) <cli>`: Run CoExpNetViz locally on the
+  command line.
+
+- :doc:`Python API (application programmer interface) <api_guide>`: Run CoExpNetViz
+  locally in your Python code using the `coexpnetviz` package.
+
+When using CoExpNetViz in a paper, please cite `Tzfadia, O., Diels, T., De
+Meyer, S., Vandepoele, K., Aharoni, A., & Van de Peer, Y. (2015). CoExpNetViz:
+Comparative Co-Expression Networks Construction and Visualization Tool.
+Frontiers in Plant Science, 6, 1194.  http://doi.org/10.3389/fpls.2015.01194
+<paper_>`__
+
+Contents
+--------
 
 .. toctree::
    :maxdepth: 2
 
-   installation
+   general
    cli
    api_guide
    api_reference
@@ -31,8 +45,6 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
-.. TODO specific version
-.. _this page: https://gitlab.psb.ugent.be/deep_genome/deep_genome/coexpnetviz.html
-.. _cli: cli.html
-.. _api guide: api_guide.html
-.. _api reference: api_reference.html
+.. _paper: http://www.ncbi.nlm.nih.gov/pubmed/26779228
+.. _website: http://bioinformatics.psb.ugent.be/webtools/coexpnetviz
+.. _cytoscape app: http://apps.cytoscape.org/apps/coexpnetviz

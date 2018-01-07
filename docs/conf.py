@@ -16,16 +16,22 @@
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.mathjax',
+    'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
-    'numpydoc',
-    'sphinx.ext.doctest',
-    'sphinx.ext.coverage',
     'sphinx.ext.autosummary',
+    'sphinx.ext.intersphinx',
 ]
 
-numpydoc_show_class_members = False  # setting this to True breaks autosummary and not having autosummary breaks numpydoc
-autosummary_generate = True
+intersphinx_mapping = {
+    'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None),
+    'python': ('https://docs.python.org/3/', None),
+    'pytil': ('http://pytil.readthedocs.io/en/6.0.0/', None),
+    'varbio': ('http://varbio.readthedocs.io/en/2.0.0/', None),
+}
+
+default_role = 'any'
+
+autodoc_default_flags = ['members', 'show-inheritance']
 
 # The master toctree document.
 master_doc = 'index'

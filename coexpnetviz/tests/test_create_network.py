@@ -130,6 +130,9 @@ def assert_network(
     assert nodes['type'].apply(lambda x: isinstance(x, NodeType)).all()
 
     # node families
+    def isnan(x):  # Note: cannot use np.isnan on non-float values such as None
+        return x != x
+    assert not nodes['family'].apply(isnan).any()  # No NaN, should use None instead
     assert gene_nodes['family'].isnull().all()
     assert family_nodes['family'].notnull().all()
 
@@ -1285,6 +1288,8 @@ class TestCorrelationMethod(object):
             )]
         )
 
-# TODO when duplicate baits, raise ValueError.
-# TODO run verify_network on some real inputs: the bug inputs or arabidopsis or other public small enough (or easy to download) data sets. Do them both with and without families if appropriate
-# TODO think: what if a family node is created of some non-bait gene but one of the baits is also present in that family! Probably it should tell the user to include said gene as a bait, but ask Oren first
+# TODO test that when duplicate baits, raise ValueError.
+
+# TODO what if a family node is created of some non-bait gene but one of
+# the baits is also present in that family! Probably it should tell the user to
+# include said gene as a bait
