@@ -21,15 +21,18 @@ Test coexpnetviz.write_cytoscape()
 I.e. test written Cytoscape files are correctly formatted and match the input Network
 '''
 
-import pytest
-import pandas as pd
-import numpy as np
 from pathlib import Path
-from pytil import data_frame as df_
-from coexpnetviz._various import MutableNetwork
-from coexpnetviz import NodeType, write_cytoscape, Network, RGB
 from pkg_resources import resource_string  # @UnresolvedImport
+
+from pytil import data_frame as df_
 import attr
+import numpy as np
+import pandas as pd
+import pytest
+
+from coexpnetviz import NodeType, write_cytoscape, Network, RGB
+from coexpnetviz._various import MutableNetwork
+
 
 @pytest.fixture(autouse=True)
 def use_temp_dir_cwd(temp_dir_cwd):

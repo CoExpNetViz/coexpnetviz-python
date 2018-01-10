@@ -19,15 +19,18 @@
 Test coexpnetviz.create_network(...)
 '''
 
-from pytil import data_frame as df_, series as series_
-from coexpnetviz import create_network, NodeType, RGB, ExpressionMatrix
-from varbio import correlation
 from itertools import product
 from textwrap import dedent
+
 from more_itertools import one
-import pandas as pd
+from pytil import data_frame as df_, series as series_
+from varbio import correlation
 import numpy as np
+import pandas as pd
 import pytest
+
+from coexpnetviz import create_network, NodeType, RGB, ExpressionMatrix
+
 
 def ids_to_labels(labels, df, columns):
     df = df.copy()

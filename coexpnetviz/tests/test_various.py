@@ -19,11 +19,12 @@
 Test coexpnetviz._various.get_distinct_colours()
 '''
 
-from coexpnetviz._various import distinct_colours
-import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+
+from coexpnetviz._various import distinct_colours
 
 @pytest.fixture(autouse=True)
 def use_temp_dir_cwd(temp_dir_cwd):

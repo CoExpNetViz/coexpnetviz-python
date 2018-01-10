@@ -15,19 +15,24 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
-from coexpnetviz import __version__, write_cytoscape, create_network, parse, ExpressionMatrix
-from varbio import correlation, clean
-from pytil import click as click_, logging as logging_
-from pkg_resources import resource_string  # @UnresolvedImport
 from pathlib import Path
-import pandas as pd
+from pkg_resources import resource_string  # @UnresolvedImport
+import logging
+
+from pytil import click as click_, logging as logging_
+from varbio import correlation, clean
 import click
 import matplotlib
-import logging
-import plumbum as pb
-import numpy as np
-import varbio
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import plumbum as pb
+import varbio
+
+from coexpnetviz import (
+    __version__, write_cytoscape, create_network, parse, ExpressionMatrix
+)
+
 
 _logger = logging.getLogger(__name__)
 

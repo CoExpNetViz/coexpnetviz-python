@@ -15,13 +15,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
+import signal
+
 from pytil.test import temp_dir_cwd  # @UnusedImport
 import numpy as np
 import pytest
 
+
 # http://stackoverflow.com/a/30091579/1031434
-from signal import signal, SIGPIPE, SIG_IGN
-signal(SIGPIPE, SIG_IGN) # Ignore SIGPIPE
+signal.signal(signal.SIGPIPE, signal.SIG_IGN)  # Ignore SIGPIPE
 
 @pytest.fixture(autouse=True)
 def auto_reset_random_seed():

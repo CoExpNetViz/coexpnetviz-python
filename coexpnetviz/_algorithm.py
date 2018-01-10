@@ -15,15 +15,20 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
-import pandas as pd
-import numpy as np
-from pytil import data_frame as df_
-from coexpnetviz._various import Network, MutableNetwork, NodeType, distinct_colours, RGB
-from varbio import correlation
 from itertools import product
 from textwrap import dedent
 import logging
+
+from pytil import data_frame as df_
+from varbio import correlation
 import attr
+import numpy as np
+import pandas as pd
+
+from coexpnetviz._various import (
+    Network, MutableNetwork, NodeType, distinct_colours, RGB
+)
+
 
 logger = logging.getLogger(__name__)
 

@@ -17,8 +17,10 @@
 
 from enum import Enum
 from math import floor, sqrt
-import numpy as np
+
 import attr
+import numpy as np
+
 
 _network_attrs = ('nodes', 'homology_edges', 'correlation_edges', 'significant_correlations', 'samples', 'percentiles', 'correlation_matrices')
 Network = attr.make_class('Network', _network_attrs, frozen=True)

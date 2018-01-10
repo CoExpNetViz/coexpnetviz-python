@@ -19,8 +19,8 @@
 Main classes and functions.
 '''
 
-from coexpnetviz._various import Network, NodeType, RGB, ExpressionMatrix
 from coexpnetviz._algorithm import create_network
 from coexpnetviz._cytoscape_writer import write_cytoscape
+from coexpnetviz._various import Network, NodeType, RGB, ExpressionMatrix
 
 __version__ = '5.0.0'

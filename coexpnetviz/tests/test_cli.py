@@ -24,13 +24,16 @@ shown on invalid input. We do test in detail the files created in addition to
 `write_cytoscape`.
 '''
 
-from coexpnetviz.main import main
-from pytil import data_frame as df_
-from pytil.test import assert_text_contains, assert_dir_unchanged
 from pathlib import Path
 from textwrap import dedent
+
+from pytil import data_frame as df_
+from pytil.test import assert_text_contains, assert_dir_unchanged
 import pandas as pd
 import pytest
+
+from coexpnetviz.main import main
+
 
 @pytest.fixture(autouse=True)
 def autouses(temp_dir_cwd):

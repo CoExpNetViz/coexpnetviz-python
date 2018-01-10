@@ -19,9 +19,10 @@
 File parsing.
 '''
 
-from varbio import parse
 from pytil import data_frame as df_
+from varbio import parse
 import pandas as pd
+
 
 def baits(file):
     '''

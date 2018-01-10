@@ -15,10 +15,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
-import pandas as pd
 from pkg_resources import resource_string  # @UnresolvedImport
+
 from more_itertools import one
+import pandas as pd
+
 from ._various import NodeType
+
 
 def write_cytoscape(network, name, output_dir):
     '''

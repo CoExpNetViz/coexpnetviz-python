@@ -19,13 +19,16 @@
 Test coexpnetviz.parse
 '''
 
-from coexpnetviz import parse
+from textwrap import dedent
+
 from pytil import data_frame as df_
 from pytil.test import assert_text_contains
-from textwrap import dedent
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
+
+from coexpnetviz import parse
+
 
 class TestValidateGeneFamilies(object):
 
