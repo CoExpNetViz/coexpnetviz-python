@@ -1,4 +1,4 @@
-# Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <tim@diels.me>
 #
 # This file is part of CoExpNetViz.
 #
@@ -18,12 +18,15 @@
 from enum import Enum
 from math import floor, sqrt
 
+from pytil import data_frame as df_
+from varbio import parse_yaml
 import attr
 import numpy as np
+import pandas as pd
 
 
 _network_attrs = ('nodes', 'homology_edges', 'correlation_edges', 'significant_correlations', 'samples', 'percentiles', 'correlation_matrices')
-Network = attr.make_class('Network', _network_attrs, frozen=True)
+Network = attr.make_class('Network', _network_attrs, frozen=True, slots=True)
 Network.__doc__ = '''
     Network (aka a graph) result of CoExpNetViz.
 
@@ -267,7 +270,7 @@ def distinct_colours(n):
 
     # Derive initial number of points to place per side of the 3D YUV grid to
     # generate
-    side = np.ceil(yuv_points**(1/3))
+    side = int(np.ceil(yuv_points**(1/3)))
 
     # Generate grids, increasing side each time, until its RGB mapping has at least
     # n valid points
@@ -296,35 +299,90 @@ def distinct_colours(n):
         # Else, continue with increased side
         side += 1
 
-@attr.s(frozen=True, repr=False)
-class ExpressionMatrix(object):
-
+def parse_gene_families(path):
     '''
-    Gene expression matrix.
+    Parse gene families file.
+
+    This is a yaml file like:
+
+        'family1': ['gene1', 'gene2']
+        'family2': ['gene3', 'gene4', 'gene5']
+
+    I.e. it is a dict/mapping of families to lists of genes. The easiest way of
+    creating such a file is to find a yaml library in your preferred language
+    and let it format the yaml for you from a dict (or whatever your preferred
+    language calls it). Caveat: family/gene names must be strings, so if your
+    family names are numbers, cast them to string first in your dict.
 
     Parameters
     ----------
-    name : str
-        Unique name of the matrix.
-    data : ~pandas.DataFrame
-        Gene expression data. The data frame is a matrix of gene expression of
-        type `float` with genes as index of type `str`. The index is named
-        ``gene``.
+    path : ~pathlib.Path
+        Gene families file
+
+    Returns
+    -------
+    ~pandas.DataFrame
+        Data frame with a ``family`` and ``gene`` `str` column.
     '''
+    # We only support yaml as we're unsure what format is commonly used. yaml
+    # is easy to work with, easy to read and tool agnostic (orthofinder vs
+    # ...), so we offer that instead. We can add more formats later by popular
+    # demand.
+    families = parse_yaml(path)
+    families = pd.DataFrame(list(families.items()), columns=('family', 'gene'))
+    families['gene'] = families['gene'].apply(list)
+    families = df_.split_array_like(families, 'gene')
+    _validate_gene_families(families)
+    return families
 
-    name = attr.ib()
-    data = attr.ib()
+def _validate_gene_families(gene_families):
+    '''
+    Validate gene families.
 
-    def __repr__(self):
-        return 'ExpressionMatrix({!r})'.format(self.name)
+    Parameters
+    ----------
+    gene_families : ~pandas.DataFrame
+        Gene families to validate. Must have ``family``, ``gene`` `str` columns.
 
-    @name.validator
-    def _validate_name(self, _, name):
-        if '\0' in name:
-            raise ValueError('Name must not contain "\0" (nul character)')
-        if not name:
-            raise ValueError('Name must not be empty')
-        if not name.strip():
-            raise ValueError('Name must not be whitespace only')
-        if name != name.strip():
-            raise ValueError('Name must not be surrounded in whitespace')
+    Raises
+    ------
+    ValueError
+        If:
+
+        - families overlap
+        - family name is invalid
+    '''
+    if gene_families.empty:
+        return gene_families
+
+    gene_families = gene_families.copy()
+
+    # Raise if invalid family name
+    #
+    # Family name must be unique, cannot be empty, ``nan``, ``None`` or contain
+    # a null character
+    def raise_if_invalid_name(is_invalid, reason):
+        mask = gene_families['family'].apply(is_invalid)
+        invalid_families = gene_families[mask]
+        if not invalid_families.empty:
+            invalid_families = invalid_families.applymap(repr)
+            raise ValueError('{}. Got:\n{}'.format(reason, invalid_families.to_string(index=False)))
+    raise_if_invalid_name(
+        lambda family: not isinstance(family, str),
+        'Gene family names must be strings'
+    )
+    raise_if_invalid_name(
+        lambda family: not family,
+        'Gene family names must not be empty'
+    )
+    raise_if_invalid_name(
+        lambda family: '\0' in family,
+        'Gene family names must not contain a null character (\\x00)'
+    )
+
+    # Raise if families overlap (i.e. if a gene is a member of multiple
+    # families)
+    duplicates = gene_families[gene_families['gene'].duplicated(keep=False)].copy()
+    if not duplicates.empty:
+        duplicates = duplicates.sort_values(list(duplicates.columns))
+        raise ValueError('Gene families overlap:\n{}'.format(duplicates.to_string(index=False)))

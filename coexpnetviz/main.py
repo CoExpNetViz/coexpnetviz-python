@@ -1,4 +1,4 @@
-# Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <tim@diels.me>
 #
 # This file is part of CoExpNetViz.
 #
@@ -20,21 +20,19 @@ from pkg_resources import resource_string  # @UnresolvedImport
 import logging
 
 from pytil import click as click_, logging as logging_
-from varbio import correlation, clean
+from varbio import ExpressionMatrix, parse_baits, parse_csv
 import click
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import plumbum as pb
+import pytil
 import varbio
 
 from coexpnetviz import (
-    __version__, write_cytoscape, create_network, parse, ExpressionMatrix
+    __version__, write_cytoscape, create_network, parse_gene_families
 )
 
-
-_logger = logging.getLogger(__name__)
 
 _file_parameter_type = click.Path(exists=True, dir_okay=False)
 
@@ -42,7 +40,7 @@ _file_parameter_type = click.Path(exists=True, dir_okay=False)
 @click_.option(
     '-b', '--baits',
     type=_file_parameter_type,
-    help='File listing bait genes'
+    help='Bait genes file'
 )
 @click_.option(
     '-e', '--expression-matrix', 'expression_matrices',
@@ -63,12 +61,6 @@ _file_parameter_type = click.Path(exists=True, dir_okay=False)
     help='Output directory'
 )
 @click_.option(
-    '--correlation-function',
-    default='pearson', 
-    type=click.Choice(['pearson', 'mutual-information']),
-    help='Correlation function to use for measuring gene coexpression'
-)
-@click_.option(
     '--percentile-ranks',
     default=(5.0, 95.0),
     help=
@@ -79,11 +71,19 @@ _file_parameter_type = click.Path(exists=True, dir_okay=False)
     'matrix are co-expressed or not.'
 )
 @click.version_option(version=__version__)
-def main(baits, expression_matrices, gene_families, correlation_function, percentile_ranks, output_dir):
+def main(baits, expression_matrices, gene_families, percentile_ranks, output_dir):
     '''
     Comparative Co-Expression Network Construction and Visualization
     (CoExpNetViz)
+
+    For full documentation, see https://coexpnetviz.readthedocs.io/en/latest/
     '''
+    # TODO this is a quick and dirty fix to allow large csv files
+    # https://stackoverflow.com/questions/15063936/csv-error-field-larger-than-field-limit-131072#15063941
+    import sys
+    import csv
+    csv.field_size_limit(sys.maxsize)
+
     output_dir = Path(str(output_dir))
 
     # Init logging
@@ -92,8 +92,9 @@ def main(baits, expression_matrices, gene_families, correlation_function, percen
     logging.getLogger('coexpnetviz').setLevel(logging.DEBUG)
 
     # Log versions
-    _logger.info('coexpnetviz version: {}'.format(__version__))
-    _logger.debug('pip freeze:\n{}'.format(pb.local['pip']('freeze')))
+    logging.info(f'coexpnetviz version: {__version__}')
+    logging.info(f'varbio version: {varbio.__version__}')
+    logging.info(f'pytil version: {pytil.__version__}')
 
     # Convert click to pathlib paths
     baits = Path(baits)
@@ -102,46 +103,34 @@ def main(baits, expression_matrices, gene_families, correlation_function, percen
         gene_families = Path(gene_families)
 
     # Log other input
-    _logger.debug('correlation function: {}'.format(correlation_function))
-    _logger.debug('percentile ranks: {}'.format('{}, {}'.format(*percentile_ranks)))
+    logging.info('percentile ranks: {}'.format('{}, {}'.format(*percentile_ranks)))
 
-    # Init matplotlib: use Agg backend when no X server
-    if not 'DISPLAY' in pb.local.env:
-        matplotlib.use('Agg')
-
-    # correlation_function
-    correlation_function_name = correlation_function
-    if correlation_function == 'pearson':
-        correlation_function = correlation.pearson_df
-    elif correlation_function == 'mutual-information':
-        correlation_function = correlation.mutual_information_df
-    else:
-        assert False
+    # Init matplotlib: the default backend does not work on a headless server
+    # or on mac, Agg seems to work anywhere so use that instead, always.
+    matplotlib.use('Agg')
 
     # Read baits
-    with baits.open() as f:
-        baits = parse.baits(clean.plain_text(f))
+    baits = pd.Series(parse_baits(baits, min_baits=2))
 
     # Read gene_families
     if gene_families:
-        with gene_families.open() as f:
-            gene_families = parse.gene_families(clean.plain_text(f))
+        gene_families = parse_gene_families(gene_families)
     else:
         gene_families = pd.DataFrame(columns=('family', 'gene'))
 
     # Read expression_matrices
+    #
+    # If file names are not unique across matrices, it's up to the user to
+    # rename them to be unique
     matrices = []
     for matrix in expression_matrices:
         matrix = Path(str(matrix))
-        with matrix.open() as f:
-            matrices.append(ExpressionMatrix(
-                matrix.name,  # Note: if the name is not unique across matrices, it's up to the user to rename them to be unique
-                varbio.parse.expression_matrix(clean.plain_text(f))
-            ))
+        matrix = ExpressionMatrix.from_csv(matrix.name, parse_csv(matrix))
+        matrices.append(matrix)
     expression_matrices = matrices
 
     # Run algorithm
-    network = create_network(baits, expression_matrices, gene_families, correlation_function, percentile_ranks)
+    network = create_network(baits, expression_matrices, gene_families, percentile_ranks)
 
     # Write network to cytoscape files
     write_cytoscape(network, 'network', output_dir)
@@ -179,7 +168,7 @@ def main(baits, expression_matrices, gene_families, correlation_function, percen
         plt.clf()
         pd.Series(sample).plot.hist(bins=60)
         plt.title('Correlations between sample of\n{} genes in {}'.format(sample_size, matrix.name))
-        plt.xlabel(correlation_function_name)
+        plt.xlabel('pearson')
         plt.ylabel('frequency')
         plt.axvline(percentiles[0], **line_style)
         plt.axvline(percentiles[1], **line_style)
@@ -187,10 +176,15 @@ def main(baits, expression_matrices, gene_families, correlation_function, percen
 
         # Write cdf
         plt.clf()
-        pd.Series(sample).plot.hist(bins=60, cumulative=True, normed=True)
-        plt.title('Cumulative distribution of correlations\nbetween sample of {} genes in {}'.format(sample_size, matrix.name))
-        plt.xlabel(correlation_function_name)
-        plt.ylabel('Cumulative probability, i.e. $P(corr \leq x)$')
+        pd.Series(sample).plot.hist(bins=60, cumulative=True, density=True)
+        plt.title(f'Cumulative distribution of correlations\nbetween sample of {sample_size} genes in {matrix.name}')
+        plt.xlabel('pearson')
+        plt.ylabel('Cumulative probability, i.e. $P(corr \\leq x)$')
         plt.axhline(percentile_ranks[0]/100.0, **line_style)
         plt.axhline(percentile_ranks[1]/100.0, **line_style)
         plt.savefig(str(output_dir / '{}.sample_cdf.png'.format(matrix.name)))
+
+if __name__ == '__main__':
+    # pylint does not understand click's magic
+    # pylint: disable=no-value-for-parameter
+    main()

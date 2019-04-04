@@ -1,4 +1,4 @@
-# Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2015 VIB/BEG/UGent - Tim Diels <tim@diels.me>
 #
 # This file is part of CoExpNetViz.
 #
@@ -20,7 +20,7 @@ from textwrap import dedent
 import logging
 
 from pytil import data_frame as df_
-from varbio import correlation
+from varbio import pearson_df
 import attr
 import numpy as np
 import pandas as pd
@@ -30,11 +30,9 @@ from coexpnetviz._various import (
 )
 
 
-logger = logging.getLogger(__name__)
-
 # TODO refactor: inplace does not necessarily improve performance. Remove unnecessary use of inplace.
 
-def create_network(baits, expression_matrices, gene_families, correlation_function=correlation.pearson_df, percentile_ranks=(5, 95)):
+def create_network(baits, expression_matrices, gene_families, percentile_ranks=(5, 95)):
     '''
     Create a comparative co-expression network.
 
@@ -53,12 +51,6 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
             `str` -- A gene in the family.
 
         There should be no duplicate rows.
-
-    correlation_function
-        A vectorised correlation function with DataFrame input/output. The
-        expected function is exactly like
-        :py:func:`~varbio.correlation.generic_df` with a
-        :py:func:`~varbio.correlation.vectorised_correlation_function` already applied.
 
     percentile_ranks : ~pytil.numpy.ArrayLike[float]
         Lower and upper percentile ranks respectively to use as cutoff. For each
@@ -146,39 +138,38 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
     for expression_matrix in expression_matrices:
         expression_matrix_ = expression_matrix.data
 
-        # Remove rows with no variance if using a correlation function that yields nan for it
+        # Remove rows with no variance as correlation functions yield nan for it
+        #
         # Note: we only drop the absolutely necessary so that the user can
         # choose how to clean the expression matrices instead of the algorithm
         # doing it for them
-        # TODO once mutual_information is no longer allowed, remove this as any corr func will nan when std == 0
-        if _std_0_causes_nan(correlation_function):
-            tiny_stds = expression_matrix_.std(axis=1) < np.finfo(float).tiny
-            rows_dropped = sum(tiny_stds)
-            if rows_dropped:
-                expression_matrix_ = expression_matrix_[~tiny_stds]
-                logger.warning(
-                    'Dropped {} out of {} rows from {} due to having (near) 0 standard deviation. '
-                    'These rows have a NaN correlation with any other row.'
-                    .format(rows_dropped, len(expression_matrix_)+rows_dropped, expression_matrix)
+        tiny_stds = expression_matrix_.std(axis=1) < np.finfo(float).tiny
+        rows_dropped = sum(tiny_stds)
+        if rows_dropped:
+            expression_matrix_ = expression_matrix_[~tiny_stds]
+            logging.warning(
+                'Dropped {} out of {} rows from {} due to having (near) 0 standard deviation. '
+                'These rows have a NaN correlation with any other row.'
+                .format(rows_dropped, len(expression_matrix_)+rows_dropped, expression_matrix)
+            )
+            if expression_matrix_.empty:
+                raise ValueError(
+                    'After dropping rows with tiny standard deviation, {} has no rows. '
+                    'Please check the expression matrix for errors or drop it from the input.'
+                    .format(expression_matrix)
                 )
-                if expression_matrix_.empty:
-                    raise ValueError(
-                        'After dropping rows with tiny standard deviation, {} has no rows. '
-                        'Please check the expression matrix for errors or drop it from the input.'
-                        .format(expression_matrix)
-                    )
 
         # Get cutoffs
-        sample, percentiles = _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, percentile_ranks)
+        sample, percentiles = _get_cutoffs(expression_matrix, expression_matrix_, percentile_ranks)
         network.samples.append(sample)
         network.percentiles.append(tuple(percentiles))
         lower_cutoff, upper_cutoff = percentiles
 
         # Baits present in matrix
-        baits_ = expression_matrix_.loc[baits].dropna()
+        baits_ = expression_matrix_.reindex(baits).dropna()
 
         # Correlation matrix
-        corrs = correlation_function(expression_matrix_, baits_)
+        corrs = pearson_df(expression_matrix_, baits_)
         corrs.index.name = None
         corrs.columns.name = None
         network.correlation_matrices.append(corrs)
@@ -209,7 +200,7 @@ def create_network(baits, expression_matrices, gene_families, correlation_functi
 
     return Network(**attr.asdict(network))
 
-def _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, percentile_ranks):
+def _get_cutoffs(expression_matrix, expression_matrix_, percentile_ranks):
     '''
     Get upper and lower correlation cutoffs for coexpnetviz
 
@@ -222,8 +213,6 @@ def _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, pe
     expression_matrix : Expressionmatrix
     expression_matrix_
         exp mat data
-    correlation_function
-        Vectorised correlation function with DataFrame input/output
 
     Returns
     -------
@@ -244,7 +233,7 @@ def _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, pe
     sample = np.random.choice(len(expression_matrix_), sample_size, replace=False)
     sample = expression_matrix_.iloc[sample]
     sample = sample.sort_index()
-    sample = correlation_function(sample, sample)
+    sample = pearson_df(sample, sample)
     sample_ = sample.values.copy()
     nan_count = np.isnan(sample_).sum()
     np.fill_diagonal(sample_, np.nan)
@@ -252,21 +241,10 @@ def _get_cutoffs(expression_matrix, expression_matrix_, correlation_function, pe
 
     size = sample.size - len(sample)  # minus the diagonal, as it's not part of sample_
     if nan_count > .1 * size: # XXX 10% is arbitrary pick
-        logger.warning('Correlation sample of {} contains more than 10% NaN values, specifically {} values out of a sample matrix of {} values are NaN'.format(expression_matrix, nan_count, size))
+        logging.warning('Correlation sample of {} contains more than 10% NaN values, specifically {} values out of a sample matrix of {} values are NaN'.format(expression_matrix, nan_count, size))
 
     # Return result
     return sample, np.percentile(sample_, percentile_ranks)
-
-def _std_0_causes_nan(correlation_function):
-    '''
-    A heuristic to see whether the correlation function produces NaN upon zero std functions
-    '''
-    # TODO probably all actual corr functions would produce NaN, after all what
-    # could possibly be the correlation when one of the vars does not vary. So
-    # this function is unnecessary. Problem lies in using mutual information
-    # func as if it's a correlation function
-    df = pd.DataFrame([[1, 1], [2, 3]], dtype=float)
-    return correlation_function(df, df).isnull().any().any()
 
 def _get_nodes(baits, correlations, gene_families):
     # bait nodes
@@ -351,7 +329,12 @@ def _get_correlation_edges(nodes, correlations):
         correlations.update(correlations['gene'].map(ids))
         correlations.update(correlations['bait'].map(ids))
         correlations.rename(columns={'bait': 'bait_node', 'gene': 'node'}, inplace=True)
-        correlations = correlations.groupby(('bait_node', 'node'))[['correlation']].agg(lambda x: x[x.abs().argmax()])  # take val for which abs(val) is max
+
+        # Summarise correlations per edge by taking the max (in the abs sense)
+        # per nodes of an edge
+        groups = correlations.groupby(['bait_node', 'node'])[['correlation']]
+        correlations = groups.agg(lambda x: x.iloc[x.abs().argmax()])
+
         correlations.reset_index(inplace=True)
         correlations.rename(columns={'correlation': 'max_correlation'}, inplace=True)
         correlations = correlations.reindex(columns=('bait_node', 'node', 'max_correlation'))

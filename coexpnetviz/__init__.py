@@ -1,4 +1,4 @@
-# Copyright (C) 2016 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2016 VIB/BEG/UGent - Tim Diels <tim@diels.me>
 #
 # This file is part of CoExpNetViz.
 #
@@ -21,6 +21,6 @@ Main classes and functions.
 
 from coexpnetviz._algorithm import create_network
 from coexpnetviz._cytoscape_writer import write_cytoscape
-from coexpnetviz._various import Network, NodeType, RGB, ExpressionMatrix
+from coexpnetviz._various import Network, NodeType, RGB, parse_gene_families
 
-__version__ = '5.0.0'
+__version__ = '5.0.0.dev1'

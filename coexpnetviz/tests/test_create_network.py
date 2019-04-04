@@ -1,4 +1,4 @@
-# Copyright (C) 2016 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2016 VIB/BEG/UGent - Tim Diels <tim@diels.me>
 #
 # This file is part of CoExpNetViz.
 #
@@ -23,13 +23,14 @@ from itertools import product
 from textwrap import dedent
 
 from more_itertools import one
-from pytil import data_frame as df_, series as series_
-from varbio import correlation
+from pytil import series as series_
+from pytil.data_frame import assert_df_equals
+from varbio import ExpressionMatrix
 import numpy as np
 import pandas as pd
 import pytest
 
-from coexpnetviz import create_network, NodeType, RGB, ExpressionMatrix
+from coexpnetviz import create_network, NodeType, RGB
 
 
 def ids_to_labels(labels, df, columns):
@@ -185,32 +186,32 @@ def assert_network(
     # optional checks
     if samples is not None:
         for actual, expected in zip(network.samples, samples):
-            df_.assert_equals(actual, expected, ignore_order={0,1}, all_close=True)
+            assert_df_equals(actual, expected, ignore_order={0,1}, all_close=True)
     if correlation_matrices is not None:
         for actual, expected in zip(network.correlation_matrices, correlation_matrices):
-            df_.assert_equals(actual, expected, ignore_order={0,1}, all_close=True)
+            assert_df_equals(actual, expected, ignore_order={0,1}, all_close=True)
     if percentiles is not None:
         actual = np.array(network.percentiles)
         expected = np.array(percentiles)
         assert np.allclose(actual, expected)
     if expected_significant_correlations is not None:
         expected = combine_edges(expected_significant_correlations, 'bait', 'gene')
-        df_.assert_equals(significant_correlations, expected, ignore_order={0}, ignore_indices={0}, all_close=True)
+        assert_df_equals(significant_correlations, expected, ignore_order={0}, ignore_indices={0}, all_close=True)
     if expected_bait_nodes is not None:
         actual = bait_nodes[['genes', 'family']].copy()
         actual['gene'] = actual['genes'].apply(one)
         del actual['genes']
-        df_.assert_equals(actual, expected_bait_nodes, ignore_order={0,1}, ignore_indices={0}, all_close=True)
+        assert_df_equals(actual, expected_bait_nodes, ignore_order={0,1}, ignore_indices={0}, all_close=True)
     if expected_family_nodes is not None:
         actual = family_nodes[['genes', 'family']].copy()
-        df_.assert_equals(actual, expected_family_nodes, ignore_order={0,1}, ignore_indices={0}, all_close=True)
+        assert_df_equals(actual, expected_family_nodes, ignore_order={0,1}, ignore_indices={0}, all_close=True)
     if expected_gene_nodes is not None:
         actual = gene_nodes[['genes']].applymap(one)
         expected = pd.DataFrame(expected_gene_nodes, columns=['genes'])
-        df_.assert_equals(actual, expected, ignore_order={0,1}, ignore_indices={0}, all_close=True)
+        assert_df_equals(actual, expected, ignore_order={0,1}, ignore_indices={0}, all_close=True)
     if expected_correlation_edges is not None:
         expected = combine_edges(expected_correlation_edges, 'bait', 'gene')
-        df_.assert_equals(correlation_edges, expected, ignore_order={0}, ignore_indices={0}, all_close=True)
+        assert_df_equals(correlation_edges, expected, ignore_order={0}, ignore_indices={0}, all_close=True)
     if partitions is not None:
         actual = set(nodes.groupby('partition_id')['label'].apply(frozenset).tolist())
         assert actual == partitions, (actual, partitions)
@@ -1224,8 +1225,7 @@ class TestExpressionMatrices(object):
 class TestCorrelationMethod(object):
 
     '''
-    Test whether the correct correlation method is used and test that at least
-    it works with pearson and mutual_information
+    Test that pearson works
     '''
 
     @pytest.fixture
@@ -1254,7 +1254,6 @@ class TestCorrelationMethod(object):
         return pd.Series(['gene1', 'gene2', 'gene3', 'gene4'])
 
     def test_pearson(self, input_, genes):
-        input_['correlation_function'] = correlation.pearson_df
         network = create_network(**input_)
         assert_network(
             input_,
@@ -1265,25 +1264,6 @@ class TestCorrelationMethod(object):
                     [-1, 1],
                     [0, 0],
                     [-0.59603956067926978, 0.59603956067926978]
-                ],
-                index=genes,
-                columns=genes.iloc[[0,1]],
-                dtype=float
-            )]
-        )
-
-    def test_mutual_information(self, input_, genes):
-        input_['correlation_function'] = correlation.mutual_information_df
-        network = create_network(**input_)
-        assert_network(
-            input_,
-            network,
-            correlation_matrices=[pd.DataFrame(
-                [
-                    [1.0986122886681096, 1.0986122886681096],
-                    [1.0986122886681096, 1.0986122886681096],
-                    [0.63651416829481289, 0.63651416829481289],
-                    [1.0986122886681096, 1.0986122886681096]
                 ],
                 index=genes,
                 columns=genes.iloc[[0,1]],

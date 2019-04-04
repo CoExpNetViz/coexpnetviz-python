@@ -1,4 +1,4 @@
-# Copyright (C) 2016 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2016 VIB/BEG/UGent - Tim Diels <tim@diels.me>
 #
 # This file is part of CoExpNetViz.
 #
@@ -15,16 +15,20 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
-'''
-Test coexpnetviz._various.get_distinct_colours()
-'''
+'Test coexpnetviz._various'
 
+from textwrap import dedent
+
+from pytil.data_frame import assert_df_equals
+from pytil.test import assert_text_contains
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import pytest
 
-from coexpnetviz._various import distinct_colours
+from coexpnetviz._various import distinct_colours, _validate_gene_families
+
 
 @pytest.fixture(autouse=True)
 def use_temp_dir_cwd(temp_dir_cwd):
@@ -71,3 +75,94 @@ class TestDistinctColours:
         plt.axis('equal')
         plt.axis('off')
         plt.show()
+
+class TestValidateGeneFamilies(object):
+
+    def test_happy_days(self):
+        '''
+        When valid gene families, do not raise
+        '''
+        original = pd.DataFrame(
+            [
+                ['fam1', 'geneA1'],
+                ['fam1', 'geneA3'],
+                ['fam2', 'geneA2'],
+                ['fam2', 'geneB3'],
+            ],
+            columns=['family', 'gene']
+        )
+        df = original.copy()
+        _validate_gene_families(df)
+        assert_df_equals(df, original)  # did not modify input
+
+    parameters = {
+        # When families overlap (before gene mapping), raise ValueError
+        'overlap': (
+            [
+                ['fam1', 'gene1'],
+                ['fam1', 'gene2'],
+                ['fam2', 'gene2']
+            ],
+            '''\
+                Gene families overlap:
+                family   gene
+                  fam1  gene2
+                  fam2  gene2
+            '''
+        ),
+
+        # When family name is not a str, raise ValueError
+        'not_str': (
+            [
+                [None, 'gene1'],
+                [np.nan, 'gene2'],
+                [1, 'gene3'],
+                ['ok', 'gene4']
+            ],
+            '''\
+                Gene family names must be strings. Got:
+                family     gene
+                  None  'gene1'
+                   nan  'gene2'
+                     1  'gene3'
+            '''
+        ),
+
+        # When family name is empty, raise ValueError
+        'empty': (
+            [
+                ['', 'gene1'],
+                ['hok', 'gene2'],
+                ['ok', 'gene3']
+            ],
+            '''\
+                Gene family names must not be empty. Got:
+                family     gene
+                    ''  'gene1'
+            '''
+        ),
+
+        # When family name contains \0, raise ValueError
+        'contains_null': (
+            [
+                ['har', 'gene1'],
+                ['h\0k', 'gene2'],
+                ['ok', 'gene3']
+            ],
+            '''\
+                Gene family names must not contain a null character (\\x00). Got:
+                   family     gene
+                 'h\\x00k'  'gene2'
+            '''
+        )
+    }
+    @pytest.mark.parametrize('families, error', tuple(parameters.values()), ids=tuple(parameters.keys()))
+    def test_raises(self, families, error):
+        '''
+        When invalid, raise ValueError
+        '''
+        with pytest.raises(ValueError) as ex:
+            _validate_gene_families(pd.DataFrame(
+                families, columns=['family', 'gene']
+            ))
+        assert_text_contains(ex.value.args[0], dedent(error.rstrip()))

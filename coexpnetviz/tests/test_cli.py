@@ -1,4 +1,4 @@
-# Copyright (C) 2016 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2016 VIB/BEG/UGent - Tim Diels <tim@diels.me>
 #
 # This file is part of CoExpNetViz.
 #
@@ -27,7 +27,7 @@ shown on invalid input. We do test in detail the files created in addition to
 from pathlib import Path
 from textwrap import dedent
 
-from pytil import data_frame as df_
+from pytil.data_frame import assert_df_equals
 from pytil.test import assert_text_contains, assert_dir_unchanged
 import pandas as pd
 import pytest
@@ -43,7 +43,7 @@ def autouses(temp_dir_cwd):
 def matrix1():
     path = Path('matrix1')
     path.write_text(dedent('''\
-        \tcondition1\tcondition2\tcondition3
+        mygene\tcondition1\tcondition2\tcondition3
         gene1\t1\t2\t3
         gene2\t3\t2\t1
         gene3\t1\t2\t1
@@ -54,14 +54,14 @@ def matrix1():
 @pytest.fixture
 def gene_families1():
     path = Path('gene_families1')
-    path.write_text('fam1\tgene3\tgene4')
+    path.write_text('fam1: [gene3, gene4]')
     return path
 
 @pytest.fixture
 def matrix2():
     path = Path('matrix2')
     path.write_text(dedent('''\
-        \tcondition1\tcondition2\tcondition3\tcondition4
+        gene\tcondition1\tcondition2\tcondition3\tcondition4
         geneB1\t1\t2\t3\t4
         geneB2\t4\t3\t2\t1'''
     ))
@@ -91,7 +91,7 @@ def test_happy_days(baits1, matrix1, capsys):
         # Run coexpnetviz
         main(args, standalone_mode=False)
 
-    # Sample matrix file + default correlation function is pearson
+    # Sample matrix file
     expected = pd.DataFrame(
         [
             [1, -1, 0, -0.59603956067926978],
@@ -103,9 +103,9 @@ def test_happy_days(baits1, matrix1, capsys):
         columns=['gene1', 'gene2', 'gene3', 'gene4'],
     )
     actual = pd.read_table(str(output_dir / 'matrix1.sample_matrix.txt'), index_col=0)
-    df_.assert_equals(actual, expected, ignore_order={0,1}, all_close=True)
+    assert_df_equals(actual, expected, ignore_order={0,1}, all_close=True)
 
-    # Correlation matrix file (+ pearson is used)
+    # Correlation matrix file
     expected = pd.DataFrame(
         [
             [1, -1],
@@ -117,7 +117,7 @@ def test_happy_days(baits1, matrix1, capsys):
         columns=['gene1', 'gene2'],
     )
     actual = pd.read_table(str(output_dir / 'matrix1.correlation_matrix.txt'), index_col=0)
-    df_.assert_equals(actual, expected, ignore_order={0}, all_close=True)
+    assert_df_equals(actual, expected, ignore_order={0}, all_close=True)
 
     # Percentiles file + default cutoffs are 5, 95
     expected = pd.DataFrame(
@@ -127,7 +127,7 @@ def test_happy_days(baits1, matrix1, capsys):
         columns=['expression_matrix', 'lower', 'upper'],
     )
     actual = pd.read_table(str(output_dir / 'percentiles.txt'), index_col=None)
-    df_.assert_equals(actual, expected, ignore_order={0}, ignore_indices={0}, all_close=True)
+    assert_df_equals(actual, expected, ignore_order={0}, ignore_indices={0}, all_close=True)
 
     # Significant correlations file
     expected = pd.DataFrame(
@@ -138,7 +138,7 @@ def test_happy_days(baits1, matrix1, capsys):
         columns=['bait', 'gene', 'correlation'],
     )
     actual = pd.read_table(str(output_dir / 'significant_correlations.txt'), index_col=None)
-    df_.assert_equals(actual, expected, ignore_order={0}, ignore_indices={0}, all_close=True)
+    assert_df_equals(actual, expected, ignore_order={0}, ignore_indices={0}, all_close=True)
 
     # Cytoscape files present
     for file_name in ('network.edge.attr', 'network.node.attr', 'network.sif', 'coexpnetviz_style.xml'):
@@ -155,8 +155,6 @@ def test_happy_days(baits1, matrix1, capsys):
     log = (output_dir / 'coexpnetviz.log').read_text()
 
     # log version info and input not included in input dir
-    assert_text_contains(log, 'pip freeze')
-    assert_text_contains(log, 'correlation function: pearson')
     assert_text_contains(log, 'percentile ranks: 5.0, 95.0')
 
     # Sample graphs
@@ -174,41 +172,6 @@ def test_gene_families(baits1, matrix1, gene_families1):
     # gene families used
     assert 'fam1' in Path('network.node.attr').read_text()
 
-def test_correlation_function(baits1, matrix1):
-    '''
-    When mutual information is requested, use it
-    '''
-    args = ['-e', str(matrix1), '--baits', str(baits1), '--correlation-function', 'mutual-information']
-    main(args, standalone_mode=False)
-
-    # Used in sample
-    expected = pd.DataFrame(
-        [
-            [1.0986122886681096, 1.0986122886681096, 0.63651416829481289, 1.0986122886681096],
-            [1.0986122886681096, 1.0986122886681096, 0.63651416829481289, 1.0986122886681096],
-            [0.63651416829481289, 0.63651416829481289, 0.63651416829481289, 0.63651416829481289],
-            [1.0986122886681096, 1.0986122886681096, 0.63651416829481289, 1.0986122886681096]
-        ],
-        index=['gene1', 'gene2', 'gene3', 'gene4'],
-        columns=['gene1', 'gene2', 'gene3', 'gene4'],
-    )
-    actual = pd.read_table('matrix1.sample_matrix.txt', index_col=0)
-    df_.assert_equals(actual, expected, ignore_order={0,1}, all_close=True)
-
-    # Used in correlation matrix
-    expected = pd.DataFrame(
-        [
-            [1.0986122886681096, 1.0986122886681096],
-            [1.0986122886681096, 1.0986122886681096],
-            [0.63651416829481289, 0.63651416829481289],
-            [1.0986122886681096, 1.0986122886681096]
-        ],
-        index=['gene1', 'gene2', 'gene3', 'gene4'],
-        columns=['gene1', 'gene2'],
-    )
-    actual = pd.read_table('matrix1.correlation_matrix.txt', index_col=0)
-    df_.assert_equals(actual, expected, ignore_order={0}, all_close=True)
-
 def test_cutoffs(baits1, matrix1):
     '''
     When given percentile ranks, use them
@@ -224,7 +187,7 @@ def test_cutoffs(baits1, matrix1):
         columns=['expression_matrix', 'lower', 'upper'],
     )
     actual = pd.read_table('percentiles.txt', index_col=None)
-    df_.assert_equals(actual, expected, ignore_order={0}, ignore_indices={0}, all_close=True)
+    assert_df_equals(actual, expected, ignore_order={0}, ignore_indices={0}, all_close=True)
 
 def test_multiple_expression_matrices(baits_both, matrix1, matrix2):
     '''
@@ -245,7 +208,7 @@ def test_multiple_expression_matrices(baits_both, matrix1, matrix2):
         columns=['gene1', 'gene2', 'gene3', 'gene4'],
     )
     actual = pd.read_table('matrix1.sample_matrix.txt', index_col=0)
-    df_.assert_equals(actual, expected, ignore_order={0,1}, all_close=True)
+    assert_df_equals(actual, expected, ignore_order={0,1}, all_close=True)
 
     expected = pd.DataFrame(
         [
@@ -256,7 +219,7 @@ def test_multiple_expression_matrices(baits_both, matrix1, matrix2):
         columns=['geneB1', 'geneB2'],
     )
     actual = pd.read_table('matrix2.sample_matrix.txt', index_col=0)
-    df_.assert_equals(actual, expected, ignore_order={0,1}, all_close=True)
+    assert_df_equals(actual, expected, ignore_order={0,1}, all_close=True)
 
     # Correlation matrix files
     expected = pd.DataFrame(
@@ -270,7 +233,7 @@ def test_multiple_expression_matrices(baits_both, matrix1, matrix2):
         columns=['gene1', 'gene2'],
     )
     actual = pd.read_table('matrix1.correlation_matrix.txt', index_col=0)
-    df_.assert_equals(actual, expected, ignore_order={0}, all_close=True)
+    assert_df_equals(actual, expected, ignore_order={0}, all_close=True)
 
     expected = pd.DataFrame(
         [
@@ -281,7 +244,7 @@ def test_multiple_expression_matrices(baits_both, matrix1, matrix2):
         columns=['geneB1'],
     )
     actual = pd.read_table('matrix2.correlation_matrix.txt', index_col=0)
-    df_.assert_equals(actual, expected, ignore_order={0}, all_close=True)
+    assert_df_equals(actual, expected, ignore_order={0}, all_close=True)
 
     # Percentiles file
     expected = pd.DataFrame(
@@ -292,7 +255,7 @@ def test_multiple_expression_matrices(baits_both, matrix1, matrix2):
         columns=['expression_matrix', 'lower', 'upper'],
     )
     actual = pd.read_table('percentiles.txt', index_col=None)
-    df_.assert_equals(actual, expected, ignore_order={0}, ignore_indices={0}, all_close=True)
+    assert_df_equals(actual, expected, ignore_order={0}, ignore_indices={0}, all_close=True)
 
     # Significant correlations file
     expected = pd.DataFrame(
@@ -304,7 +267,7 @@ def test_multiple_expression_matrices(baits_both, matrix1, matrix2):
         columns=['bait', 'gene', 'correlation'],
     )
     actual = pd.read_table('significant_correlations.txt', index_col=None)
-    df_.assert_equals(actual, expected, ignore_order={0}, ignore_indices={0}, all_close=True)
+    assert_df_equals(actual, expected, ignore_order={0}, ignore_indices={0}, all_close=True)
 
     # Sample graphs
     # Note: difficult to test automatically, check contents manually on release

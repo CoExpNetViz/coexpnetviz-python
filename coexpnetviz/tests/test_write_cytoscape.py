@@ -1,4 +1,4 @@
-# Copyright (C) 2016 VIB/BEG/UGent - Tim Diels <timdiels.m@gmail.com>
+# Copyright (C) 2016 VIB/BEG/UGent - Tim Diels <tim@diels.me>
 #
 # This file is part of CoExpNetViz.
 #
@@ -24,7 +24,7 @@ I.e. test written Cytoscape files are correctly formatted and match the input Ne
 from pathlib import Path
 from pkg_resources import resource_string  # @UnresolvedImport
 
-from pytil import data_frame as df_
+from pytil.data_frame import assert_df_equals, replace_na_with_none
 import attr
 import numpy as np
 import pandas as pd
@@ -96,7 +96,7 @@ def assert_(network):
         columns=('id', 'label', 'colour', 'type', 'bait_gene', 'species', 'families', 'family', 'correlating_genes_in_family', 'partition_id')
     )
     node_attr['colour'] = node_attr['colour'].str.upper()
-    df_.assert_equals(node_attr, expected, ignore_indices={0,1}, ignore_order={0})
+    assert_df_equals(node_attr, expected, ignore_indices={0,1}, ignore_order={0})
 
     # edge.attr
     if network.correlation_edges.empty:
@@ -115,7 +115,7 @@ def assert_(network):
             columns=('nodes', 'relation', 'max_correlation')
         )
         expected['nodes'] = expected['nodes'].apply(frozenset)
-        df_.assert_equals(edge_attr, expected, ignore_indices={0,1}, ignore_order={0,1})
+        assert_df_equals(edge_attr, expected, ignore_indices={0,1}, ignore_order={0,1})
 
     # sif
     expected = [
@@ -133,10 +133,10 @@ def assert_(network):
     expected = pd.DataFrame(expected)
     expected[0] = expected[0].apply(frozenset)
     actual = pd.read_table(str(sif_file), header=None)
-    actual = df_.replace_na_with_none(actual)
+    actual = replace_na_with_none(actual)
     actual[0] = actual[[0,2]].apply(frozenset, axis=1)
     del actual[2]
-    df_.assert_equals(actual, expected, ignore_indices={0,1}, ignore_order={0,1})
+    assert_df_equals(actual, expected, ignore_indices={0,1}, ignore_order={0,1})
 
     # other files copied verbatim
     actual = resource_string('coexpnetviz', 'data/coexpnetviz_style.xml')
