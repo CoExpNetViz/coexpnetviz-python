@@ -20,7 +20,7 @@ setup_args = dict(
         'numpy>=1',
         'pandas>=0.19',
         'more_itertools>=3',
-        'pytil[data_frame,series,numpy,click]==7.*,>7',
+        'pytil[data_frame,series,numpy]==7.*,>7',
         'varbio==3.*',
     ],
     extras_require={

@@ -25,7 +25,10 @@ import numpy as np
 import pandas as pd
 
 
-_network_attrs = ('nodes', 'homology_edges', 'correlation_edges', 'significant_correlations', 'samples', 'percentiles', 'correlation_matrices')
+_network_attrs = (
+    'nodes', 'homology_edges', 'correlation_edges', 'significant_correlations',
+    'samples', 'percentiles', 'correlation_matrices'
+)
 Network = attr.make_class('Network', _network_attrs, frozen=True, slots=True)
 Network.__doc__ = '''
     Network (aka a graph) result of CoExpNetViz.
