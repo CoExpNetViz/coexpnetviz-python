@@ -24,7 +24,7 @@ I.e. test written Cytoscape files are correctly formatted and match the input Ne
 from pathlib import Path
 from pkg_resources import resource_string  # @UnresolvedImport
 
-from pytil.data_frame import assert_df_equals, replace_na_with_none
+from pytil.data_frame import assert_df_equals
 import attr
 import numpy as np
 import pandas as pd
@@ -133,7 +133,7 @@ def assert_(network):
     expected = pd.DataFrame(expected)
     expected[0] = expected[0].apply(frozenset)
     actual = pd.read_table(str(sif_file), header=None)
-    actual = replace_na_with_none(actual)
+    actual = actual.where(pd.notna, None)
     actual[0] = actual[[0,2]].apply(frozenset, axis=1)
     del actual[2]
     assert_df_equals(actual, expected, ignore_indices={0,1}, ignore_order={0,1})

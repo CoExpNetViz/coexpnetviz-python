@@ -23,7 +23,6 @@ from itertools import product
 from textwrap import dedent
 
 from more_itertools import one
-from pytil import series as series_
 from pytil.data_frame import assert_df_equals
 from varbio import ExpressionMatrix
 import numpy as np
@@ -148,7 +147,7 @@ def assert_network(
     assert family_nodes['genes'].apply(lambda xs: all(x in input_non_baits for x in xs)).all()
     assert (gene_nodes['genes'].apply(len) == 1).all()
     assert gene_nodes['genes'].apply(lambda xs: all(x in input_non_baits for x in xs)).all()
-    assert not series_.split(nodes['genes'].apply(list)).duplicated().any()  # no gene appears in 2 nodes
+    assert not nodes['genes'].explode().duplicated().any()  # no gene appears in 2 nodes
 
     # node partition_id
     assert nodes['partition_id'].notnull().all()

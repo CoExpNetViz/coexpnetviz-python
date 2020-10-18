@@ -18,7 +18,6 @@
 from enum import Enum
 from math import floor, sqrt
 
-from pytil import data_frame as df_
 from varbio import parse_yaml
 import attr
 import numpy as np
@@ -332,9 +331,12 @@ def parse_gene_families(path):
     # ...), so we offer that instead. We can add more formats later by popular
     # demand.
     families = parse_yaml(path)
-    families = pd.DataFrame(list(families.items()), columns=('family', 'gene'))
-    families['gene'] = families['gene'].apply(list)
-    families = df_.split_array_like(families, 'gene')
+    records = (
+        (family, gene)
+        for family, genes in families.items()
+        for gene in genes
+    )
+    families = pd.DataFrame.from_records(records, columns=('family', 'gene'))
     _validate_gene_families(families)
     return families
 
@@ -356,7 +358,7 @@ def _validate_gene_families(gene_families):
         - family name is invalid
     '''
     if gene_families.empty:
-        return gene_families
+        return
 
     gene_families = gene_families.copy()
 

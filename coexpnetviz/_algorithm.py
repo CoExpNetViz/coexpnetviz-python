@@ -19,7 +19,6 @@ from itertools import product
 from textwrap import dedent
 import logging
 
-from pytil import data_frame as df_
 from varbio import pearson_df
 import attr
 import numpy as np
@@ -308,7 +307,14 @@ def _get_nodes(baits, correlations, gene_families):
     nodes.index.name = 'id'
     nodes.reset_index(inplace=True)
     nodes = nodes.reindex(columns=('id', 'label', 'type', 'genes', 'family', 'colour', 'partition_id'))
-    nodes = df_.replace_na_with_none(nodes)
+
+    # replace all na with None
+    #
+    # TODO instead of replacing with None, let nan and None roam free until the
+    # point where it actually makes a difference, at that point you can use
+    # .replace(np.nan, 'whatever you need'). Will have to be careful to use
+    # pd.isna/notna in if statements and in bool()
+    nodes = nodes.where(pd.notna(nodes), None)
 
     return nodes
 
@@ -325,7 +331,7 @@ def _get_correlation_edges(nodes, correlations):
         correlations = correlations.copy()
         nodes = nodes[['id', 'genes']].copy()
         nodes.update(nodes['genes'].apply(list))
-        ids = df_.split_array_like(nodes, 'genes').set_index('genes')['id']
+        ids = nodes.explode('genes').set_index('genes')['id']
         correlations.update(correlations['gene'].map(ids))
         correlations.update(correlations['bait'].map(ids))
         correlations.rename(columns={'bait': 'bait_node', 'gene': 'node'}, inplace=True)

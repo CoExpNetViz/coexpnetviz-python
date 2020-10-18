@@ -20,7 +20,6 @@ setup_args = dict(
         'numpy>=1',
         'pandas>=0.19',
         'more_itertools>=3',
-        'pytil[data_frame,series,numpy]==7.*,>7',
         'varbio==3.*',
     ],
     extras_require={
@@ -30,7 +29,7 @@ setup_args = dict(
             'sphinx-rtd-theme',
             'pytest>=3',
             'pytest-env',
-            'pytil[test]==7.*,>7',
+            'pytil[data_frame,test]==8.*',
         ],
     },
     entry_points={'console_scripts': [
