@@ -6,22 +6,8 @@ import os
 setup_args = dict(
     version='5.0.0.dev1',
     name='coexpnetviz',
-    description='Comparative co-expression network construction and visualization',
     long_description=Path('README.rst').read_text(),
-    url='https://gitlab.psb.ugent.be/deep_genome/coexpnetviz.git',
-    author='VIB/BEG/UGent',
-    author_email='tim@diels.me',
-    license='LGPL3',
-    keywords='bioinformatics coexpression guilt-by-association',
     packages=find_packages(),
-    install_requires=[
-        'attrs>=17',
-        'matplotlib>=1',
-        'numpy>=1',
-        'pandas>=0.19',
-        'more_itertools>=3',
-        'varbio==3.*',
-    ],
     extras_require={
         'dev': [
             'numpydoc',
@@ -35,33 +21,7 @@ setup_args = dict(
     entry_points={'console_scripts': [
         'coexpnetviz = coexpnetviz.main:main'
     ]},
-    # https://pypi.python.org/pypi?%3Aaction=list_classifiers
-    classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Science/Research',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
-        'Natural Language :: English',
-        'Environment :: Console',
-        'Operating System :: POSIX :: Linux',
-        'Environment :: MacOS X',
-        'Operating System :: Microsoft :: Windows',
-        'Programming Language :: Python :: 3 :: Only',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Programming Language :: Python :: Implementation :: Stackless',
-        'Topic :: Scientific/Engineering',
-        'Topic :: Scientific/Engineering :: Bio-Informatics'
-    ],
 )
-
-# Generate extras_require['all'], union of all extras
-all_extra_dependencies = []
-for dependencies in setup_args['extras_require'].values():
-    all_extra_dependencies.extend(dependencies)
-all_extra_dependencies = list(set(all_extra_dependencies))
-setup_args['extras_require']['all'] = all_extra_dependencies
 
 # Generate package data
 #

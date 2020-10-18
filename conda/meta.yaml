@@ -1,0 +1,36 @@
+# Conda recipe
+{% set data = load_setup_py_data() %}
+package:
+  name: coexpnetviz
+  version: '{{ data['version'] }}'
+source:
+  path: ..
+build:
+  script: '{{ PYTHON }} -m pip install . -vv'
+  entry_points:
+    - coexpnetviz = coexpnetviz.main:main
+requirements:
+  build:
+    - python
+    - setuptools
+  host:
+    # Conda recommends always adding the interpreter as a host dep
+    - python
+  run:
+    - python
+    - attrs>=17
+    - matplotlib>=1
+    - numpy>=1
+    - pandas>=0.19
+    - more-itertools>=3
+    - varbio==3.*
+test:
+  # A very simple test, ensure we can run coexpnetviz without error
+  commands:
+    - coexpnetviz --help
+about:
+  # TODO point home to cytoscape app page instead
+  home: https://gitlab.psb.ugent.be/deep_genome/coexpnetviz.git
+  license: LGPL3
+  license_file: LICENSE.txt
+  summary: Internal python CLI used by CoExpNetViz Cytoscape app
