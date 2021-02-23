@@ -22,12 +22,13 @@ import csv
 import logging
 import sys
 
-from varbio import ExpressionMatrix, parse_baits, parse_csv, parse_yaml
+from varbio import (
+    ExpressionMatrix, parse_baits, parse_csv, parse_yaml, init_logging
+)
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import varbio
 
 from coexpnetviz import (
     __version__, write_cytoscape, create_network, parse_gene_families
@@ -96,29 +97,6 @@ class App:
         # or on mac, Agg seems to work anywhere so use that instead, always.
         matplotlib.use('Agg')
 
-    def _init_logging(self):
-        root_logger = logging.getLogger()
-        root_logger.setLevel(logging.DEBUG)
-
-        formatter = logging.Formatter('{asctime} {levelname[0]}: {message}', style='{')
-
-        # Log to stderr
-        stderr_handler = logging.StreamHandler() # to stderr
-        stderr_handler.setLevel(logging.DEBUG)
-        stderr_handler.setFormatter(formatter)
-        root_logger.addHandler(stderr_handler)
-
-        # and to file
-        log_file = self._output_dir / 'coexpnetviz.log'
-        file_handler = logging.FileHandler(str(log_file))
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(formatter)
-        root_logger.addHandler(file_handler)
-
-        # Log versions
-        logging.info(f'coexpnetviz version: {__version__}')
-        logging.info(f'varbio version: {varbio.__version__}')
-
     @staticmethod
     def _parse_args():
         parser = argparse.ArgumentParser(
@@ -135,7 +113,8 @@ class App:
         config = parse_yaml(path)
 
         self._output_dir = Path(config['output_dir'])
-        self._init_logging()
+        log_file = self._output_dir / 'coexpnetviz.log'
+        init_logging('coexpnetviz', __version__, log_file)
 
         baits = Path(config['baits'])
         self._baits = pd.Series(parse_baits(baits, min_baits=2))
