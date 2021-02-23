@@ -331,12 +331,12 @@ def parse_gene_families(path):
     # ...), so we offer that instead. We can add more formats later by popular
     # demand.
     families = parse_yaml(path)
-    records = (
+    data = (
         (family, gene)
         for family, genes in families.items()
         for gene in genes
     )
-    families = pd.DataFrame.from_records(records, columns=('family', 'gene'))
+    families = pd.DataFrame(data, columns=('family', 'gene'))
     _validate_gene_families(families)
     return families
 
