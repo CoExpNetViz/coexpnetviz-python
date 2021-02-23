@@ -11,7 +11,6 @@ setup_args = dict(
     extras_require={
         'dev': [
             'pytest>=3',
-            'pytest-env',
             'pytil[data_frame,test]==8.*',
         ],
     },
