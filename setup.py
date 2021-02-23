@@ -10,9 +10,6 @@ setup_args = dict(
     packages=find_packages(),
     extras_require={
         'dev': [
-            'numpydoc',
-            'sphinx>=1',
-            'sphinx-rtd-theme',
             'pytest>=3',
             'pytest-env',
             'pytil[data_frame,test]==8.*',

@@ -41,9 +41,7 @@ class App:
     Comparative Co-Expression Network Construction and Visualization
     (CoExpNetViz)
 
-    For full documentation, see https://coexpnetviz.readthedocs.io/en/latest/
-
-    Except a single cli arg, path to a yaml config file:
+    Accept a single CLI arg, path to a yaml config file:
 
         baits: path/to/baits.txt
 
