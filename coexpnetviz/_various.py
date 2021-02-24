@@ -24,12 +24,10 @@ import numpy as np
 import pandas as pd
 
 
-_network_attrs = (
-    'nodes', 'homology_edges', 'correlation_edges', 'significant_correlations',
-    'samples', 'percentiles', 'correlation_matrices'
-)
-Network = attr.make_class('Network', _network_attrs, frozen=True, slots=True)
-Network.__doc__ = '''
+@attr.s(frozen=True, slots=True)
+class Network:
+
+    '''
     Network (aka a graph) result of CoExpNetViz.
 
     Parameters
@@ -128,7 +126,13 @@ Network.__doc__ = '''
     create_network : Create a comparative coexpression network.
     '''
 
-MutableNetwork = attr.make_class('MutableNetwork', _network_attrs)  # internal class
+    nodes = attr.ib()
+    homology_edges = attr.ib()
+    correlation_edges = attr.ib()
+    significant_correlations = attr.ib()
+    samples = attr.ib()
+    percentiles = attr.ib()
+    correlation_matrices = attr.ib()
 
 class NodeType(Enum):
 

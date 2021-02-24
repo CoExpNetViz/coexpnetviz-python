@@ -20,12 +20,11 @@ from textwrap import dedent
 import logging
 
 from varbio import pearson_df
-import attr
 import numpy as np
 import pandas as pd
 
 from coexpnetviz._various import (
-    Network, MutableNetwork, NodeType, distinct_colours, RGB
+    Network, NodeType, distinct_colours, RGB
 )
 
 
@@ -69,13 +68,26 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
         with a bait. Similarly, only gene nodes which correlate with a bait are
         included.
     '''
-    network = MutableNetwork(
-        None, None, None, None,
-        samples=[],
-        percentiles=[],
-        correlation_matrices=[]
+    _validate_input(baits, expression_matrices, gene_families, percentile_ranks)
+
+    corrs, samples, percentiles, corr_matrices = _correlate_matrices(
+        expression_matrices, baits, percentile_ranks
+    )
+    nodes = _get_nodes(baits, corrs, gene_families)
+    homology_edges = _get_homology_edges(nodes)
+    correlation_edges = _get_correlation_edges(nodes, corrs)
+
+    return Network(
+        significant_correlations=corrs,
+        samples=samples,
+        percentiles=percentiles,
+        correlation_matrices=corr_matrices,
+        nodes=nodes,
+        homology_edges=homology_edges,
+        correlation_edges=correlation_edges,
     )
 
+def _validate_input(baits, expression_matrices, gene_families, percentile_ranks):
     # Validate baits (more complex validate below)
     if baits.empty:
         raise ValueError('Must specify at least one bait, got: {}'.format(baits))
@@ -158,74 +170,73 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
             .format(', '.join(overlapping_genes))
         )
 
-    # Calculate correlations
-    correlations = []
-    for expression_matrix in expression_matrices:
-        expression_matrix_ = expression_matrix.data
+def _correlate_matrices(expression_matrices, baits, percentile_ranks):
+    results = tuple(
+        _correlate_matrix(expression_matrix, baits, percentile_ranks)
+        for expression_matrix in expression_matrices
+    )
 
-        # Remove rows with no variance as correlation functions yield nan for it
-        #
-        # Note: we only drop the absolutely necessary so that the user can
-        # choose how to clean the expression matrices instead of the algorithm
-        # doing it for them
-        tiny_stds = expression_matrix_.std(axis=1) < np.finfo(float).tiny
-        rows_dropped = sum(tiny_stds)
-        if rows_dropped:
-            expression_matrix_ = expression_matrix_[~tiny_stds]
-            logging.warning(
-                'Dropped {} out of {} rows from {} due to having (near) 0 standard deviation. '
-                'These rows have a NaN correlation with any other row.'
-                .format(rows_dropped, len(expression_matrix_)+rows_dropped, expression_matrix)
+    corrs = pd.concat([result[0] for result in results])
+    # Drop self comparisons
+    corrs = corrs[corrs['bait'] < corrs['gene']]
+    corrs = corrs.reindex(columns=('bait', 'gene', 'correlation'))
+
+    samples = tuple(result[1] for result in results)
+    percentiles = tuple(result[2] for result in results)
+    corr_matrices = tuple(result[3] for result in results)
+
+    return corrs, samples, percentiles, corr_matrices
+
+def _correlate_matrix(matrix, baits, percentile_ranks):
+    matrix_data = matrix.data
+
+    # Remove rows with no variance as correlation functions yield nan for it
+    #
+    # Note: we only drop the absolutely necessary so that the user can
+    # choose how to clean the expression matrices instead of the algorithm
+    # doing it for them
+    tiny_stds = matrix_data.std(axis=1) < np.finfo(float).tiny
+    rows_dropped = sum(tiny_stds)
+    if rows_dropped:
+        matrix_data = matrix_data[~tiny_stds]
+        logging.warning(
+            'Dropped {} out of {} rows from {} due to having (near) 0 standard deviation. '
+            'These rows have a NaN correlation with any other row.'
+            .format(rows_dropped, len(matrix_data)+rows_dropped, matrix)
+        )
+        if matrix_data.empty:
+            raise ValueError(
+                'After dropping rows with tiny standard deviation, {} has no rows. '
+                'Please check the expression matrix for errors or drop it from the input.'
+                .format(matrix)
             )
-            if expression_matrix_.empty:
-                raise ValueError(
-                    'After dropping rows with tiny standard deviation, {} has no rows. '
-                    'Please check the expression matrix for errors or drop it from the input.'
-                    .format(expression_matrix)
-                )
 
-        # Get cutoffs
-        sample, percentiles = _get_cutoffs(expression_matrix, expression_matrix_, percentile_ranks)
-        network.samples.append(sample)
-        network.percentiles.append(tuple(percentiles))
-        lower_cutoff, upper_cutoff = percentiles
+    # Get cutoffs
+    sample, percentiles = _get_cutoffs(matrix, matrix_data, percentile_ranks)
+    percentiles = tuple(percentiles)
+    lower_cutoff, upper_cutoff = percentiles
 
-        # Baits present in matrix
-        baits_ = expression_matrix_.reindex(baits).dropna()
+    # Baits present in matrix
+    baits_ = matrix_data.reindex(baits).dropna()
 
-        # Correlation matrix
-        corrs = pearson_df(expression_matrix_, baits_)
-        corrs.index.name = None
-        corrs.columns.name = None
-        network.correlation_matrices.append(corrs)
+    # Correlation matrix
+    corrs = pearson_df(matrix_data, baits_)
+    corrs.index.name = None
+    corrs.columns.name = None
+    corr_matrix = corrs.copy()
 
-        # Apply cutoff
-        corrs = corrs[(corrs <= lower_cutoff) | (corrs >= upper_cutoff)]
-        # TODO not sure if helps performance. If not, this is unnecessary
-        corrs.dropna(how='all', inplace=True)
+    # Apply cutoff
+    corrs = corrs[(corrs <= lower_cutoff) | (corrs >= upper_cutoff)]
+    # TODO not sure if helps performance. If not, this is unnecessary
+    corrs.dropna(how='all', inplace=True)
 
-        # Reformat to relational (DB) format
-        corrs.index.name = 'gene'
-        corrs.reset_index(inplace=True)
-        corrs = pd.melt(corrs, id_vars=['gene'], var_name='bait', value_name='correlation')
-        corrs.dropna(subset=['correlation'], inplace=True)
-        correlations.append(corrs)
+    # Reformat to relational (DB) format
+    corrs.index.name = 'gene'
+    corrs.reset_index(inplace=True)
+    corrs = pd.melt(corrs, id_vars=['gene'], var_name='bait', value_name='correlation')
+    corrs.dropna(subset=['correlation'], inplace=True)
 
-    network.samples = tuple(network.samples)
-    network.percentiles = tuple(network.percentiles)
-    network.correlation_matrices = tuple(network.correlation_matrices)
-    correlations = pd.concat(correlations)
-    # drop self comparisons
-    correlations = correlations[correlations['bait'] < correlations['gene']]
-    correlations = correlations.reindex(columns=('bait', 'gene', 'correlation'))
-
-    # Format as Network
-    network.significant_correlations = correlations
-    network.nodes = _get_nodes(baits, correlations, gene_families)
-    network.homology_edges = _get_homology_edges(network.nodes)
-    network.correlation_edges = _get_correlation_edges(network.nodes, correlations)
-
-    return Network(**attr.asdict(network))
+    return corrs, sample, percentiles, corr_matrix
 
 def _get_cutoffs(expression_matrix, expression_matrix_, percentile_ranks):
     '''
