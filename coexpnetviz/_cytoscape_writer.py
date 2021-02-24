@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
-from pkg_resources import resource_string  # @UnresolvedImport
-
 from more_itertools import one
 import pandas as pd
 
@@ -59,7 +57,7 @@ def write_cytoscape(network, name, output_dir):
         # Any node
         nodes['id'] = nodes['id'].apply(_format_node_id)
         nodes['type'] = nodes['type'].apply(
-            lambda x: 'bait node' if x == NodeType.bait else 'family node'
+            lambda x: 'bait' if x == NodeType.bait else 'family'
         )
         nodes['colour'] = nodes['colour'].apply(lambda x: x.to_hex())
         nodes['species'] = None
