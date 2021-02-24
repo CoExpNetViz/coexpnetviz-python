@@ -73,9 +73,9 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
     corrs, samples, percentiles, corr_matrices = _correlate_matrices(
         expression_matrices, baits, percentile_ranks
     )
-    nodes = _get_nodes(baits, corrs, gene_families)
-    homology_edges = _get_homology_edges(nodes)
-    correlation_edges = _get_correlation_edges(nodes, corrs)
+    nodes = _create_nodes(baits, corrs, gene_families)
+    homology_edges = _create_homology_edges(nodes)
+    correlation_edges = _create_correlation_edges(nodes, corrs)
 
     return Network(
         significant_correlations=corrs,
@@ -181,12 +181,12 @@ def _validate_input(baits, expression_matrices, gene_families, percentile_ranks)
 
 def _correlate_matrices(expression_matrices, baits, percentile_ranks):
     results = tuple(
-        _correlate_matrix(expression_matrix, baits, percentile_ranks)
-        for expression_matrix in expression_matrices
+        _correlate_matrix(matrix, baits, percentile_ranks)
+        for matrix in expression_matrices
     )
 
     corrs = pd.concat([result[0] for result in results])
-    # Drop self comparisons
+    # Drop self comparisons (and symmetrical ones I guess)
     corrs = corrs[corrs['bait'] < corrs['gene']]
     corrs = corrs.reindex(columns=('bait', 'gene', 'correlation'))
 
@@ -197,25 +197,25 @@ def _correlate_matrices(expression_matrices, baits, percentile_ranks):
     return corrs, samples, percentiles, corr_matrices
 
 def _correlate_matrix(matrix, baits, percentile_ranks):
-    matrix_data = matrix.data
+    matrix_df = matrix.data
 
     # Remove rows with no variance as correlation functions yield nan for it
     #
     # Note: we only drop the absolutely necessary so that the user can
     # choose how to clean the expression matrices instead of the algorithm
     # doing it for them
-    tiny_stds = matrix_data.std(axis=1) < np.finfo(float).tiny
+    tiny_stds = matrix_df.std(axis=1) < np.finfo(float).tiny
     rows_dropped = sum(tiny_stds)
     if rows_dropped:
-        matrix_data = matrix_data[~tiny_stds]
+        matrix_df = matrix_df[~tiny_stds]
         logging.warning(join_lines(
             f'''
-            Dropped {rows_dropped} out of {len(matrix_data)+rows_dropped} rows
+            Dropped {rows_dropped} out of {len(matrix_df)+rows_dropped} rows
             from {matrix} due to having (near) 0 standard deviation. These rows
             have a NaN correlation with any other row.
             '''
         ))
-        if matrix_data.empty:
+        if matrix_df.empty:
             raise ValueError(join_lines(
                 f'''
                 After dropping rows with tiny standard deviation, {matrix} has
@@ -225,15 +225,15 @@ def _correlate_matrix(matrix, baits, percentile_ranks):
             ))
 
     # Get cutoffs
-    sample, percentiles = _get_cutoffs(matrix, matrix_data, percentile_ranks)
+    sample, percentiles = _estimate_cutoffs(matrix, matrix_df, percentile_ranks)
     percentiles = tuple(percentiles)
     lower_cutoff, upper_cutoff = percentiles
 
     # Baits present in matrix
-    baits_ = matrix_data.reindex(baits).dropna()
+    baits_ = matrix_df.reindex(baits).dropna()
 
     # Correlation matrix
-    corrs = pearson_df(matrix_data, baits_)
+    corrs = pearson_df(matrix_df, baits_)
     corrs.index.name = None
     corrs.columns.name = None
     corr_matrix = corrs.copy()
@@ -251,19 +251,26 @@ def _correlate_matrix(matrix, baits, percentile_ranks):
 
     return corrs, sample, percentiles, corr_matrix
 
-def _get_cutoffs(expression_matrix, expression_matrix_, percentile_ranks):
+def _estimate_cutoffs(matrix, matrix_df, percentile_ranks):
     '''
-    Get upper and lower correlation cutoffs for coexpnetviz
+    Get upper and lower correlation cutoffs
 
-    Takes the 5th and 95th percentile of a sample similarity matrix of
-    `expression_matrix`, returning these as the lower and upper cut-off
-    respectively.
+    Takes the x-th and y-th (percentile ranks) percentile of a sample
+    similarity matrix of `matrix`, returning these as the lower and upper
+    cut-off respectively.
+
+    Using a sample as calculating all correlations is n**2. Sample size is
+    chosen to be easy enough to calculate; for a large matrix our estimate
+    is less accurate than for a small matrix. We could report a confidence
+    interval for the cut-off estimate if that bothers us or more likely delve
+    into statistics to find a better cut-off. In practice the user just plays
+    with the percentile ranks until the result is what they want; so this is
+    good enough.
 
     Parameters
     ----------
-    expression_matrix : Expressionmatrix
-    expression_matrix_
-        exp mat data
+    matrix : Expressionmatrix
+    matrix_df
 
     Returns
     -------
@@ -271,18 +278,9 @@ def _get_cutoffs(expression_matrix, expression_matrix_, percentile_ranks):
     np.array((lower, upper))
         Cut-offs
     '''
-    # TODO we took a sample of the population of correlations, so take into
-    # account statistics when drawing conclusions from it... In fact, that's how
-    # we should determine our sample size, probably.
-    # Or simply ask a stats person to review the stats used in CoExpNetViz
-
-    # TODO should also take into account the sample size, e.g. if in some freak
-    # case we have only 2 rows in the matrix, we won't be able to tell much this
-    # way
-
-    sample_size = min(len(expression_matrix_), 800)
-    sample = np.random.choice(len(expression_matrix_), sample_size, replace=False)
-    sample = expression_matrix_.iloc[sample]
+    sample_size = min(len(matrix_df), 800)
+    sample = np.random.choice(len(matrix_df), sample_size, replace=False)
+    sample = matrix_df.iloc[sample]
     sample = sample.sort_index()
     sample = pearson_df(sample, sample)
     sample_ = sample.values.copy()
@@ -291,56 +289,61 @@ def _get_cutoffs(expression_matrix, expression_matrix_, percentile_ranks):
     sample_ = sample_[~np.isnan(sample_)].ravel()
 
     size = sample.size - len(sample)  # minus the diagonal, as it's not part of sample_
-    if nan_count > .1 * size: # XXX 10% is arbitrary pick
+    if nan_count > size * .1:
         logging.warning(join_lines(
             f'''
-            Correlation sample of {expression_matrix} contains more than 10%
-            NaN values, specifically {nan_count} values out of a sample matrix
-            of {size} values are NaN.
+            Correlation sample of {matrix} contains more than 10% NaN values,
+            specifically {nan_count} values out of a sample matrix of {size}
+            values are NaN.
             '''
         ))
 
-    # Return result
     return sample, np.percentile(sample_, percentile_ranks)
 
-def _get_nodes(baits, correlations, gene_families):
-    # bait nodes
+def _create_nodes(baits, corrs, gene_families):
+    bait_nodes = _create_bait_nodes(baits, gene_families)
+    family_nodes, gene_nodes = _create_non_bait_nodes(baits, corrs, gene_families)
+    return _concat_nodes(bait_nodes, family_nodes, gene_nodes)
+
+def _create_bait_nodes(baits, gene_families):
     assert not baits.empty
-    bait_nodes = baits.to_frame('genes')
-    bait_nodes.reset_index(drop=True, inplace=True)
-    bait_nodes['type'] = NodeType.bait
-    bait_nodes = pd.merge(bait_nodes, gene_families, left_on='genes', right_on='gene', how='left')
-    del bait_nodes['gene']
-    bait_nodes['label'] = bait_nodes['genes']
-    bait_nodes['genes'] = bait_nodes['genes'].apply(lambda gene: frozenset({gene}))
-    bait_nodes['colour'] = [RGB((255, 255, 255))] * len(bait_nodes)
-    bait_nodes['partition_id'] = hash(frozenset())
-    assert not bait_nodes.empty
+    nodes = baits.to_frame('genes')
+    nodes.reset_index(drop=True, inplace=True)
+    nodes['type'] = NodeType.bait
+    nodes = pd.merge(
+        nodes, gene_families, left_on='genes', right_on='gene', how='left'
+    )
+    del nodes['gene']
+    nodes['label'] = nodes['genes']
+    nodes['genes'] = nodes['genes'].apply(lambda gene: frozenset({gene}))
+    nodes['colour'] = [RGB((255, 255, 255))] * len(nodes)
+    nodes['partition_id'] = hash(frozenset())
+    assert not nodes.empty
+    return nodes
 
-    # other nodes
-    correlations = correlations[~correlations['gene'].isin(baits)].copy()  # no baits
-    if not correlations.empty:
-        # split into family and gene nodes
-        correlations = pd.merge(correlations, gene_families, on='gene', how='left')
-        orphans = correlations[correlations['family'].isnull()].copy()
-        correlations.dropna(inplace=True)  # no orphans
-        nodes = []
+def _create_non_bait_nodes(baits, corrs, gene_families):
+    is_not_a_bait = ~corrs['gene'].isin(baits)
+    corrs = corrs[is_not_a_bait].copy()
+    family_nodes = pd.DataFrame()
+    orphans = pd.DataFrame()
+    if not corrs.empty:
+        # Split into family and gene nodes
+        corrs = pd.merge(corrs, gene_families, on='gene', how='left')
+        orphans = corrs[corrs['family'].isnull()].copy()
+        corrs.dropna(inplace=True)  # no orphans
 
-        # family nodes
-        if not correlations.empty:
+        if not corrs.empty:
             # TODO is it necessary?
             # pylint: disable=unnecessary-lambda
             family_nodes = (
-                correlations.groupby('family')[['bait','gene']]
+                corrs.groupby('family')[['bait','gene']]
                 .agg(lambda x: frozenset(x))
                 .reset_index()
             )
             family_nodes.columns = ('family', 'baits', 'genes')
             family_nodes['type'] = NodeType.family
             family_nodes['label'] = family_nodes['family']
-            nodes.append(family_nodes)
 
-        # gene nodes
         if not orphans.empty:
             # TODO is it necessary?
             # pylint: disable=unnecessary-lambda
@@ -354,28 +357,26 @@ def _get_nodes(baits, correlations, gene_families):
             orphans['type'] = NodeType.gene
             orphans['genes'] = orphans['gene'].apply(lambda gene: frozenset({gene}))
             orphans.drop('gene', axis=1, inplace=True)
-            nodes.append(orphans)
+    return family_nodes, orphans
 
-        # concat gene and family nodes
-        nodes = pd.concat(nodes, ignore_index=True)
+def _concat_nodes(bait_nodes, family_nodes, gene_nodes):
+    # TODO test with empty fam and/or gene nodes df
+    nodes = pd.concat((family_nodes, gene_nodes), ignore_index=True)
 
-        # partitions and colours
+    # Add partitions and colours to non-bait nodes
+    if not nodes.empty:
         nodes['partition_id'] = nodes['baits'].apply(hash)
         nodes.drop('baits', axis=1, inplace=True)
         partitions = nodes[['partition_id']].drop_duplicates()
         colours = distinct_colours(len(partitions))
-        # shuffle the colours so distinct colours are less likely to be put
+        # Shuffle the colours so distinct colours are less likely to be put
         # next to each other
         colours = np.random.permutation([RGB.from_float(x) for x in colours])
         partitions['colour'] = colours
         nodes = pd.merge(nodes, partitions, on='partition_id')
 
-        # concat bait nodes to other nodes
-        nodes = pd.concat((nodes, bait_nodes), ignore_index=True)
-    else:
-        nodes = bait_nodes
-
-    # assign ids
+    # Assign ids to all nodes
+    nodes = pd.concat((nodes, bait_nodes), ignore_index=True)
     nodes.index.name = 'id'
     nodes.reset_index(inplace=True)
     columns = (
@@ -383,7 +384,7 @@ def _get_nodes(baits, correlations, gene_families):
     )
     nodes = nodes.reindex(columns=columns)
 
-    # replace all na with None
+    # Replace all na with None
     #
     # TODO instead of replacing with None, let nan and None roam free until the
     # point where it actually makes a difference, at that point you can use
@@ -393,7 +394,7 @@ def _get_nodes(baits, correlations, gene_families):
 
     return nodes
 
-def _get_homology_edges(nodes):
+def _create_homology_edges(nodes):
     bait_nodes = nodes[nodes['type'] == NodeType.bait][['id', 'family']]
     bait_nodes = bait_nodes.dropna(subset=('family',)).rename(columns={'id': 'bait_node'})
     homology_edges = pd.merge(bait_nodes, bait_nodes, on='family', suffixes=('1', '2'))
@@ -402,7 +403,7 @@ def _get_homology_edges(nodes):
     homology_edges = homology_edges[bait1_lt_bait2].copy()
     return homology_edges
 
-def _get_correlation_edges(nodes, correlations):
+def _create_correlation_edges(nodes, correlations):
     if not correlations.empty:
         correlations = correlations.copy()
         nodes = nodes[['id', 'genes']].copy()
