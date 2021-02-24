@@ -15,12 +15,4 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
-'''
-Main classes and functions.
-'''
-
-from coexpnetviz._algorithm import create_network
-from coexpnetviz._cytoscape_writer import write_cytoscape
-from coexpnetviz._various import Network, NodeType, RGB, parse_gene_families
-
 __version__ = '5.0.0.dev1'

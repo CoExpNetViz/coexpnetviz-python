@@ -30,9 +30,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from coexpnetviz import (
-    __version__, write_cytoscape, create_network, parse_gene_families
-)
+from coexpnetviz import __version__
+from coexpnetviz._algorithm import create_network
+from coexpnetviz._cytoscape_writer import write_cytoscape
+from coexpnetviz._various import parse_gene_families
 
 
 class App:

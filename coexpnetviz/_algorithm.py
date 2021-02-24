@@ -62,7 +62,7 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
 
     Returns
     -------
-    ~coexpnetviz.Network
+    ~coexpnetviz._various.Network
         The created network. A bait node for each bait is included. However,
         family nodes are only included if at least one of their genes correlates
         with a bait. Similarly, only gene nodes which correlate with a bait are
