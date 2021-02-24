@@ -59,7 +59,9 @@ def write_cytoscape(network, name, output_dir):
         # Family/gene nodes
         family_nodes = nodes[nodes['type'] != NodeType.bait]
         nodes['family'] = family_nodes['family']
-        nodes['correlating_genes_in_family'] = family_nodes['genes'].apply(lambda genes: ', '.join(sorted(genes)))
+        nodes['correlating_genes_in_family'] = (
+            family_nodes['genes'].apply(lambda genes: ', '.join(sorted(genes)))
+        )
 
         # Gene nodes
         gene_nodes = nodes[nodes['type'] == NodeType.gene]
@@ -67,20 +69,32 @@ def write_cytoscape(network, name, output_dir):
 
         # Any node
         nodes['id'] = nodes['id'].apply(_format_node_id)
-        nodes['type'] = nodes['type'].apply(lambda x: 'bait node' if x == NodeType.bait else 'family node')
+        nodes['type'] = nodes['type'].apply(
+            lambda x: 'bait node' if x == NodeType.bait else 'family node'
+        )
         nodes['colour'] = nodes['colour'].apply(lambda x: x.to_hex())
         nodes['species'] = None
         del nodes['genes']
 
         # Write
-        nodes = nodes.reindex(columns=('id', 'label', 'colour', 'type', 'bait_gene', 'species', 'families', 'family', 'correlating_genes_in_family', 'partition_id'))
+        columns = (
+            'id', 'label', 'colour', 'type', 'bait_gene', 'species',
+            'families', 'family', 'correlating_genes_in_family',
+            'partition_id'
+        )
+        nodes = nodes.reindex(columns=columns)
         nodes.to_csv(str(output_dir / '{}.node.attr'.format(name)), sep='\t', index=False)
 
     def write_edge_attr():
         if network.correlation_edges.empty:
             return
         edges = network.correlation_edges.copy()
-        edges.insert(0, 'edge', edges[['bait_node', 'node']].applymap(_format_node_id).apply(lambda nodes: '{} (cor) {}'.format(*nodes), axis=1))
+        edge_attrs = (
+            edges[['bait_node', 'node']]
+            .applymap(_format_node_id)
+            .apply(lambda nodes: '{} (cor) {}'.format(*nodes), axis=1)
+        )
+        edges.insert(0, 'edge', edge_attrs)
         del edges['bait_node']
         del edges['node']
         edges.to_csv(str(output_dir / '{}.edge.attr'.format(name)), sep='\t', index=False)

@@ -43,9 +43,10 @@ class Network:
         type
             `NodeType` -- the type of the node.
         genes
-            :py:class:`~typing.FrozenSet` of `str` -- if a bait node, the bait gene. If a family node,
-            each gene of the family that correlates with a bait. If a gene node,
-            the gene, which correlates with a bait.
+            :py:class:`~typing.FrozenSet` of `str` -- if a bait node, the bait
+            gene. If a family node, each gene of the family that correlates
+            with a bait. If a gene node, the gene, which correlates with a
+            bait.
         family
             `str` or `None` -- if a bait node, family name which the bait
             gene is part of, if any. If a family node, the corresponding family
@@ -148,7 +149,7 @@ class NodeType(Enum):
     family = 'family'
     gene = 'gene'
 
-class RGB(object):
+class RGB:
 
     '''
     Colour as sequence of red, green, blue colour components.
@@ -189,7 +190,10 @@ class RGB(object):
         '''
         rgb = np.array(rgb)
         if ((rgb < 0.0) | (rgb > 1.0)).any():
-            raise ValueError('Invalid component value(s), should be float in range of [0, 1]. Given rgb: {}', rgb)
+            raise ValueError(
+                'Invalid component value(s), should be float in range of [0, 1]. Given rgb: {}'
+                .format(rgb)
+            )
         return RGB((rgb * 255).round().astype(int))
 
     @property
