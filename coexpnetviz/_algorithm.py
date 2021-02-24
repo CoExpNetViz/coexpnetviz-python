@@ -19,7 +19,7 @@ from itertools import product
 from textwrap import dedent
 import logging
 
-from varbio import pearson_df
+from varbio import pearson_df, join_lines
 import numpy as np
 import pandas as pd
 
@@ -90,33 +90,38 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
 def _validate_input(baits, expression_matrices, gene_families, percentile_ranks):
     # Validate baits (more complex validate below)
     if baits.empty:
-        raise ValueError('Must specify at least one bait, got: {}'.format(baits))
+        raise ValueError(f'Must specify at least one bait, got: {baits}')
 
     # Validate percentile ranks
     percentile_ranks = np.array(percentile_ranks)
     out_of_bounds = (percentile_ranks < 0) | (percentile_ranks > 100)
     if out_of_bounds.any():
-        raise ValueError(
-            'Percentile ranks must be in range of [0, 100], got: {}'
-            .format(percentile_ranks)
-        )
+        raise ValueError(join_lines(
+            f'''
+            Percentile ranks must be in range of [0, 100], got:
+            {percentile_ranks}
+            '''
+        ))
     if percentile_ranks[0] > percentile_ranks[1]:
-        raise ValueError(
-            'Lower percentile rank must be less or equal to upper percentile rank, got: {}'
-            .format(percentile_ranks)
-        )
+        raise ValueError(join_lines(
+            f'''
+            Lower percentile rank must be less or equal to upper percentile
+            rank, got: {percentile_ranks}
+            '''
+        ))
 
     # Validate expression_matrices
     if not expression_matrices:
-        raise ValueError(
-            'Must provide at least one expression matrix, got: {}'
-            .format(expression_matrices)
-        )
+        raise ValueError(join_lines(
+            f'''
+            Must provide at least one expression matrix, got:
+            {expression_matrices}
+            '''
+        ))
     names = [matrix.name for matrix in expression_matrices]
     if len(expression_matrices) != len(set(names)):
         raise ValueError(
-            'Expression matrices must have unique name, got: {}'
-            .format(sorted(names))
+            f'Expression matrices must have unique name, got: {sorted(names)}'
         )
 
     # Check each bait occurs in exactly one matrix
@@ -136,39 +141,43 @@ def _validate_input(baits, expression_matrices, gene_families, percentile_ranks)
         missing_bait_matrix.index = missing_bait_matrix.index.map(lambda matrix: matrix.name)
         missing_bait_matrix.index.name = 'Matrix name'
         missing_bait_matrix.columns.name = 'Gene name'
-        raise ValueError(dedent('''\
+        raise ValueError(dedent(
+            f'''\
             Each of the following baits is either missing from all or present in
             multiple expression matrices:
             
-            {}
+            {missing_bait_matrix.to_string()}
             
             Missing baits are columns with no "present" value, while baits in
-            multiple matrices have multiple "present" values in a column.''')
-            .format(missing_bait_matrix.to_string())
-        )
+            multiple matrices have multiple "present" values in a column.'''
+        ))
 
     # and each matrix has at least one bait
     is_baitless = bait_presence.sum(axis=1) == 0
     if is_baitless.any():
         matrices = np.array(expression_matrices)[is_baitless]
         matrices = ', '.join(map(str, matrices))
-        raise ValueError(
-            'Some expression matrices have no baits: {}. '
-            'Each expression matrix must contain at least one bait. '
-            'Either drop the matrices or add some of their genes to the baits list.'
-            .format(matrices)
-        )
+        raise ValueError(join_lines(
+            f'''
+            Some expression matrices have no baits: {matrices}. Each expression
+            matrix must contain at least one bait. Either drop the matrices or
+            add some of their genes to the baits list.
+            '''
+        ))
 
     # Check the matrices don't overlap (same gene in multiple matrices)
     all_genes = pd.Series(sum((list(matrix.data.index) for matrix in expression_matrices), []))
     overlapping_genes = all_genes[all_genes.duplicated()]
     if not overlapping_genes.empty:
-        raise ValueError(
-            'The following genes appear in multiple expression matrices: {}. '
-            'CoExpNetViz does not support gene expression data from different matrices for the same gene. '
-            'Please remove rows from the given matrices such that no gene appears in multiple matrices.'
-            .format(', '.join(overlapping_genes))
-        )
+        raise ValueError(join_lines(
+            f'''
+            The following genes appear in multiple expression matrices: {',
+            '.join(overlapping_genes)}. CoExpNetViz does not support gene
+            expression data from different matrices for the same gene. Please
+            remove rows from the given matrices such that no gene appears in
+            multiple matrices.
+            '''
+        ))
 
 def _correlate_matrices(expression_matrices, baits, percentile_ranks):
     results = tuple(
@@ -199,17 +208,21 @@ def _correlate_matrix(matrix, baits, percentile_ranks):
     rows_dropped = sum(tiny_stds)
     if rows_dropped:
         matrix_data = matrix_data[~tiny_stds]
-        logging.warning(
-            'Dropped {} out of {} rows from {} due to having (near) 0 standard deviation. '
-            'These rows have a NaN correlation with any other row.'
-            .format(rows_dropped, len(matrix_data)+rows_dropped, matrix)
-        )
+        logging.warning(join_lines(
+            f'''
+            Dropped {rows_dropped} out of {len(matrix_data)+rows_dropped} rows
+            from {matrix} due to having (near) 0 standard deviation. These rows
+            have a NaN correlation with any other row.
+            '''
+        ))
         if matrix_data.empty:
-            raise ValueError(
-                'After dropping rows with tiny standard deviation, {} has no rows. '
-                'Please check the expression matrix for errors or drop it from the input.'
-                .format(matrix)
-            )
+            raise ValueError(join_lines(
+                f'''
+                After dropping rows with tiny standard deviation, {matrix} has
+                no rows. Please check the expression matrix for errors or drop
+                it from the input.
+                '''
+            ))
 
     # Get cutoffs
     sample, percentiles = _get_cutoffs(matrix, matrix_data, percentile_ranks)
@@ -279,10 +292,13 @@ def _get_cutoffs(expression_matrix, expression_matrix_, percentile_ranks):
 
     size = sample.size - len(sample)  # minus the diagonal, as it's not part of sample_
     if nan_count > .1 * size: # XXX 10% is arbitrary pick
-        logging.warning(
-            'Correlation sample of {} contains more than 10% NaN values, specifically {} values out of a sample matrix of {} values are NaN'
-            .format(expression_matrix, nan_count, size)
-        )
+        logging.warning(join_lines(
+            f'''
+            Correlation sample of {expression_matrix} contains more than 10%
+            NaN values, specifically {nan_count} values out of a sample matrix
+            of {size} values are NaN.
+            '''
+        ))
 
     # Return result
     return sample, np.percentile(sample_, percentile_ranks)

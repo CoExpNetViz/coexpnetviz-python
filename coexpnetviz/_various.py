@@ -18,7 +18,7 @@
 from enum import Enum
 from math import floor, sqrt
 
-from varbio import parse_yaml
+from varbio import parse_yaml, join_lines
 import attr
 import numpy as np
 import pandas as pd
@@ -174,9 +174,16 @@ class RGB:
     def __init__(self, rgb):
         self._rgb = np.array(rgb)
         if ((self._rgb < 0) | (self._rgb > 255)).any():
-            raise ValueError('Invalid colour component value(s). Given rgb: {}'.format(self._rgb))
+            raise ValueError(
+                f'Invalid colour component value(s). Given rgb: {self._rgb}'
+            )
         if self._rgb.dtype != int:
-            raise ValueError('Colour component value(s) must be int. Given values have type {}'.format(self._rgb.dtype))
+            raise ValueError(join_lines(
+                f'''
+                Colour component value(s) must be int. Given values have type
+                {self._rgb.dtype}
+                '''
+            ))
 
     @staticmethod
     def from_float(rgb):
@@ -190,10 +197,12 @@ class RGB:
         '''
         rgb = np.array(rgb)
         if ((rgb < 0.0) | (rgb > 1.0)).any():
-            raise ValueError(
-                'Invalid component value(s), should be float in range of [0, 1]. Given rgb: {}'
-                .format(rgb)
-            )
+            raise ValueError(join_lines(
+                f'''
+                Invalid component value(s), should be float in range of [0, 1].
+                Given rgb: {rgb}
+                '''
+            ))
         return RGB((rgb * 255).round().astype(int))
 
     @property

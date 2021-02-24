@@ -83,7 +83,7 @@ def write_cytoscape(network, name, output_dir):
             'partition_id'
         )
         nodes = nodes.reindex(columns=columns)
-        nodes.to_csv(str(output_dir / '{}.node.attr'.format(name)), sep='\t', index=False)
+        nodes.to_csv(str(output_dir / f'{name}.node.attr'), sep='\t', index=False)
 
     def write_edge_attr():
         if network.correlation_edges.empty:
@@ -97,7 +97,7 @@ def write_cytoscape(network, name, output_dir):
         edges.insert(0, 'edge', edge_attrs)
         del edges['bait_node']
         del edges['node']
-        edges.to_csv(str(output_dir / '{}.edge.attr'.format(name)), sep='\t', index=False)
+        edges.to_csv(str(output_dir / f'{name}.edge.attr'), sep='\t', index=False)
 
     def write_sif():
         edges = []
@@ -125,7 +125,7 @@ def write_cytoscape(network, name, output_dir):
         sif = pd.concat(edges, ignore_index=True)
         sif = sif.reindex(columns=('node1', 'type', 'node2'))
         sif[['node1', 'node2']] = sif[['node1', 'node2']].applymap(_format_node_id)
-        sif.to_csv(str(output_dir / '{}.sif'.format(name)), sep='\t', header=False, index=False)
+        sif.to_csv(str(output_dir / f'{name}.sif'), sep='\t', header=False, index=False)
 
     if network.nodes.empty:
         raise ValueError('network.nodes is empty. Cytoscape networks must have at least one node.')
@@ -144,4 +144,4 @@ def _format_node_id(node_id):
     if pd.isnull(node_id):
         return ''
     else:
-        return 'n{}'.format(int(node_id))
+        return f'n{int(node_id)}'

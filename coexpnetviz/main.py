@@ -146,11 +146,11 @@ class App:
             name = expression_matrix.name
 
             sample.index.name = None
-            sample_file = str(self._output_dir / '{}.sample_matrix.txt'.format(name))
+            sample_file = str(self._output_dir / f'{name}.sample_matrix.txt')
             sample.to_csv(sample_file, sep='\t', na_rep=str(np.nan))
 
             correlation_matrix.index.name = None
-            correlation_file = str(self._output_dir / '{}.correlation_matrix.txt'.format(name))
+            correlation_file = str(self._output_dir / f'{name}.correlation_matrix.txt')
             correlation_matrix.to_csv(correlation_file, sep='\t', na_rep=str(np.nan))
 
             # Flatten sample matrix
@@ -163,7 +163,10 @@ class App:
             line_style = dict(color='r', linewidth=2)
             plt.clf()
             pd.Series(sample).plot.hist(bins=60)
-            plt.title(f'Correlations between sample of\n{sample_size} genes in {expression_matrix.name}')
+            plt.title(
+                f'Correlations between sample of\n'
+                f'{sample_size} genes in {expression_matrix.name}'
+            )
             plt.xlabel('pearson')
             plt.ylabel('frequency')
             plt.axvline(percentiles[0], **line_style)
@@ -173,7 +176,11 @@ class App:
             # Write cdf
             plt.clf()
             pd.Series(sample).plot.hist(bins=60, cumulative=True, density=True)
-            plt.title(f'Cumulative distribution of correlations\nbetween sample of {sample_size} genes in {expression_matrix.name}')
+            plt.title(
+                f'Cumulative distribution of correlations\n'
+                f'between sample of {sample_size} genes in '
+                f'{expression_matrix.name}'
+            )
             plt.xlabel('pearson')
             plt.ylabel('Cumulative probability, i.e. $P(corr \\leq x)$')
             plt.axhline(self._percentile_ranks[0]/100.0, **line_style)
