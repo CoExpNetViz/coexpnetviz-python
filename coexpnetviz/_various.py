@@ -36,12 +36,11 @@ class Network:
         Nodes of the network as a data frame with the following columns:
 
         id
-            `int` -- unique node id.
+            `int`
         label
-            `str` -- short description of the node. Labels are unique (but often
-            don't make legal identifiers, e.g. they may contain spaces).
+            `str`
         type
-            `NodeType` -- the type of the node.
+            `NodeType`
         genes
             :py:class:`~typing.FrozenSet` of `str` -- if a bait node, the bait
             gene. If a family node, each gene of the family that correlates
@@ -52,12 +51,9 @@ class Network:
             gene is part of, if any. If a family node, the corresponding family
             name. Else, `None`.
         colour
-            `RGB` -- colour of the node.
+            `RGB`
         partition_id
-            `int` -- partition id. Bait nodes form a partition. Other nodes are
-            partitioned according to the subset of baits they correlate with.
-
-        Each gene is assigned to at most 1 node.
+            `int`
 
     homology_edges : ~pandas.DataFrame
         Homology edges indicating homologous baits. There are no self edges
@@ -136,15 +132,6 @@ class Network:
     correlation_matrices = attr.ib()
 
 class NodeType(Enum):
-
-    '''
-    Type of a node in a `Network`.
-
-    Bait nodes represent a bait gene. Family nodes represent the genes of the family
-    that correlate with a bait. Gene nodes represent a non-bait gene that has no
-    family but does correlate with a bait.
-    '''
-
     bait = 'bait'
     family = 'family'
     gene = 'gene'
