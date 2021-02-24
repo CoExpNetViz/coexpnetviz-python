@@ -27,17 +27,6 @@ def write_cytoscape(network, name, output_dir):
     '''
     Write a Cytoscape network.
 
-    The outputted network consists of the following files:
-
-    {name}.sif
-        The network structure: list of nodes and the edges between them.
-    {name}.node.attr
-        Node attributes.
-    {name}.edge.attr
-        Edge attributes.
-    coexpnetviz_style.xml
-        Style to display the network with.
-
     Parameters
     ----------
     network : Network
@@ -133,12 +122,6 @@ def write_cytoscape(network, name, output_dir):
     write_node_attr()
     write_edge_attr()
     write_sif()
-
-    # Copy additional files
-    # Note: can't do a plain file copy as resource might be in an egg
-    (output_dir / 'coexpnetviz_style.xml').write_bytes(
-        resource_string('coexpnetviz', 'data/coexpnetviz_style.xml')
-    )
 
 def _format_node_id(node_id):
     if pd.isnull(node_id):

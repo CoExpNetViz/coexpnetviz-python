@@ -16,7 +16,6 @@
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
 from pathlib import Path
-from pkg_resources import resource_string  # @UnresolvedImport
 import argparse
 import csv
 import logging
@@ -84,7 +83,6 @@ class App:
             na_rep=str(np.nan),
             index=False,
         )
-        (self._output_dir / 'README.txt').write_bytes(resource_string(__name__, 'data/README.txt'))
 
     @staticmethod
     def _init():
