@@ -29,7 +29,8 @@ from coexpnetviz._various import (
 )
 
 
-# TODO refactor: inplace does not necessarily improve performance. Remove unnecessary use of inplace.
+# TODO refactor: inplace does not necessarily improve performance. Remove
+# unnecessary use of inplace.
 
 def create_network(baits, expression_matrices, gene_families, percentile_ranks=(5, 95)):
     '''
@@ -68,7 +69,12 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
         with a bait. Similarly, only gene nodes which correlate with a bait are
         included.
     '''
-    network = MutableNetwork(None, None, None, None, samples=[], percentiles=[], correlation_matrices=[])
+    network = MutableNetwork(
+        None, None, None, None,
+        samples=[],
+        percentiles=[],
+        correlation_matrices=[]
+    )
 
     # Validate baits (more complex validate below)
     if baits.empty:
@@ -78,21 +84,41 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
     percentile_ranks = np.array(percentile_ranks)
     out_of_bounds = (percentile_ranks < 0) | (percentile_ranks > 100)
     if out_of_bounds.any():
-        raise ValueError('Percentile ranks must be in range of [0, 100], got: {}'.format(percentile_ranks))
+        raise ValueError(
+            'Percentile ranks must be in range of [0, 100], got: {}'
+            .format(percentile_ranks)
+        )
     if percentile_ranks[0] > percentile_ranks[1]:
-        raise ValueError('Lower percentile rank must be less or equal to upper percentile rank, got: {}'.format(percentile_ranks))
+        raise ValueError(
+            'Lower percentile rank must be less or equal to upper percentile rank, got: {}'
+            .format(percentile_ranks)
+        )
 
     # Validate expression_matrices
     if not expression_matrices:
-        raise ValueError('Must provide at least one expression matrix, got: {}'.format(expression_matrices))
+        raise ValueError(
+            'Must provide at least one expression matrix, got: {}'
+            .format(expression_matrices)
+        )
     names = [matrix.name for matrix in expression_matrices]
     if len(expression_matrices) != len(set(names)):
-        raise ValueError('Expression matrices must have unique name, got: {}'.format(sorted(names)))
+        raise ValueError(
+            'Expression matrices must have unique name, got: {}'
+            .format(sorted(names))
+        )
 
     # Check each bait occurs in exactly one matrix
-    bait_presence = np.array([bait in matrix.data.index for matrix, bait in product(expression_matrices, baits)])
+    bait_presence = np.array([
+        bait in matrix.data.index
+        for matrix, bait in product(expression_matrices, baits)
+    ])
     bait_presence = bait_presence.reshape(len(expression_matrices), len(baits))
-    missing_bait_matrix = pd.DataFrame(bait_presence, index=expression_matrices, columns=baits).loc[:,bait_presence.sum(axis=0) != 1]
+    missing_bait_matrix = pd.DataFrame(
+        bait_presence,
+        index=expression_matrices,
+        columns=baits
+    )
+    missing_bait_matrix = missing_bait_matrix.loc[:,bait_presence.sum(axis=0) != 1]
     if not missing_bait_matrix.empty:
         missing_bait_matrix = missing_bait_matrix.applymap(lambda x: 'present' if x else 'absent')
         missing_bait_matrix.index = missing_bait_matrix.index.map(lambda matrix: matrix.name)
@@ -175,7 +201,8 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
 
         # Apply cutoff
         corrs = corrs[(corrs <= lower_cutoff) | (corrs >= upper_cutoff)]
-        corrs.dropna(how='all', inplace=True)  # TODO not sure if aids performance. If not, this is unnecessary
+        # TODO not sure if helps performance. If not, this is unnecessary
+        corrs.dropna(how='all', inplace=True)
 
         # Reformat to relational (DB) format
         corrs.index.name = 'gene'
@@ -188,7 +215,8 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
     network.percentiles = tuple(network.percentiles)
     network.correlation_matrices = tuple(network.correlation_matrices)
     correlations = pd.concat(correlations)
-    correlations = correlations[correlations['bait'] < correlations['gene']]  # drop self comparisons
+    # drop self comparisons
+    correlations = correlations[correlations['bait'] < correlations['gene']]
     correlations = correlations.reindex(columns=('bait', 'gene', 'correlation'))
 
     # Format as Network
@@ -240,7 +268,10 @@ def _get_cutoffs(expression_matrix, expression_matrix_, percentile_ranks):
 
     size = sample.size - len(sample)  # minus the diagonal, as it's not part of sample_
     if nan_count > .1 * size: # XXX 10% is arbitrary pick
-        logging.warning('Correlation sample of {} contains more than 10% NaN values, specifically {} values out of a sample matrix of {} values are NaN'.format(expression_matrix, nan_count, size))
+        logging.warning(
+            'Correlation sample of {} contains more than 10% NaN values, specifically {} values out of a sample matrix of {} values are NaN'
+            .format(expression_matrix, nan_count, size)
+        )
 
     # Return result
     return sample, np.percentile(sample_, percentile_ranks)
@@ -270,7 +301,13 @@ def _get_nodes(baits, correlations, gene_families):
 
         # family nodes
         if not correlations.empty:
-            family_nodes = correlations.groupby('family')[['bait','gene']].agg(lambda x: frozenset(x)).reset_index()
+            # TODO is it necessary?
+            # pylint: disable=unnecessary-lambda
+            family_nodes = (
+                correlations.groupby('family')[['bait','gene']]
+                .agg(lambda x: frozenset(x))
+                .reset_index()
+            )
             family_nodes.columns = ('family', 'baits', 'genes')
             family_nodes['type'] = NodeType.family
             family_nodes['label'] = family_nodes['family']
@@ -278,7 +315,13 @@ def _get_nodes(baits, correlations, gene_families):
 
         # gene nodes
         if not orphans.empty:
-            orphans = orphans.groupby('gene')[['bait']].agg(lambda x: frozenset(x)).reset_index()
+            # TODO is it necessary?
+            # pylint: disable=unnecessary-lambda
+            orphans = (
+                orphans.groupby('gene')[['bait']]
+                .agg(lambda x: frozenset(x))
+                .reset_index()
+            )
             orphans.columns = ('gene', 'baits')
             orphans['label'] = orphans['gene']
             orphans['type'] = NodeType.gene
@@ -294,7 +337,9 @@ def _get_nodes(baits, correlations, gene_families):
         nodes.drop('baits', axis=1, inplace=True)
         partitions = nodes[['partition_id']].drop_duplicates()
         colours = distinct_colours(len(partitions))
-        colours = np.random.permutation([RGB.from_float(x) for x in colours])  # shuffle the colours so distinct colours are less likely to be put next to each other
+        # shuffle the colours so distinct colours are less likely to be put
+        # next to each other
+        colours = np.random.permutation([RGB.from_float(x) for x in colours])
         partitions['colour'] = colours
         nodes = pd.merge(nodes, partitions, on='partition_id')
 
@@ -306,7 +351,10 @@ def _get_nodes(baits, correlations, gene_families):
     # assign ids
     nodes.index.name = 'id'
     nodes.reset_index(inplace=True)
-    nodes = nodes.reindex(columns=('id', 'label', 'type', 'genes', 'family', 'colour', 'partition_id'))
+    columns = (
+        'id', 'label', 'type', 'genes', 'family', 'colour', 'partition_id'
+    )
+    nodes = nodes.reindex(columns=columns)
 
     # replace all na with None
     #
@@ -323,7 +371,8 @@ def _get_homology_edges(nodes):
     bait_nodes = bait_nodes.dropna(subset=('family',)).rename(columns={'id': 'bait_node'})
     homology_edges = pd.merge(bait_nodes, bait_nodes, on='family', suffixes=('1', '2'))
     del homology_edges['family']
-    homology_edges = homology_edges[homology_edges['bait_node1'] < homology_edges['bait_node2']].copy()
+    bait1_lt_bait2 = homology_edges['bait_node1'] < homology_edges['bait_node2']
+    homology_edges = homology_edges[bait1_lt_bait2].copy()
     return homology_edges
 
 def _get_correlation_edges(nodes, correlations):
