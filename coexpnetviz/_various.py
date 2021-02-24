@@ -230,9 +230,7 @@ class RGB:
         return repr(self)
 
     def to_hex(self):
-        '''
-        Hex formatted colour, i.e. ``#RRGGBB``.
-        '''
+        'Hex formatted colour `#RRGGBB`'
         return '#{:02x}{:02x}{:02x}'.format(*self._rgb)
 
 # Convert HDTV Y'UV to RGB. See http://www.equasys.de/colorconversion.html
