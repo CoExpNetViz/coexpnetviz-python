@@ -63,10 +63,8 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
     Returns
     -------
     ~coexpnetviz._various.Network
-        The created network. A bait node for each bait is included. However,
-        family nodes are only included if at least one of their genes correlates
-        with a bait. Similarly, only gene nodes which correlate with a bait are
-        included.
+        A bait node for each bait is included. Non-bait nodes are only included
+        if at least one of their genes correlates with a bait.
     '''
     _validate_input(baits, expression_matrices, gene_families, percentile_ranks)
 
@@ -301,6 +299,19 @@ def _estimate_cutoffs(matrix, matrix_df, percentile_ranks):
     return sample, np.percentile(sample_, percentile_ranks)
 
 def _create_nodes(baits, corrs, gene_families):
+    '''
+    Create DataFrame of nodes
+    
+    Columns (see node attrs in the docs):
+
+    id : int
+    label : str
+    type : NodeType
+    genes : FrozenSet of str
+    family : str or None
+    colour : RGB
+    partition_id : int
+    '''
     bait_nodes = _create_bait_nodes(baits, gene_families)
     family_nodes, gene_nodes = _create_non_bait_nodes(baits, corrs, gene_families)
     return _concat_nodes(bait_nodes, family_nodes, gene_nodes)
@@ -395,15 +406,36 @@ def _concat_nodes(bait_nodes, family_nodes, gene_nodes):
     return nodes
 
 def _create_homology_edges(nodes):
+    '''
+    Create DataFrame of homology edges between baits with columns:
+
+    bait_node1 : int
+    bait_node2 : int
+        Node id
+    '''
     bait_nodes = nodes[nodes['type'] == NodeType.bait][['id', 'family']]
     bait_nodes = bait_nodes.dropna(subset=('family',)).rename(columns={'id': 'bait_node'})
     homology_edges = pd.merge(bait_nodes, bait_nodes, on='family', suffixes=('1', '2'))
     del homology_edges['family']
+    # Avoid self/symmetrical edges (and there are no duplicate edges to begin
+    # with)
     bait1_lt_bait2 = homology_edges['bait_node1'] < homology_edges['bait_node2']
     homology_edges = homology_edges[bait1_lt_bait2].copy()
     return homology_edges
 
 def _create_correlation_edges(nodes, correlations):
+    '''
+    Create DataFrame of correlation edges between bait and non-bait nodes.
+
+    Columns:
+
+    bait_node : int
+    node : int
+    max_correlation : float
+    '''
+    # TODO node musn't be a bait node.
+    # TODO no self/symmetrical/duplicate edges (would apparently already be the
+    # case; but at least leave a comment why that is so)
     if not correlations.empty:
         correlations = correlations.copy()
         nodes = nodes[['id', 'genes']].copy()

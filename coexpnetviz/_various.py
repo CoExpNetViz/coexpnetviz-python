@@ -32,60 +32,6 @@ class Network:
 
     Parameters
     ----------
-    nodes : ~pandas.DataFrame
-        Nodes of the network as a data frame with the following columns:
-
-        id
-            `int`
-        label
-            `str`
-        type
-            `NodeType`
-        genes
-            :py:class:`~typing.FrozenSet` of `str` -- if a bait node, the bait
-            gene. If a family node, each gene of the family that correlates
-            with a bait. If a gene node, the gene, which correlates with a
-            bait.
-        family
-            `str` or `None` -- if a bait node, family name which the bait
-            gene is part of, if any. If a family node, the corresponding family
-            name. Else, `None`.
-        colour
-            `RGB`
-        partition_id
-            `int`
-
-    homology_edges : ~pandas.DataFrame
-        Homology edges indicating homologous baits. There are no self edges
-        (``bait_node1==bait_node2``), no synonymous edges (one edge being the
-        same as another edge when swapping ``bait_node1`` and ``bait_node2``) and no
-        duplicates.
-
-        The data frame has the following columns:
-
-        bait_node1
-            `int` -- Node id of the first bait of the edge.
-        bait_node2
-            `int` -- Node id of the other bait of the edge.
-
-    correlation_edges : ~pandas.DataFrame
-        Correlation edges between bait nodes and all nodes (including baits again).
-        There are no self edges (``bait_node==node``), no synonymous edges (one
-        edge being the same as another edge when swapping ``bait_node`` and
-        ``node``) and no duplicates.
-
-        The data frame has the following columns:
-
-        bait_node
-            `int` -- Node id of the bait of the edge.
-        node
-            `int` -- Node id of the other node (of any type) of the edge.
-        max_correlation
-            `float` -- If node is a family node, the highest of all correlations
-            between bait and family genes (``max(correlation(bait, gene) for
-            gene in family)``). Otherwise, simply the correlation between the
-            bait gene and the gene of the other node.
-
     significant_correlations : ~pandas.DataFrame
         Gene correlations after percentile-based cut-off. There are no self edges
         (``bait==gene``), no synonymous edges (one edge being the same as another edge
@@ -117,10 +63,6 @@ class Network:
         ``expression_matrices[i]`` before any values have been cut off. Each
         data frame's is a matrix of correlations of type `float`, its columns
         are bait genes of type `str`, its index are genes of type `str`.
-
-    See also
-    --------
-    create_network : Create a comparative coexpression network.
     '''
 
     nodes = attr.ib()
