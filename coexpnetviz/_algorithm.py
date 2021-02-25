@@ -84,10 +84,6 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
     )
 
 def _validate_input(baits, expression_matrices, gene_families, percentile_ranks):
-    # Validate baits (more complex validate below)
-    if baits.empty:
-        raise ValueError(f'Must specify at least one bait, got: {baits}')
-
     # Validate percentile ranks
     percentile_ranks = np.array(percentile_ranks)
     out_of_bounds = (percentile_ranks < 0) | (percentile_ranks > 100)

@@ -23,7 +23,8 @@ import logging
 import sys
 
 from varbio import (
-    ExpressionMatrix, parse_baits, parse_csv, parse_yaml, init_logging
+    ExpressionMatrix, parse_baits, parse_csv, parse_yaml, init_logging,
+    UserError
 )
 import matplotlib
 import matplotlib.pyplot as plt
@@ -86,8 +87,7 @@ class App:
         log_file = self._output_dir / 'coexpnetviz.log'
         init_logging('coexpnetviz', __version__, log_file)
 
-        baits = Path(config['baits'])
-        self._baits = pd.Series(parse_baits(baits, min_baits=2))
+        self._baits = _parse_json_baits(config)
 
         # If file names are not unique across matrices, it's up to the user to
         # rename them to be unique
@@ -143,6 +143,17 @@ def _parse_args():
     )
     args = parser.parse_args()
     return Path(args.config_file)
+
+def _parse_json_baits(config):
+    baits = config['baits']
+    min_baits = 2
+    if isinstance(baits, str):
+        baits = parse_baits(Path(baits), min_baits)
+    else:
+        assert isinstance(baits, list)
+        if len(baits) < min_baits:
+            raise UserError(f'Need at least 2 baits, but got only {len(baits)}')
+    return pd.Series(baits)
 
 def _print_json_response(network):
     response = {}
