@@ -31,7 +31,7 @@ class Network:
 
     Parameters
     ----------
-    significant_correlations : ~pandas.DataFrame
+    significant_cors : ~pandas.DataFrame
         Gene correlations after percentile-based cut-off. There are no self edges
         (``bait==gene``), no synonymous edges (one edge being the same as another edge
         when swapping ``bait`` and ``gene``) and no duplicates.
@@ -57,8 +57,8 @@ class Network:
         ``percentiles[i]`` are the lower and upper percentiles, respectively,
         used as cutoff on ``correlation_matrices[i]``.
 
-    correlation_matrices : ~typing.Tuple[~pandas.DataFrame]
-        ``correlation_matrices[i]`` is the correlation matrix derived from
+    cor_matrices : ~typing.Tuple[~pandas.DataFrame]
+        ``cor_matrices[i]`` is the correlation matrix derived from
         ``expression_matrices[i]`` before any values have been cut off. Each
         data frame's is a matrix of correlations of type `float`, its columns
         are bait genes of type `str`, its index are genes of type `str`.
@@ -66,11 +66,11 @@ class Network:
 
     nodes = attr.ib()
     homology_edges = attr.ib()
-    correlation_edges = attr.ib()
-    significant_correlations = attr.ib()
+    cor_edges = attr.ib()
+    significant_cors = attr.ib()
     samples = attr.ib()
     percentiles = attr.ib()
-    correlation_matrices = attr.ib()
+    cor_matrices = attr.ib()
 
 class RGB:
 

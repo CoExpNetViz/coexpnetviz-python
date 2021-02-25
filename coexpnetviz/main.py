@@ -78,7 +78,7 @@ class App:
         write_cytoscape(self._network, 'network', self._output_dir)
         self._write_matrix_intermediates()
         self._write_percentiles()
-        self._network.significant_correlations.to_csv(
+        self._network.significant_cors.to_csv(
             str(self._output_dir / 'significant_correlations.txt'),
             sep='\t',
             na_rep=str(np.nan),
@@ -151,19 +151,19 @@ class App:
         matrix_outputs = zip(
             self._expression_matrices,
             self._network.samples,
-            self._network.correlation_matrices,
+            self._network.cor_matrices,
             self._network.percentiles,
         )
-        for expression_matrix, sample, correlation_matrix, percentiles in matrix_outputs:
+        for expression_matrix, sample, cor_matrix, percentiles in matrix_outputs:
             name = expression_matrix.name
 
             sample.index.name = None
             sample_file = str(self._output_dir / f'{name}.sample_matrix.txt')
             sample.to_csv(sample_file, sep='\t', na_rep=str(np.nan))
 
-            correlation_matrix.index.name = None
-            correlation_file = str(self._output_dir / f'{name}.correlation_matrix.txt')
-            correlation_matrix.to_csv(correlation_file, sep='\t', na_rep=str(np.nan))
+            cor_matrix.index.name = None
+            cor_file = str(self._output_dir / f'{name}.correlation_matrix.txt')
+            cor_matrix.to_csv(cor_file, sep='\t', na_rep=str(np.nan))
 
             # Flatten sample matrix
             sample_size = len(sample.index)
@@ -194,7 +194,7 @@ class App:
                 f'{expression_matrix.name}'
             )
             plt.xlabel('pearson')
-            plt.ylabel('Cumulative probability, i.e. $P(corr \\leq x)$')
+            plt.ylabel('Cumulative probability, i.e. $P(cor \\leq x)$')
             plt.axhline(self._percentile_ranks[0]/100.0, **line_style)
             plt.axhline(self._percentile_ranks[1]/100.0, **line_style)
             plt.savefig(str(self._output_dir / f'{expression_matrix.name}.sample_cdf.png'))

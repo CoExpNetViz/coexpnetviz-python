@@ -68,21 +68,21 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
     '''
     _validate_input(baits, expression_matrices, gene_families, percentile_ranks)
 
-    corrs, samples, percentiles, corr_matrices = _correlate_matrices(
+    cors, samples, percentiles, cor_matrices = _correlate_matrices(
         expression_matrices, baits, percentile_ranks
     )
-    nodes = _create_nodes(baits, corrs, gene_families)
+    nodes = _create_nodes(baits, cors, gene_families)
     homology_edges = _create_homology_edges(nodes)
-    correlation_edges = _create_correlation_edges(nodes, corrs)
+    cor_edges = _create_cor_edges(nodes, cors)
 
     return Network(
-        significant_correlations=corrs,
+        significant_cors=cors,
         samples=samples,
         percentiles=percentiles,
-        correlation_matrices=corr_matrices,
+        cor_matrices=cor_matrices,
         nodes=nodes,
         homology_edges=homology_edges,
-        correlation_edges=correlation_edges,
+        cor_edges=cor_edges,
     )
 
 def _validate_input(baits, expression_matrices, gene_families, percentile_ranks):
@@ -183,16 +183,16 @@ def _correlate_matrices(expression_matrices, baits, percentile_ranks):
         for matrix in expression_matrices
     )
 
-    corrs = pd.concat([result[0] for result in results])
+    cors = pd.concat([result[0] for result in results])
     # Drop self comparisons (and symmetrical ones I guess)
-    corrs = corrs[corrs['bait'] < corrs['gene']]
-    corrs = corrs.reindex(columns=('bait', 'gene', 'correlation'))
+    cors = cors[cors['bait'] < cors['gene']]
+    cors = cors.reindex(columns=('bait', 'gene', 'correlation'))
 
     samples = tuple(result[1] for result in results)
     percentiles = tuple(result[2] for result in results)
-    corr_matrices = tuple(result[3] for result in results)
+    cor_matrices = tuple(result[3] for result in results)
 
-    return corrs, samples, percentiles, corr_matrices
+    return cors, samples, percentiles, cor_matrices
 
 def _correlate_matrix(matrix, baits, percentile_ranks):
     matrix_df = matrix.data
@@ -231,23 +231,23 @@ def _correlate_matrix(matrix, baits, percentile_ranks):
     baits_ = matrix_df.reindex(baits).dropna()
 
     # Correlation matrix
-    corrs = pearson_df(matrix_df, baits_)
-    corrs.index.name = None
-    corrs.columns.name = None
-    corr_matrix = corrs.copy()
+    cors = pearson_df(matrix_df, baits_)
+    cors.index.name = None
+    cors.columns.name = None
+    cor_matrix = cors.copy()
 
     # Apply cutoff
-    corrs = corrs[(corrs <= lower_cutoff) | (corrs >= upper_cutoff)]
+    cors = cors[(cors <= lower_cutoff) | (cors >= upper_cutoff)]
     # TODO not sure if helps performance. If not, this is unnecessary
-    corrs.dropna(how='all', inplace=True)
+    cors.dropna(how='all', inplace=True)
 
     # Reformat to relational (DB) format
-    corrs.index.name = 'gene'
-    corrs.reset_index(inplace=True)
-    corrs = pd.melt(corrs, id_vars=['gene'], var_name='bait', value_name='correlation')
-    corrs.dropna(subset=['correlation'], inplace=True)
+    cors.index.name = 'gene'
+    cors.reset_index(inplace=True)
+    cors = pd.melt(cors, id_vars=['gene'], var_name='bait', value_name='correlation')
+    cors.dropna(subset=['correlation'], inplace=True)
 
-    return corrs, sample, percentiles, corr_matrix
+    return cors, sample, percentiles, cor_matrix
 
 def _estimate_cutoffs(matrix, matrix_df, percentile_ranks):
     '''
@@ -298,7 +298,7 @@ def _estimate_cutoffs(matrix, matrix_df, percentile_ranks):
 
     return sample, np.percentile(sample_, percentile_ranks)
 
-def _create_nodes(baits, corrs, gene_families):
+def _create_nodes(baits, cors, gene_families):
     '''
     Create DataFrame of nodes
 
@@ -313,7 +313,7 @@ def _create_nodes(baits, corrs, gene_families):
     partition_id : int
     '''
     bait_nodes = _create_bait_nodes(baits, gene_families)
-    family_nodes, gene_nodes = _create_non_bait_nodes(baits, corrs, gene_families)
+    family_nodes, gene_nodes = _create_non_bait_nodes(baits, cors, gene_families)
     return _concat_nodes(bait_nodes, family_nodes, gene_nodes)
 
 def _create_bait_nodes(baits, gene_families):
@@ -332,22 +332,22 @@ def _create_bait_nodes(baits, gene_families):
     assert not nodes.empty
     return nodes
 
-def _create_non_bait_nodes(baits, corrs, gene_families):
-    is_not_a_bait = ~corrs['gene'].isin(baits)
-    corrs = corrs[is_not_a_bait].copy()
+def _create_non_bait_nodes(baits, cors, gene_families):
+    is_not_a_bait = ~cors['gene'].isin(baits)
+    cors = cors[is_not_a_bait].copy()
     family_nodes = pd.DataFrame()
     orphans = pd.DataFrame()
-    if not corrs.empty:
+    if not cors.empty:
         # Split into family and gene nodes
-        corrs = pd.merge(corrs, gene_families, on='gene', how='left')
-        orphans = corrs[corrs['family'].isnull()].copy()
-        corrs.dropna(inplace=True)  # no orphans
+        cors = pd.merge(cors, gene_families, on='gene', how='left')
+        orphans = cors[cors['family'].isnull()].copy()
+        cors.dropna(inplace=True)  # no orphans
 
-        if not corrs.empty:
+        if not cors.empty:
             # TODO is it necessary?
             # pylint: disable=unnecessary-lambda
             family_nodes = (
-                corrs.groupby('family')[['bait','gene']]
+                cors.groupby('family')[['bait','gene']]
                 .agg(lambda x: frozenset(x))
                 .reset_index()
             )
@@ -423,7 +423,7 @@ def _create_homology_edges(nodes):
     homology_edges = homology_edges[bait1_lt_bait2].copy()
     return homology_edges
 
-def _create_correlation_edges(nodes, correlations):
+def _create_cor_edges(nodes, cors):
     '''
     Create DataFrame of correlation edges between bait and non-bait nodes.
 
@@ -436,23 +436,23 @@ def _create_correlation_edges(nodes, correlations):
     # TODO node musn't be a bait node.
     # TODO no self/symmetrical/duplicate edges (would apparently already be the
     # case; but at least leave a comment why that is so)
-    if not correlations.empty:
-        correlations = correlations.copy()
+    if not cors.empty:
+        cors = cors.copy()
         nodes = nodes[['id', 'genes']].copy()
         nodes.update(nodes['genes'].apply(list))
         ids = nodes.explode('genes').set_index('genes')['id']
-        correlations.update(correlations['gene'].map(ids))
-        correlations.update(correlations['bait'].map(ids))
-        correlations.rename(columns={'bait': 'bait_node', 'gene': 'node'}, inplace=True)
+        cors.update(cors['gene'].map(ids))
+        cors.update(cors['bait'].map(ids))
+        cors.rename(columns={'bait': 'bait_node', 'gene': 'node'}, inplace=True)
 
         # Summarise correlations per edge by taking the max (in the abs sense)
         # per nodes of an edge
-        groups = correlations.groupby(['bait_node', 'node'])[['correlation']]
-        correlations = groups.agg(lambda x: x.iloc[x.abs().argmax()])
+        groups = cors.groupby(['bait_node', 'node'])[['correlation']]
+        cors = groups.agg(lambda x: x.iloc[x.abs().argmax()])
 
-        correlations.reset_index(inplace=True)
-        correlations.rename(columns={'correlation': 'max_correlation'}, inplace=True)
-        correlations = correlations.reindex(columns=('bait_node', 'node', 'max_correlation'))
-        return correlations
+        cors.reset_index(inplace=True)
+        cors.rename(columns={'correlation': 'max_correlation'}, inplace=True)
+        cors = cors.reindex(columns=('bait_node', 'node', 'max_correlation'))
+        return cors
     else:
         return pd.DataFrame(columns=('bait_node', 'node', 'max_correlation'))

@@ -34,9 +34,9 @@ def write_cytoscape(network, name, output_dir):
     '''
 
     def write_edge_attr():
-        if network.correlation_edges.empty:
+        if network.cor_edges.empty:
             return
-        edges = network.correlation_edges.copy()
+        edges = network.cor_edges.copy()
         edge_attrs = (
             edges[['bait_node', 'node']]
             .applymap(_format_node_id)
@@ -56,8 +56,8 @@ def write_cytoscape(network, name, output_dir):
         edges.append(edges_)
 
         # Correlation edges
-        if not network.correlation_edges.empty:
-            edges_ = network.correlation_edges[['bait_node', 'node']].copy()
+        if not network.cor_edges.empty:
+            edges_ = network.cor_edges[['bait_node', 'node']].copy()
             edges_.columns = ('node1', 'node2')
             edges_['type'] = 'cor'
             edges.append(edges_)
