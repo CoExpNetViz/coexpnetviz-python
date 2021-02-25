@@ -76,12 +76,6 @@ class App:
         )
         self._write_matrix_intermediates()
         self._write_percentiles()
-        self._network.significant_cors.to_csv(
-            str(self._output_dir / 'significant_correlations.txt'),
-            sep='\t',
-            na_rep=str(np.nan),
-            index=False,
-        )
         self._print_json_response(self._network)
 
     @staticmethod
@@ -143,6 +137,7 @@ class App:
         # TODO test empty dfs
         response['homology_edges'] = network.homology_edges.to_dict('records')
         response['cor_edges'] = network.cor_edges.to_dict('records')
+        response['significant_cors'] = network.significant_cors.to_dict('records')
 
         json.dump(response, sys.stdout)
 
