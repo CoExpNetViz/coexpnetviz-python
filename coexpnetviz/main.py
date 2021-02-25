@@ -76,7 +76,6 @@ class App:
             self._gene_families,
             self._percentile_ranks,
         )
-        self._write_percentiles()
         self._print_json_response(self._network)
 
     @staticmethod
@@ -135,6 +134,13 @@ class App:
         nodes['colour'] = nodes['colour'].apply(lambda x: x.to_hex())
         response['nodes'] = nodes.to_dict('records')
 
+        data = tuple(
+            (info.matrix.name,) + info.percentiles
+            for info in self._network.matrix_infos
+        )
+        percentiles = pd.DataFrame(data, columns=('expression_matrix', 'lower', 'upper'))
+        response['percentiles'] = percentiles.to_dict('records')
+
         # TODO test empty dfs
         response['homology_edges'] = network.homology_edges.to_dict('records')
         response['cor_edges'] = network.cor_edges.to_dict('records')
@@ -190,16 +196,6 @@ class App:
         plt.axhline(self._percentile_ranks[0]/100.0, **_line_style)
         plt.axhline(self._percentile_ranks[1]/100.0, **_line_style)
         plt.savefig(str(self._output_dir / f'{name}.sample_cdf.png'))
-
-    def _write_percentiles(self):
-        data = tuple(info.percentiles for info in self._network.matrix_infos)
-        percentiles = pd.DataFrame(data, columns=('lower', 'upper'))
-        percentiles.insert(0, 'expression_matrix', self._expression_matrices)
-        percentiles['expression_matrix'] = (
-            percentiles['expression_matrix'].apply(lambda matrix: matrix.name)
-        )
-        percentiles_file = str(self._output_dir / 'percentiles.txt')
-        percentiles.to_csv(percentiles_file, sep='\t', na_rep=str(np.nan), index=False)
 
 def main():
     App().run()
