@@ -122,7 +122,7 @@ def _correlate_matrix(matrix, baits, percentile_ranks):
             ))
 
     # Get cutoffs
-    sample, percentiles = _estimate_cutoffs(matrix, matrix_df, percentile_ranks)
+    sample, percentiles = _estimate_cutoffs(matrix, percentile_ranks)
     percentiles = tuple(percentiles)
     lower_cutoff, upper_cutoff = percentiles
 
@@ -148,7 +148,7 @@ def _correlate_matrix(matrix, baits, percentile_ranks):
 
     return cors, ExpressionMatrixInfo(matrix, sample, percentiles, cor_matrix)
 
-def _estimate_cutoffs(matrix, matrix_df, percentile_ranks):
+def _estimate_cutoffs(matrix, percentile_ranks):
     '''
     Get upper and lower correlation cutoffs
 
@@ -167,7 +167,6 @@ def _estimate_cutoffs(matrix, matrix_df, percentile_ranks):
     Parameters
     ----------
     matrix : Expressionmatrix
-    matrix_df
 
     Returns
     -------
@@ -175,6 +174,7 @@ def _estimate_cutoffs(matrix, matrix_df, percentile_ranks):
     np.array((lower, upper))
         Cut-offs
     '''
+    matrix_df = matrix.data
     sample_size = min(len(matrix_df), 800)
     sample = np.random.choice(len(matrix_df), sample_size, replace=False)
     sample = matrix_df.iloc[sample]
