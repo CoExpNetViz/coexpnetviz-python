@@ -131,27 +131,41 @@ def _estimate_cutoffs(matrix, percentile_ranks):
     good enough.
     '''
     matrix_df = matrix.data
-    sample_size = min(len(matrix_df), 800)
-    sample = np.random.choice(len(matrix_df), sample_size, replace=False)
-    sample = matrix_df.iloc[sample]
-    sample = sample.sort_index()
-    sample = pearson_df(sample, sample)
-    sample_ = sample.values.copy()
-    nan_count = np.isnan(sample_).sum()
-    np.fill_diagonal(sample_, np.nan)
-    sample_ = sample_[~np.isnan(sample_)].ravel()
 
-    size = sample.size - len(sample)  # minus the diagonal, as it's not part of sample_
-    if nan_count > size * .1:
+    # Take a sample unless it's a tiny matrix
+    if len(matrix_df) <= 800:
+        sample = matrix_df
+    else:
+        sample_size = 800
+        sample = np.random.choice(len(matrix_df), sample_size, replace=False)
+        sample = matrix_df.iloc[sample]
+
+    sample = sample.sort_index()  # for prettier output later
+    cors = pearson_df(sample, sample)
+
+    # Get the upper triangle as 1D array, excluding the diagonal.
+    #
+    # The diagonal is pearson(x, x) == 1, so we ignore that. The matrix is
+    # symmetric as pearson(x, y) == pearson(y, x); so we only need to look at
+    # the upper triangle.
+    triu = cors.values[np.triu_indices(len(cors), 1)]
+
+    # Warn if >10% NaN
+    nan_count = np.isnan(triu).sum()
+    if nan_count > triu.size * .1:
         logging.warning(join_lines(
             f'''
             Correlation sample of {matrix} contains more than 10% NaN values,
-            specifically {nan_count} values out of a sample matrix of {size}
-            values are NaN.
+            specifically {nan_count}/{triu.size} correlations are NaN (only
+            including non-diagonal upper triangle correlation matrix values).
             '''
         ))
 
-    return sample, np.percentile(sample_, percentile_ranks)
+    # Ignore NaN values when calculating percentiles
+    triu = triu[~np.isnan(triu)]
+    percentiles = np.percentile(triu, percentile_ranks)
+
+    return cors, percentiles
 
 def _create_nodes(baits, cors, gene_families):
     '''
