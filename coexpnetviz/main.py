@@ -70,13 +70,13 @@ class App:
         self._init()
         config_file = self._parse_args()
         self._parse_config(config_file)
-        self._network = create_network(
+        network = create_network(
             self._baits,
             self._expression_matrices,
             self._gene_families,
             self._percentile_ranks,
         )
-        self._print_json_response(self._network)
+        self._print_json_response(network)
 
     @staticmethod
     def _init():
@@ -136,7 +136,7 @@ class App:
 
         data = tuple(
             (info.matrix.name,) + info.percentiles
-            for info in self._network.matrix_infos
+            for info in network.matrix_infos
         )
         percentiles = pd.DataFrame(data, columns=('expression_matrix', 'lower', 'upper'))
         response['percentiles'] = percentiles.to_dict('records')
