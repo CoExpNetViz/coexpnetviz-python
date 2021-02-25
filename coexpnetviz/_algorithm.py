@@ -84,24 +84,6 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
     )
 
 def _validate_input(baits, expression_matrices, gene_families, percentile_ranks):
-    # Validate percentile ranks
-    percentile_ranks = np.array(percentile_ranks)
-    out_of_bounds = (percentile_ranks < 0) | (percentile_ranks > 100)
-    if out_of_bounds.any():
-        raise ValueError(join_lines(
-            f'''
-            Percentile ranks must be in range of [0, 100], got:
-            {percentile_ranks}
-            '''
-        ))
-    if percentile_ranks[0] > percentile_ranks[1]:
-        raise ValueError(join_lines(
-            f'''
-            Lower percentile rank must be less or equal to upper percentile
-            rank, got: {percentile_ranks}
-            '''
-        ))
-
     # Validate expression_matrices
     if not expression_matrices:
         raise ValueError(join_lines(

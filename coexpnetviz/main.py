@@ -22,7 +22,8 @@ import logging
 import sys
 
 from varbio import (
-    ExpressionMatrix, parse_baits, parse_csv, init_logging, UserError
+    ExpressionMatrix, parse_baits, parse_csv, init_logging, UserError,
+    join_lines
 )
 import matplotlib
 import matplotlib.pyplot as plt
@@ -74,7 +75,7 @@ class App:
         else:
             self._gene_families = pd.DataFrame(columns=('family', 'gene'))
 
-        self._percentile_ranks = args['percentile_ranks']
+        self._percentile_ranks = _parse_percentile_ranks(args)
         logging.info(f'percentile ranks: {self._percentile_ranks}')
 
     def _write_sample_graphs(self, network):
@@ -114,6 +115,26 @@ def _parse_json_baits(args):
         if len(baits) < min_baits:
             raise UserError(f'Need at least 2 baits, but got only {len(baits)}')
     return pd.Series(baits)
+
+def _parse_percentile_ranks(args):
+    lower_rank = args['lower_percentile_rank']
+    upper_rank = args['upper_percentile_rank']
+    if lower_rank < 0:
+        raise UserError(
+            f'Lower percentile rank must be at least 0. Got: {lower_rank}'
+        )
+    if upper_rank > 100:
+        raise UserError(
+            f'Upper percentile rank must be at most 100. Got: {upper_rank}'
+        )
+    if lower_rank > upper_rank:
+        raise ValueError(join_lines(
+            f'''
+            Lower percentile rank must be less or equal to upper percentile
+            rank, got: {lower_rank}, {upper_rank}
+            '''
+        ))
+    return np.array([lower_rank, upper_rank])
 
 def _print_json_response(network):
     response = {}
