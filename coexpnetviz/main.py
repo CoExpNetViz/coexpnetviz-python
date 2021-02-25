@@ -32,7 +32,6 @@ import pandas as pd
 
 from coexpnetviz import __version__
 from coexpnetviz._algorithm import create_network
-from coexpnetviz._cytoscape_writer import write_cytoscape
 from coexpnetviz._various import parse_gene_families
 
 
@@ -75,7 +74,6 @@ class App:
             self._gene_families,
             self._percentile_ranks,
         )
-        write_cytoscape(self._network, 'network', self._output_dir)
         self._write_matrix_intermediates()
         self._write_percentiles()
         self._network.significant_cors.to_csv(
@@ -144,6 +142,10 @@ class App:
             lambda genes: ', '.join(sorted(genes))
         )
         response['nodes'] = nodes.to_dict('records')
+
+        # TODO test empty dfs
+        response['homology_edges'] = network.homology_edges.to_dict('records')
+        response['cor_edges'] = network.cor_edges.to_dict('records')
 
         json.dump(response, sys.stdout)
 
