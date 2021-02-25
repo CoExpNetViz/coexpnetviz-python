@@ -16,6 +16,8 @@
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
 from pathlib import Path
+from itertools import product
+from textwrap import dedent
 import csv
 import json
 import logging
@@ -68,6 +70,7 @@ class App:
             matrix = Path(matrix)
             matrix = ExpressionMatrix.from_csv(matrix.name, parse_csv(matrix))
             self._expression_matrices.append(matrix)
+        _validate_matrices(self._baits, self._expression_matrices)
 
         gene_families = args.get('gene_families', None)
         if gene_families:
@@ -135,6 +138,76 @@ def _parse_percentile_ranks(args):
             '''
         ))
     return np.array([lower_rank, upper_rank])
+
+def _validate_matrices(baits, matrices):
+    if not matrices:
+        raise UserError(join_lines(
+            f'''
+            Must provide at least one expression matrix, got:
+            {matrices}
+            '''
+        ))
+    names = [matrix.name for matrix in matrices]
+    if len(matrices) != len(set(names)):
+        raise UserError(
+            f'Expression matrices must have unique name, got: {sorted(names)}'
+        )
+
+    # Check each bait occurs in exactly one matrix
+    bait_presence = np.array([
+        bait in matrix.data.index
+        for matrix, bait in product(matrices, baits)
+    ])
+    bait_presence = bait_presence.reshape(len(matrices), len(baits))
+    missing_bait_matrix = pd.DataFrame(
+        bait_presence,
+        index=matrices,
+        columns=baits
+    )
+    missing_bait_matrix = missing_bait_matrix.loc[:,bait_presence.sum(axis=0) != 1]
+    # pylint: disable=trailing-whitespace
+    if not missing_bait_matrix.empty:
+        missing_bait_matrix = missing_bait_matrix.applymap(lambda x: 'present' if x else 'absent')
+        missing_bait_matrix.index = missing_bait_matrix.index.map(lambda matrix: matrix.name)
+        missing_bait_matrix.index.name = 'Matrix name'
+        missing_bait_matrix.columns.name = 'Gene name'
+        raise UserError(dedent(
+            f'''\
+            Each of the following baits is either missing from all or present in
+            multiple expression matrices:
+            
+            {missing_bait_matrix.to_string()}
+            
+            Missing baits are columns with no "present" value, while baits in
+            multiple matrices have multiple "present" values in a column.'''
+        ))
+
+    # and each matrix has at least one bait
+    is_baitless = bait_presence.sum(axis=1) == 0
+    if is_baitless.any():
+        matrices = np.array(matrices)[is_baitless]
+        matrices = ', '.join(map(str, matrices))
+        raise UserError(join_lines(
+            f'''
+            Some expression matrices have no baits: {matrices}. Each expression
+            matrix must contain at least one bait. Either drop the matrices or
+            add some of their genes to the baits list.
+            '''
+        ))
+
+    # Check the matrices don't overlap (same gene in multiple matrices)
+    all_genes = pd.Series(sum((list(matrix.data.index) for matrix in matrices), []))
+    overlapping_genes = all_genes[all_genes.duplicated()]
+    if not overlapping_genes.empty:
+        raise UserError(join_lines(
+            f'''
+            The following genes appear in multiple expression matrices:
+            {', '.join(overlapping_genes)}. CoExpNetViz does not support gene
+            expression data from different matrices for the same gene. Please
+            remove rows from the given matrices such that no gene appears in
+            multiple matrices.
+            '''
+        ))
 
 def _print_json_response(network):
     response = {}
