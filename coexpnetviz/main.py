@@ -40,33 +40,6 @@ _line_style = {'color': 'r', 'linewidth': 2}
 
 class App:
 
-    '''
-    Comparative Co-Expression Network Construction and Visualization
-    (CoExpNetViz)
-
-    Accept a single CLI arg, path to a yaml config file:
-
-        baits: path/to/baits.txt
-
-        # 1 or more expression matrices
-        expression_matrices:
-          - path/to/expmat1.csv
-          - path/to/expmat2.xlsx
-
-        # All output files will be placed in this dir
-        output_dir: path/to/output_dir
-
-        # Which percentile rank to use to determine the lower and upper cut-off. For
-        # each expression matrix, a sample of genes is drawn and the correlations
-        # between them is calculated. From this sample distribution of correlations
-        # the L-th percentile is used as a cut-off to determine whether 2 genes in the
-        # matrix are co-expressed or not.
-        percentile_ranks: [5.0, 95.0]
-
-        # Optionally
-        gene_families: path/to/gene_families.yml
-    '''
-
     def run(self):
         _init()
         config_file = _parse_args()
@@ -91,6 +64,7 @@ class App:
 
         # If file names are not unique across matrices, it's up to the user to
         # rename them to be unique
+        # TODO support non-csv formats too
         self._expression_matrices = []
         for matrix in config['expression_matrices']:
             matrix = Path(matrix)
