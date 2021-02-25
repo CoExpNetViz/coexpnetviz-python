@@ -30,40 +30,6 @@ from coexpnetviz._various import (
 # unnecessary use of inplace.
 
 def create_network(baits, expression_matrices, gene_families, percentile_ranks=(5, 95)):
-    '''
-    Create a comparative co-expression network.
-
-    Parameters
-    ----------
-    baits : ~pandas.Series[str]
-        Genes to which all genes are compared.
-    expression_matrices : ~typing.Sequence[~coexpnetviz.ExpressionMatrix]
-        Gene expression matrices containing at least one bait.
-    gene_families : ~pandas.DataFrame
-        Gene families (to make family nodes with) as data frame with columns:
-
-        family
-            `str` -- Family name.
-        gene
-            `str` -- A gene in the family.
-
-        There should be no duplicate rows.
-
-    percentile_ranks : ~pytil.numpy.ArrayLike[float]
-        Lower and upper percentile ranks respectively to use as cutoff. For each
-        matrix, 2 percentiles are derived. Genes are only considered
-        co-expressed when their correlation value does not lie between the lower
-        and upper percentile. The percentiles are derived by taking a sample of
-        rows from the matrix, constructing a correlation matrix of all vs all
-        genes in the sample and forming a distribution with all the correlations
-        of the correlation matrix.
-
-    Returns
-    -------
-    ~coexpnetviz._various.Network
-        A bait node for each bait is included. Non-bait nodes are only included
-        if at least one of their genes correlates with a bait.
-    '''
     cors, matrix_infos = _correlate_matrices(
         expression_matrices, baits, percentile_ranks
     )
@@ -150,7 +116,7 @@ def _correlate_matrix(matrix, baits, percentile_ranks):
 
 def _estimate_cutoffs(matrix, percentile_ranks):
     '''
-    Get upper and lower correlation cutoffs
+    Estimate upper and lower correlation cutoffs
 
     Takes the x-th and y-th (percentile ranks) percentile of a sample
     similarity matrix of `matrix`, returning these as the lower and upper
@@ -163,16 +129,6 @@ def _estimate_cutoffs(matrix, percentile_ranks):
     into statistics to find a better cut-off. In practice the user just plays
     with the percentile ranks until the result is what they want; so this is
     good enough.
-
-    Parameters
-    ----------
-    matrix : Expressionmatrix
-
-    Returns
-    -------
-    sample : pd.DataFrame
-    np.array((lower, upper))
-        Cut-offs
     '''
     matrix_df = matrix.data
     sample_size = min(len(matrix_df), 800)
