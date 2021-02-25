@@ -18,6 +18,7 @@
 from pathlib import Path
 import argparse
 import csv
+import json
 import logging
 import sys
 
@@ -83,6 +84,7 @@ class App:
             na_rep=str(np.nan),
             index=False,
         )
+        self._print_json_response(self._network)
 
     @staticmethod
     def _init():
@@ -132,6 +134,18 @@ class App:
 
         self._percentile_ranks = config['percentile_ranks']
         logging.info(f'percentile ranks: {self._percentile_ranks}')
+
+    def _print_json_response(self, network):
+        response = {}
+
+        nodes = network.nodes.copy()
+        nodes['colour'] = nodes['colour'].apply(lambda x: x.to_hex())
+        nodes['genes'] = nodes['genes'].apply(
+            lambda genes: ', '.join(sorted(genes))
+        )
+        response['nodes'] = nodes.to_dict('records')
+
+        json.dump(response, sys.stdout)
 
     def _write_matrix_intermediates(self):
         matrix_outputs = zip(

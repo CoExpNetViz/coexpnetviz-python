@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
-from more_itertools import one
 import pandas as pd
 
 
@@ -33,39 +32,6 @@ def write_cytoscape(network, name, output_dir):
         Directory to write the network files to. The directory must already
         exist.
     '''
-    def write_node_attr():
-        nodes = network.nodes.copy()
-
-        # Bait nodes
-        bait_nodes = nodes[nodes['type'] == 'bait']
-        nodes['bait_gene'] = bait_nodes['genes'].apply(one)
-        nodes['families'] = bait_nodes['family']
-
-        # Family/gene nodes
-        family_nodes = nodes[nodes['type'] != 'bait']
-        nodes['family'] = family_nodes['family']
-        nodes['correlating_genes_in_family'] = (
-            family_nodes['genes'].apply(lambda genes: ', '.join(sorted(genes)))
-        )
-
-        # Gene nodes
-        gene_nodes = nodes[nodes['type'] == 'gene']
-        nodes['family'].update(gene_nodes['correlating_genes_in_family'])
-
-        # Any node
-        nodes['id'] = nodes['id'].apply(_format_node_id)
-        nodes['colour'] = nodes['colour'].apply(lambda x: x.to_hex())
-        nodes['species'] = None
-        del nodes['genes']
-
-        # Write
-        columns = (
-            'id', 'label', 'colour', 'type', 'bait_gene', 'species',
-            'families', 'family', 'correlating_genes_in_family',
-            'partition_id'
-        )
-        nodes = nodes.reindex(columns=columns)
-        nodes.to_csv(str(output_dir / f'{name}.node.attr'), sep='\t', index=False)
 
     def write_edge_attr():
         if network.correlation_edges.empty:
@@ -112,7 +78,6 @@ def write_cytoscape(network, name, output_dir):
     if network.nodes.empty:
         raise ValueError('network.nodes is empty. Cytoscape networks must have at least one node.')
 
-    write_node_attr()
     write_edge_attr()
     write_sif()
 
