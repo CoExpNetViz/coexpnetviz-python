@@ -35,6 +35,8 @@ from coexpnetviz._algorithm import create_network
 from coexpnetviz._various import parse_gene_families
 
 
+_line_style = {'color': 'r', 'linewidth': 2}
+
 class App:
 
     '''
@@ -157,38 +159,42 @@ class App:
 
             # Flatten sample matrix
             sample_size = len(sample.index)
-            sample = sample.values.copy()
-            np.fill_diagonal(sample, np.nan)
-            sample = sample[~np.isnan(sample)].ravel()
-
-            # Write histogram
-            percentiles = info.percentiles
-            line_style = dict(color='r', linewidth=2)
-            plt.clf()
-            pd.Series(sample).plot.hist(bins=60)
-            plt.title(
-                f'Correlations between sample of\n'
-                f'{sample_size} genes in {name}'
+            flat_sample = sample.values.copy()
+            np.fill_diagonal(flat_sample, np.nan)
+            flat_sample = flat_sample[~np.isnan(flat_sample)].ravel()
+            self._write_sample_histogram(
+                name, flat_sample, sample_size, info.percentiles
             )
-            plt.xlabel('pearson')
-            plt.ylabel('frequency')
-            plt.axvline(percentiles[0], **line_style)
-            plt.axvline(percentiles[1], **line_style)
-            plt.savefig(str(self._output_dir / f'{name}.sample_histogram.png'))
-
-            # Write cdf
-            plt.clf()
-            pd.Series(sample).plot.hist(bins=60, cumulative=True, density=True)
-            plt.title(
-                f'Cumulative distribution of correlations\n'
-                f'between sample of {sample_size} genes in '
-                f'{name}'
+            self._write_sample_cdf(
+                name, flat_sample, sample_size
             )
-            plt.xlabel('pearson')
-            plt.ylabel('Cumulative probability, i.e. $P(cor \\leq x)$')
-            plt.axhline(self._percentile_ranks[0]/100.0, **line_style)
-            plt.axhline(self._percentile_ranks[1]/100.0, **line_style)
-            plt.savefig(str(self._output_dir / f'{name}.sample_cdf.png'))
+
+    def _write_sample_histogram(self, name, flat_sample, sample_size, percentiles):
+        plt.clf()
+        pd.Series(flat_sample).plot.hist(bins=60)
+        plt.title(
+            f'Correlations between sample of\n'
+            f'{sample_size} genes in {name}'
+        )
+        plt.xlabel('pearson')
+        plt.ylabel('frequency')
+        plt.axvline(percentiles[0], **_line_style)
+        plt.axvline(percentiles[1], **_line_style)
+        plt.savefig(str(self._output_dir / f'{name}.sample_histogram.png'))
+
+    def _write_sample_cdf(self, name, flat_sample, sample_size):
+        plt.clf()
+        pd.Series(flat_sample).plot.hist(bins=60, cumulative=True, density=True)
+        plt.title(
+            f'Cumulative distribution of correlations\n'
+            f'between sample of {sample_size} genes in '
+            f'{name}'
+        )
+        plt.xlabel('pearson')
+        plt.ylabel('Cumulative probability, i.e. $P(cor \\leq x)$')
+        plt.axhline(self._percentile_ranks[0]/100.0, **_line_style)
+        plt.axhline(self._percentile_ranks[1]/100.0, **_line_style)
+        plt.savefig(str(self._output_dir / f'{name}.sample_cdf.png'))
 
     def _write_percentiles(self):
         data = tuple(info.percentiles for info in self._network.matrix_infos)
