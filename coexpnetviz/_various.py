@@ -44,33 +44,23 @@ class Network:
             `str` -- Correlating gene (can be a bait as well).
         correlation
             `float` -- Correlation between ``bait`` and ``gene``.
-
-    samples : ~typing.Tuple[~pandas.DataFrame]
-        ``samples[i]`` is the correlation matrix derived from a sample of
-        ``expression_matrices[i]`` (referring to the argument given to
-        `create_network`) and was used to generate ``percentiles[i]``. Its
-        columns and index are a subset of ``expression_matrices[i].index`` and
-        ``columns.equals(index)``. Each data frame's is a matrix of correlations
-        of type `float`, its index and columns are genes of type `str`.
-
-    percentiles : ~typing.Tuple[float, float]
-        ``percentiles[i]`` are the lower and upper percentiles, respectively,
-        used as cutoff on ``correlation_matrices[i]``.
-
-    cor_matrices : ~typing.Tuple[~pandas.DataFrame]
-        ``cor_matrices[i]`` is the correlation matrix derived from
-        ``expression_matrices[i]`` before any values have been cut off. Each
-        data frame's is a matrix of correlations of type `float`, its columns
-        are bait genes of type `str`, its index are genes of type `str`.
     '''
 
     nodes = attr.ib()
     homology_edges = attr.ib()
     cor_edges = attr.ib()
     significant_cors = attr.ib()
-    samples = attr.ib()
+    matrix_infos = attr.ib()
+
+@attr.s(frozen=True, slots=True)
+class ExpressionMatrixInfo:
+
+    'Intermediate results of an expression matrix (see docs output section)'
+
+    matrix = attr.ib()
+    sample = attr.ib()
     percentiles = attr.ib()
-    cor_matrices = attr.ib()
+    cor_matrix = attr.ib()
 
 class RGB:
 

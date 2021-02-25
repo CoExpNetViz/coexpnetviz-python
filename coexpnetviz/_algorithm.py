@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 
 from coexpnetviz._various import (
-    Network, distinct_colours, RGB
+    Network, ExpressionMatrixInfo, distinct_colours, RGB
 )
 
 
@@ -68,7 +68,7 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
     '''
     _validate_input(baits, expression_matrices, gene_families, percentile_ranks)
 
-    cors, samples, percentiles, cor_matrices = _correlate_matrices(
+    cors, matrix_infos = _correlate_matrices(
         expression_matrices, baits, percentile_ranks
     )
     nodes = _create_nodes(baits, cors, gene_families)
@@ -77,12 +77,10 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
 
     return Network(
         significant_cors=cors,
-        samples=samples,
-        percentiles=percentiles,
-        cor_matrices=cor_matrices,
         nodes=nodes,
         homology_edges=homology_edges,
         cor_edges=cor_edges,
+        matrix_infos=matrix_infos,
     )
 
 def _validate_input(baits, expression_matrices, gene_families, percentile_ranks):
@@ -188,11 +186,8 @@ def _correlate_matrices(expression_matrices, baits, percentile_ranks):
     cors = cors[cors['bait'] < cors['gene']]
     cors = cors.reindex(columns=('bait', 'gene', 'correlation'))
 
-    samples = tuple(result[1] for result in results)
-    percentiles = tuple(result[2] for result in results)
-    cor_matrices = tuple(result[3] for result in results)
-
-    return cors, samples, percentiles, cor_matrices
+    matrix_infos = tuple(result[1] for result in results)
+    return cors, matrix_infos
 
 def _correlate_matrix(matrix, baits, percentile_ranks):
     matrix_df = matrix.data
@@ -247,7 +242,7 @@ def _correlate_matrix(matrix, baits, percentile_ranks):
     cors = pd.melt(cors, id_vars=['gene'], var_name='bait', value_name='correlation')
     cors.dropna(subset=['correlation'], inplace=True)
 
-    return cors, sample, percentiles, cor_matrix
+    return cors, ExpressionMatrixInfo(matrix, sample, percentiles, cor_matrix)
 
 def _estimate_cutoffs(matrix, matrix_df, percentile_ranks):
     '''

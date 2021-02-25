@@ -147,19 +147,15 @@ class App:
         json.dump(response, sys.stdout)
 
     def _write_matrix_intermediates(self):
-        matrix_outputs = zip(
-            self._expression_matrices,
-            self._network.samples,
-            self._network.cor_matrices,
-            self._network.percentiles,
-        )
-        for expression_matrix, sample, cor_matrix, percentiles in matrix_outputs:
-            name = expression_matrix.name
+        for info in self._network.matrix_infos:
+            name = info.matrix.name
 
+            sample = info.sample
             sample.index.name = None
             sample_file = str(self._output_dir / f'{name}.sample_matrix.txt')
             sample.to_csv(sample_file, sep='\t', na_rep=str(np.nan))
 
+            cor_matrix = info.cor_matrix
             cor_matrix.index.name = None
             cor_file = str(self._output_dir / f'{name}.correlation_matrix.txt')
             cor_matrix.to_csv(cor_file, sep='\t', na_rep=str(np.nan))
@@ -171,18 +167,19 @@ class App:
             sample = sample[~np.isnan(sample)].ravel()
 
             # Write histogram
+            percentiles = info.percentiles
             line_style = dict(color='r', linewidth=2)
             plt.clf()
             pd.Series(sample).plot.hist(bins=60)
             plt.title(
                 f'Correlations between sample of\n'
-                f'{sample_size} genes in {expression_matrix.name}'
+                f'{sample_size} genes in {name}'
             )
             plt.xlabel('pearson')
             plt.ylabel('frequency')
             plt.axvline(percentiles[0], **line_style)
             plt.axvline(percentiles[1], **line_style)
-            plt.savefig(str(self._output_dir / f'{expression_matrix.name}.sample_histogram.png'))
+            plt.savefig(str(self._output_dir / f'{name}.sample_histogram.png'))
 
             # Write cdf
             plt.clf()
@@ -190,16 +187,17 @@ class App:
             plt.title(
                 f'Cumulative distribution of correlations\n'
                 f'between sample of {sample_size} genes in '
-                f'{expression_matrix.name}'
+                f'{name}'
             )
             plt.xlabel('pearson')
             plt.ylabel('Cumulative probability, i.e. $P(cor \\leq x)$')
             plt.axhline(self._percentile_ranks[0]/100.0, **line_style)
             plt.axhline(self._percentile_ranks[1]/100.0, **line_style)
-            plt.savefig(str(self._output_dir / f'{expression_matrix.name}.sample_cdf.png'))
+            plt.savefig(str(self._output_dir / f'{name}.sample_cdf.png'))
 
     def _write_percentiles(self):
-        percentiles = pd.DataFrame(self._network.percentiles, columns=('lower', 'upper'))
+        data = tuple(info.percentiles for info in self._network.matrix_infos)
+        percentiles = pd.DataFrame(data, columns=('lower', 'upper'))
         percentiles.insert(0, 'expression_matrix', self._expression_matrices)
         percentiles['expression_matrix'] = (
             percentiles['expression_matrix'].apply(lambda matrix: matrix.name)
