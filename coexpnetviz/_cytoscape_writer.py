@@ -18,8 +18,6 @@
 from more_itertools import one
 import pandas as pd
 
-from coexpnetviz._various import NodeType
-
 
 def write_cytoscape(network, name, output_dir):
     '''
@@ -39,26 +37,23 @@ def write_cytoscape(network, name, output_dir):
         nodes = network.nodes.copy()
 
         # Bait nodes
-        bait_nodes = nodes[nodes['type'] == NodeType.bait]
+        bait_nodes = nodes[nodes['type'] == 'bait']
         nodes['bait_gene'] = bait_nodes['genes'].apply(one)
         nodes['families'] = bait_nodes['family']
 
         # Family/gene nodes
-        family_nodes = nodes[nodes['type'] != NodeType.bait]
+        family_nodes = nodes[nodes['type'] != 'bait']
         nodes['family'] = family_nodes['family']
         nodes['correlating_genes_in_family'] = (
             family_nodes['genes'].apply(lambda genes: ', '.join(sorted(genes)))
         )
 
         # Gene nodes
-        gene_nodes = nodes[nodes['type'] == NodeType.gene]
+        gene_nodes = nodes[nodes['type'] == 'gene']
         nodes['family'].update(gene_nodes['correlating_genes_in_family'])
 
         # Any node
         nodes['id'] = nodes['id'].apply(_format_node_id)
-        nodes['type'] = nodes['type'].apply(
-            lambda x: 'bait' if x == NodeType.bait else 'family'
-        )
         nodes['colour'] = nodes['colour'].apply(lambda x: x.to_hex())
         nodes['species'] = None
         del nodes['genes']
@@ -91,7 +86,7 @@ def write_cytoscape(network, name, output_dir):
 
         # Bait nodes
         nodes = network.nodes
-        edges_ = nodes[nodes.type == NodeType.bait]['id'].to_frame('node1')
+        edges_ = nodes[nodes.type == 'bait']['id'].to_frame('node1')
         edges.append(edges_)
 
         # Correlation edges

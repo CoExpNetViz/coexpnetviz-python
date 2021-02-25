@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
-from enum import Enum
 from math import floor, sqrt
 
 from varbio import parse_yaml, join_lines
@@ -72,11 +71,6 @@ class Network:
     samples = attr.ib()
     percentiles = attr.ib()
     correlation_matrices = attr.ib()
-
-class NodeType(Enum):
-    bait = 'bait'
-    family = 'family'
-    gene = 'gene'
 
 class RGB:
 

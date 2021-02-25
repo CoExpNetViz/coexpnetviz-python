@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 
 from coexpnetviz._various import (
-    Network, NodeType, distinct_colours, RGB
+    Network, distinct_colours, RGB
 )
 
 
@@ -301,12 +301,12 @@ def _estimate_cutoffs(matrix, matrix_df, percentile_ranks):
 def _create_nodes(baits, corrs, gene_families):
     '''
     Create DataFrame of nodes
-    
+
     Columns (see node attrs in the docs):
 
     id : int
     label : str
-    type : NodeType
+    type : 'bait', 'family' or 'gene'
     genes : FrozenSet of str
     family : str or None
     colour : RGB
@@ -320,7 +320,7 @@ def _create_bait_nodes(baits, gene_families):
     assert not baits.empty
     nodes = baits.to_frame('genes')
     nodes.reset_index(drop=True, inplace=True)
-    nodes['type'] = NodeType.bait
+    nodes['type'] = 'bait'
     nodes = pd.merge(
         nodes, gene_families, left_on='genes', right_on='gene', how='left'
     )
@@ -352,7 +352,7 @@ def _create_non_bait_nodes(baits, corrs, gene_families):
                 .reset_index()
             )
             family_nodes.columns = ('family', 'baits', 'genes')
-            family_nodes['type'] = NodeType.family
+            family_nodes['type'] = 'family'
             family_nodes['label'] = family_nodes['family']
 
         if not orphans.empty:
@@ -365,7 +365,7 @@ def _create_non_bait_nodes(baits, corrs, gene_families):
             )
             orphans.columns = ('gene', 'baits')
             orphans['label'] = orphans['gene']
-            orphans['type'] = NodeType.gene
+            orphans['type'] = 'gene'
             orphans['genes'] = orphans['gene'].apply(lambda gene: frozenset({gene}))
             orphans.drop('gene', axis=1, inplace=True)
     return family_nodes, orphans
@@ -413,7 +413,7 @@ def _create_homology_edges(nodes):
     bait_node2 : int
         Node id
     '''
-    bait_nodes = nodes[nodes['type'] == NodeType.bait][['id', 'family']]
+    bait_nodes = nodes[nodes['type'] == 'bait'][['id', 'family']]
     bait_nodes = bait_nodes.dropna(subset=('family',)).rename(columns={'id': 'bait_node'})
     homology_edges = pd.merge(bait_nodes, bait_nodes, on='family', suffixes=('1', '2'))
     del homology_edges['family']
