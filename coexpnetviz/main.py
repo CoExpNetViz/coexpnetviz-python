@@ -76,7 +76,6 @@ class App:
             self._gene_families,
             self._percentile_ranks,
         )
-        self._write_matrix_intermediates()
         self._write_percentiles()
         self._print_json_response(self._network)
 
@@ -140,34 +139,30 @@ class App:
         response['homology_edges'] = network.homology_edges.to_dict('records')
         response['cor_edges'] = network.cor_edges.to_dict('records')
         response['significant_cors'] = network.significant_cors.to_dict('records')
+        response['matrix_infos'] = {
+            info.matrix.name: self._dump_matrix_info(info)
+            for info in network.matrix_infos
+        }
 
         json.dump(response, sys.stdout)
 
-    def _write_matrix_intermediates(self):
-        for info in self._network.matrix_infos:
-            name = info.matrix.name
+    def _dump_matrix_info(self, info):
+        response = {}
+        name = info.matrix.name
+        response['sample'] = info.sample.to_dict('records')
+        response['cor_matrix'] = info.cor_matrix.to_dict('records')
 
-            sample = info.sample
-            sample.index.name = None
-            sample_file = str(self._output_dir / f'{name}.sample_matrix.txt')
-            sample.to_csv(sample_file, sep='\t', na_rep=str(np.nan))
-
-            cor_matrix = info.cor_matrix
-            cor_matrix.index.name = None
-            cor_file = str(self._output_dir / f'{name}.correlation_matrix.txt')
-            cor_matrix.to_csv(cor_file, sep='\t', na_rep=str(np.nan))
-
-            # Flatten sample matrix
-            sample_size = len(sample.index)
-            flat_sample = sample.values.copy()
-            np.fill_diagonal(flat_sample, np.nan)
-            flat_sample = flat_sample[~np.isnan(flat_sample)].ravel()
-            self._write_sample_histogram(
-                name, flat_sample, sample_size, info.percentiles
-            )
-            self._write_sample_cdf(
-                name, flat_sample, sample_size
-            )
+        # Also output 2 graphs about the sample to file
+        sample_size = len(info.sample.index)
+        flat_sample = info.sample.values.copy()
+        np.fill_diagonal(flat_sample, np.nan)
+        flat_sample = flat_sample[~np.isnan(flat_sample)].ravel()
+        self._write_sample_histogram(
+            name, flat_sample, sample_size, info.percentiles
+        )
+        self._write_sample_cdf(
+            name, flat_sample, sample_size
+        )
 
     def _write_sample_histogram(self, name, flat_sample, sample_size, percentiles):
         plt.clf()
