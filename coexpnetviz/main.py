@@ -138,9 +138,6 @@ class App:
 
         nodes = network.nodes.copy()
         nodes['colour'] = nodes['colour'].apply(lambda x: x.to_hex())
-        nodes['genes'] = nodes['genes'].apply(
-            lambda genes: ', '.join(sorted(genes))
-        )
         response['nodes'] = nodes.to_dict('records')
 
         # TODO test empty dfs
