@@ -26,26 +26,6 @@ import pandas as pd
 @attr.s(frozen=True, slots=True)
 class Network:
 
-    '''
-    Network (aka a graph) result of CoExpNetViz.
-
-    Parameters
-    ----------
-    significant_cors : ~pandas.DataFrame
-        Gene correlations after percentile-based cut-off. There are no self edges
-        (``bait==gene``), no synonymous edges (one edge being the same as another edge
-        when swapping ``bait`` and ``gene``) and no duplicates.
-
-        The data frame has the following columns:
-
-        bait
-            `str` -- Bait gene.
-        gene
-            `str` -- Correlating gene (can be a bait as well).
-        correlation
-            `float` -- Correlation between ``bait`` and ``gene``.
-    '''
-
     nodes = attr.ib()
     homology_edges = attr.ib()
     cor_edges = attr.ib()
