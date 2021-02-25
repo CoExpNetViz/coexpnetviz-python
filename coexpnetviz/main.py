@@ -16,15 +16,13 @@
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
 from pathlib import Path
-import argparse
 import csv
 import json
 import logging
 import sys
 
 from varbio import (
-    ExpressionMatrix, parse_baits, parse_csv, parse_yaml, init_logging,
-    UserError
+    ExpressionMatrix, parse_baits, parse_csv, init_logging, UserError
 )
 import matplotlib
 import matplotlib.pyplot as plt
@@ -42,8 +40,7 @@ class App:
 
     def run(self):
         _init()
-        config_file = _parse_args()
-        self._parse_config(config_file)
+        self._parse_input()
         network = create_network(
             self._baits,
             self._expression_matrices,
@@ -53,31 +50,31 @@ class App:
         _print_json_response(network)
         self._write_sample_graphs(network)
 
-    def _parse_config(self, path):
-        config = parse_yaml(path)
+    def _parse_input(self):
+        args = json.load(sys.stdin)
 
-        self._output_dir = Path(config['output_dir'])
+        self._output_dir = Path(args['output_dir'])
         log_file = self._output_dir / 'coexpnetviz.log'
         init_logging('coexpnetviz', __version__, log_file)
 
-        self._baits = _parse_json_baits(config)
+        self._baits = _parse_json_baits(args)
 
         # If file names are not unique across matrices, it's up to the user to
         # rename them to be unique
         # TODO support non-csv formats too
         self._expression_matrices = []
-        for matrix in config['expression_matrices']:
+        for matrix in args['expression_matrices']:
             matrix = Path(matrix)
             matrix = ExpressionMatrix.from_csv(matrix.name, parse_csv(matrix))
             self._expression_matrices.append(matrix)
 
-        gene_families = config.get('gene_families', None)
+        gene_families = args.get('gene_families', None)
         if gene_families:
             self._gene_families = parse_gene_families(Path(gene_families))
         else:
             self._gene_families = pd.DataFrame(columns=('family', 'gene'))
 
-        self._percentile_ranks = config['percentile_ranks']
+        self._percentile_ranks = args['percentile_ranks']
         logging.info(f'percentile ranks: {self._percentile_ranks}')
 
     def _write_sample_graphs(self, network):
@@ -107,19 +104,8 @@ def _init():
     # or on mac, Agg seems to work anywhere so use that instead, always.
     matplotlib.use('Agg')
 
-def _parse_args():
-    parser = argparse.ArgumentParser(
-        description='Create a CoExpNetViz network from baits and matrices'
-    )
-    parser.add_argument(
-        'config_file',
-        help='A yaml config file containing input and parameters',
-    )
-    args = parser.parse_args()
-    return Path(args.config_file)
-
-def _parse_json_baits(config):
-    baits = config['baits']
+def _parse_json_baits(args):
+    baits = args['baits']
     min_baits = 2
     if isinstance(baits, str):
         baits = parse_baits(Path(baits), min_baits)
