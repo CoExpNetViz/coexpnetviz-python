@@ -188,3 +188,47 @@ class TestCorrelateMatrix:
         assert_df_equals(
             cors, expected_cors, ignore_indices={0}, ignore_order={0, 1}
         )
+
+class TestCorrelateMatrices:
+
+    '''
+    Happy days, for code coverage, check self/symmetrical cors are dropped,
+    concat correctly. Not checking for trivial things though, manually reviewed
+    that instead.
+    '''
+
+    @pytest.fixture
+    def correlate_matrix_mock(self, monkeypatch):
+        cors1 = pd.DataFrame(
+            [['bait1', 'gene1', 0.5],
+             ['gene1', 'bait1', 0.5],
+             ['bait1', 'bait1', 1.0]],
+            columns=['bait', 'gene', 'correlation'],
+        )
+        cors2 = pd.DataFrame(
+            [['bait2', 'gene2', 1.0],
+             ['gene2', 'bait2', 1.0],
+             ['bait2', 'bait2', 1.0]],
+            columns=['bait', 'gene', 'correlation'],
+        )
+        mock = Mock(side_effect=((cors1, 3), (cors2, 4)))
+        monkeypatch.setattr('coexpnetviz._algorithm._correlate_matrix', mock)
+        return mock
+
+    def test(self, correlate_matrix_mock):
+        # These args are invalid but is fine for this test as we mock _correlate_matrix
+        cors, matrix_infos = alg._correlate_matrices([1, 2], None, None)
+
+        # Then cors is concatenation of the cors of each matrix with self
+        # comparisons and symmetrical cors dropped (i.e. only return
+        # pearson(x, y) for x < y)
+        expected = pd.DataFrame(
+            [['bait1', 'gene1', 0.5],
+             ['bait2', 'gene2', 1.0]],
+            columns=['bait', 'gene', 'correlation'],
+        )
+        assert_df_equals(cors, expected, ignore_indices={0}, ignore_order={0, 1})
+
+        # matrix_infos is a tuple of infos (though we only returned an int
+        # instead of MatrixInfo)
+        assert matrix_infos == (3, 4)

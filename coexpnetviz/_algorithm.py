@@ -52,9 +52,9 @@ def _correlate_matrices(expression_matrices, baits, percentile_ranks):
     )
 
     cors = pd.concat([result[0] for result in results])
-    # Drop self comparisons (and symmetrical ones I guess)
+    # Drop self comparisons and symmetrical ones. There are no duplicates
+    # because baits do not appear in multiple matrices.
     cors = cors[cors['bait'] < cors['gene']]
-    cors = cors.reindex(columns=('bait', 'gene', 'correlation'))
 
     matrix_infos = tuple(result[1] for result in results)
     return cors, matrix_infos
