@@ -110,8 +110,8 @@ class RGB:
     def b(self):
         return self[2]
 
-    def __equals__(self, other):
-        return isinstance(other, RGB) and other._rgb == self._rgb
+    def __eq__(self, other):
+        return isinstance(other, RGB) and (other._rgb == self._rgb).all()
 
     def __get_item__(self, index):
         return self._rgb[index]
