@@ -15,6 +15,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
+'''
+Test _algorithm
+
+Too trivial to test: _create_nodes.
+'''
+
 from unittest.mock import Mock
 import pytest
 
@@ -273,4 +279,73 @@ class TestCreateBaitNodes:
         )
         assert_df_equals(
             nodes, expected, ignore_indices={0}, ignore_order={0, 1}
+        )
+
+class TestCreateNonBaitNodes:
+
+    '''
+    Happy days, mostly check for a correct split between family/gene nodes,
+    check families are merged in correctly and baits are ignored.
+    '''
+
+    @pytest.fixture
+    def baits(self):
+        return pd.Series(['bait1', 'bait2'])
+
+    @pytest.fixture
+    def gene_families(self):
+        return pd.DataFrame(
+            [['gene1', 'fam'],
+             ['gene2', 'fam']],
+            columns=['gene', 'family'],
+        )
+
+    @pytest.fixture
+    def cors(self):
+        return pd.DataFrame(
+            [['bait1', 'gene1', 1.0],
+             ['bait1', 'gene2', 2.0],
+             ['bait2', 'gene1', 3.0],
+             ['bait2', 'gene3', 4.0],
+             ['bait1', 'bait2', 5.0]],
+            columns=['bait', 'gene', 'correlation'],
+        )
+
+    def test(self, baits, cors, gene_families):
+        orig_baits = baits.copy()
+        orig_cors = cors.copy()
+        orig_gene_families = gene_families.copy()
+        family_nodes, gene_nodes = alg._create_non_bait_nodes(baits, cors, gene_families)
+
+        # Then input unchanged
+        assert_series_equals(baits, orig_baits)
+        assert_df_equals(cors, orig_cors)
+        assert_df_equals(gene_families, orig_gene_families)
+
+        # gene nodes
+        expected = pd.DataFrame(
+            [[frozenset({'bait2'}), 'gene3', 'gene', frozenset({'gene3'})]],
+            columns=[
+                'baits', 'label', 'type', 'genes'
+            ],
+        )
+        assert_df_equals(
+            gene_nodes, expected, ignore_indices={0}, ignore_order={0, 1}
+        )
+
+        # family nodes
+        expected = pd.DataFrame(
+            [[
+                frozenset({'bait1', 'bait2'}),
+                'fam',
+                'family',
+                frozenset({'gene1', 'gene2'}),
+                'fam'
+            ]],
+            columns=[
+                'baits', 'label', 'type', 'genes', 'family'
+            ],
+        )
+        assert_df_equals(
+            family_nodes, expected, ignore_indices={0}, ignore_order={0, 1}
         )

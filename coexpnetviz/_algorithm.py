@@ -194,40 +194,40 @@ def _create_bait_nodes(baits, gene_families):
 def _create_non_bait_nodes(baits, cors, gene_families):
     is_not_a_bait = ~cors['gene'].isin(baits)
     cors = cors[is_not_a_bait].copy()
-    family_nodes = pd.DataFrame()
-    orphans = pd.DataFrame()
+    family_nodes = pd.DataFrame(
+        columns=('baits', 'label', 'type', 'genes', 'family')
+    )
+    gene_nodes = pd.DataFrame(
+        columns=('baits', 'label', 'type', 'gene')
+    )
     if not cors.empty:
         # Split into family and gene nodes
         cors = pd.merge(cors, gene_families, on='gene', how='left')
-        orphans = cors[cors['family'].isnull()].copy()
-        cors.dropna(inplace=True)  # no orphans
+        gene_nodes = cors[cors['family'].isnull()].copy()
+        cors = cors.dropna()  # drop gene nodes
 
         if not cors.empty:
-            # TODO is it necessary?
-            # pylint: disable=unnecessary-lambda
             family_nodes = (
-                cors.groupby('family')[['bait','gene']]
-                .agg(lambda x: frozenset(x))
+                cors.groupby('family')[['bait', 'gene']]
+                .agg(frozenset)
                 .reset_index()
             )
             family_nodes.columns = ('family', 'baits', 'genes')
             family_nodes['type'] = 'family'
             family_nodes['label'] = family_nodes['family']
 
-        if not orphans.empty:
-            # TODO is it necessary?
-            # pylint: disable=unnecessary-lambda
-            orphans = (
-                orphans.groupby('gene')[['bait']]
-                .agg(lambda x: frozenset(x))
+        if not gene_nodes.empty:
+            gene_nodes = (
+                gene_nodes.groupby('gene')[['bait']]
+                .agg(frozenset)
                 .reset_index()
             )
-            orphans.columns = ('gene', 'baits')
-            orphans['label'] = orphans['gene']
-            orphans['type'] = 'gene'
-            orphans['genes'] = orphans['gene'].apply(lambda gene: frozenset({gene}))
-            orphans.drop('gene', axis=1, inplace=True)
-    return family_nodes, orphans
+            gene_nodes.columns = ('gene', 'baits')
+            gene_nodes['label'] = gene_nodes['gene']
+            gene_nodes['type'] = 'gene'
+            gene_nodes['genes'] = gene_nodes['gene'].apply(lambda gene: frozenset({gene}))
+            del gene_nodes['gene']
+    return family_nodes, gene_nodes
 
 def _concat_nodes(bait_nodes, family_nodes, gene_nodes):
     # TODO test with empty fam and/or gene nodes df
