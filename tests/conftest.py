@@ -17,14 +17,8 @@
 
 import signal
 
-from pytil.test import temp_dir_cwd  # @UnusedImport
-import numpy as np
-import pytest
-
+# pylint: disable=unused-import
+from pytil.test import temp_dir_cwd
 
 # http://stackoverflow.com/a/30091579/1031434
 signal.signal(signal.SIGPIPE, signal.SIG_IGN)  # Ignore SIGPIPE
-
-@pytest.fixture(autouse=True)
-def auto_reset_random_seed():
-    np.random.seed(0)

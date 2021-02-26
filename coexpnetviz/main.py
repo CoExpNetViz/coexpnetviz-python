@@ -233,7 +233,6 @@ def _print_json_response(network):
     nodes['genes'] = nodes['genes'].apply(tuple)
     response['nodes'] = nodes.to_dict('records')
 
-    # TODO test empty dfs
     response['homology_edges'] = network.homology_edges.to_dict('records')
     response['cor_edges'] = network.cor_edges.to_dict('records')
 
