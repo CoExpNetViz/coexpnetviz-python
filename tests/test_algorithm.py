@@ -24,6 +24,7 @@ from varbio import ExpressionMatrix
 import pandas as pd
 import numpy as np
 
+from coexpnetviz._various import RGB
 import coexpnetviz._algorithm as alg
 
 
@@ -232,3 +233,44 @@ class TestCorrelateMatrices:
         # matrix_infos is a tuple of infos (though we only returned an int
         # instead of MatrixInfo)
         assert matrix_infos == (3, 4)
+
+class TestCreateBaitNodes:
+
+    '''
+    Happy days, for coverage and mostly to check the gene family is merged in
+    correctly. The remainder is fairly trivial.
+    '''
+
+    @pytest.fixture
+    def baits(self):
+        return pd.Series(['bait1', 'bait2'])
+
+    @pytest.fixture
+    def gene_families(self):
+        return pd.DataFrame(
+            [['bait2', 'fam2']],
+            columns=['gene', 'family'],
+        )
+
+    def test(self, baits, gene_families):
+        orig_baits = baits.copy()
+        orig_families = gene_families.copy()
+        nodes = alg._create_bait_nodes(baits, gene_families)
+
+        # Then input unchanged
+        assert_series_equals(baits, orig_baits)
+        assert_df_equals(gene_families, orig_families)
+
+        # and returns a table with family added
+        colour = RGB((255, 255, 255))
+        partition = hash(frozenset())
+        expected = pd.DataFrame(
+            [[frozenset({'bait1'}), 'bait', np.nan, 'bait1', colour, partition],
+             [frozenset({'bait2'}), 'bait', 'fam2', 'bait2', colour, partition]],
+            columns=[
+                'genes', 'type', 'family', 'label', 'colour', 'partition_id'
+            ],
+        )
+        assert_df_equals(
+            nodes, expected, ignore_indices={0}, ignore_order={0, 1}
+        )

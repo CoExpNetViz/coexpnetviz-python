@@ -178,9 +178,8 @@ def _create_nodes(baits, cors, gene_families):
     return _concat_nodes(bait_nodes, family_nodes, gene_nodes)
 
 def _create_bait_nodes(baits, gene_families):
-    assert not baits.empty
     nodes = baits.to_frame('genes')
-    nodes.reset_index(drop=True, inplace=True)
+    nodes = nodes.reset_index(drop=True)
     nodes['type'] = 'bait'
     nodes = pd.merge(
         nodes, gene_families, left_on='genes', right_on='gene', how='left'
@@ -188,9 +187,8 @@ def _create_bait_nodes(baits, gene_families):
     del nodes['gene']
     nodes['label'] = nodes['genes']
     nodes['genes'] = nodes['genes'].apply(lambda gene: frozenset({gene}))
-    nodes['colour'] = [RGB((255, 255, 255))] * len(nodes)
+    nodes['colour'] = RGB((255, 255, 255))
     nodes['partition_id'] = hash(frozenset())
-    assert not nodes.empty
     return nodes
 
 def _create_non_bait_nodes(baits, cors, gene_families):
