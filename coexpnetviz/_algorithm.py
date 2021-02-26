@@ -92,25 +92,17 @@ def _correlate_matrix(matrix, baits, percentile_ranks):
     percentiles = tuple(percentiles)
     lower_cutoff, upper_cutoff = percentiles
 
-    # Baits present in matrix
-    baits_ = matrix_df.reindex(baits).dropna()
-
     # Correlation matrix
-    cors = pearson_df(matrix_df, baits_)
-    cors.index.name = None
-    cors.columns.name = None
+    present_baits = matrix_df.reindex(baits).dropna()
+    cors = pearson_df(matrix_df, present_baits)
     cor_matrix = cors.copy()
 
-    # Apply cutoff
+    # Cutoff and reformat to relational (DB) format
     cors = cors[(cors <= lower_cutoff) | (cors >= upper_cutoff)]
-    # TODO not sure if helps performance. If not, this is unnecessary
-    cors.dropna(how='all', inplace=True)
-
-    # Reformat to relational (DB) format
-    cors.index.name = 'gene'
-    cors.reset_index(inplace=True)
+    cors = cors.reset_index()
+    cors = cors.rename(columns={'index': 'gene'})
     cors = pd.melt(cors, id_vars=['gene'], var_name='bait', value_name='correlation')
-    cors.dropna(subset=['correlation'], inplace=True)
+    cors = cors.dropna(subset=['correlation'])
 
     return cors, ExpressionMatrixInfo(matrix, sample, percentiles, cor_matrix)
 
