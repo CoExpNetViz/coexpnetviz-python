@@ -230,36 +230,23 @@ def _create_non_bait_nodes(baits, cors, gene_families):
     return family_nodes, gene_nodes
 
 def _concat_nodes(bait_nodes, family_nodes, gene_nodes):
-    # TODO test with empty fam and/or gene nodes df
     nodes = pd.concat((family_nodes, gene_nodes), ignore_index=True)
 
     # Add partitions and colours to non-bait nodes
     if not nodes.empty:
         nodes['partition_id'] = nodes['baits'].apply(hash)
-        nodes.drop('baits', axis=1, inplace=True)
+        del nodes['baits']
         partitions = nodes[['partition_id']].drop_duplicates()
-        colours = distinct_colours(len(partitions))
-        # Shuffle the colours so distinct colours are less likely to be put
-        # next to each other
-        colours = np.random.permutation([RGB.from_float(x) for x in colours])
+        colours = list(distinct_colours(len(partitions)))
         partitions['colour'] = colours
         nodes = pd.merge(nodes, partitions, on='partition_id')
 
     # Assign ids to all nodes
     nodes = pd.concat((nodes, bait_nodes), ignore_index=True)
     nodes.index.name = 'id'
-    nodes.reset_index(inplace=True)
-    columns = (
-        'id', 'label', 'type', 'genes', 'family', 'colour', 'partition_id'
-    )
-    nodes = nodes.reindex(columns=columns)
+    nodes = nodes.reset_index()
 
-    # Replace all na with None
-    #
-    # TODO instead of replacing with None, let nan and None roam free until the
-    # point where it actually makes a difference, at that point you can use
-    # .replace(np.nan, 'whatever you need'). Will have to be careful to use
-    # pd.isna/notna in if statements and in bool()
+    # Replace NaN with None (can't use replacena for that)
     nodes = nodes.where(pd.notna(nodes), None)
 
     return nodes

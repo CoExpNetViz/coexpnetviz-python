@@ -349,3 +349,98 @@ class TestCreateNonBaitNodes:
         assert_df_equals(
             family_nodes, expected, ignore_indices={0}, ignore_order={0, 1}
         )
+
+class TestConcatNodes:
+
+    'Happy days, to check they are merged correctly with colour added'
+
+    @pytest.fixture
+    def bait_nodes(self):
+        colour = 1
+        partition = 1
+        return pd.DataFrame(
+            [[frozenset({'bait1'}), 'bait', np.nan, 'bait1', colour, partition]],
+            columns=[
+                'genes', 'type', 'family', 'label', 'colour', 'partition_id'
+            ],
+        )
+
+    @pytest.fixture
+    def family_nodes(self):
+        return pd.DataFrame(
+            [
+                [frozenset({'bait1', 'bait2'}),
+                 'fam',
+                 'family',
+                 frozenset({'gene1', 'gene2'}),
+                 'fam'],
+                [frozenset({'bait1'}),
+                 'fam2',
+                 'family',
+                 frozenset({'gene3'}),
+                 'fam2'],
+            ],
+            columns=[
+                'baits', 'label', 'type', 'genes', 'family'
+            ],
+        )
+
+    @pytest.fixture
+    def gene_nodes(self):
+        return pd.DataFrame(
+            [[frozenset({'bait1', 'bait2'}), 'gene4', 'gene',
+              frozenset({'gene4'})]],
+            columns=[
+                'baits', 'label', 'type', 'genes'
+            ],
+        )
+
+    @pytest.fixture
+    def distinct_colours_mock(self, monkeypatch):
+        # Normally it returns RGB but for this test this is fine. We only need
+        # to check they end up on the right nodes.
+        mock = Mock(return_value=[2, 3])
+        monkeypatch.setattr('coexpnetviz._algorithm.distinct_colours', mock)
+        return mock
+
+    def test(self, bait_nodes, family_nodes, gene_nodes, distinct_colours_mock):
+        orig_bait_nodes = bait_nodes.copy()
+        orig_family_nodes = family_nodes.copy()
+        orig_gene_nodes = gene_nodes.copy()
+        nodes = alg._concat_nodes(bait_nodes, family_nodes, gene_nodes)
+
+        # Then input unchanged
+        assert_df_equals(bait_nodes, orig_bait_nodes)
+        assert_df_equals(family_nodes, orig_family_nodes)
+        assert_df_equals(gene_nodes, orig_gene_nodes)
+
+        # All NaN replaced by None (e.g. when converting family col to json
+        # later on we want missing values to become `null`, not `NaN`, in json)
+        #
+        # np.isnan raises exception on None so we check with `is`.
+        assert not nodes.applymap(lambda x: x is np.nan).any(axis=None)
+
+        # Request 2 colours as there are 2 partitions other than the bait
+        # partition
+        distinct_colours_mock.assert_called_once_with(2)
+
+        # Do a plain simple concat with partitions being hashes of baits
+        del nodes['id']
+        expected = pd.DataFrame(
+            [
+                ['bait1', 'bait', frozenset({'bait1'}), None,
+                 1, 1],
+                ['fam', 'family', frozenset({'gene1', 'gene2'}),
+                 'fam', hash(frozenset({'bait1', 'bait2'})), 2],
+                ['fam2', 'family', frozenset({'gene3'}),
+                 'fam2', hash(frozenset({'bait1'})), 3],
+                ['gene4', 'gene', frozenset({'gene4'}),
+                 None, hash(frozenset({'bait1', 'bait2'})), 2],
+            ],
+            columns = (
+                'label', 'type', 'genes', 'family', 'partition_id', 'colour'
+            )
+        )
+        assert_df_equals(
+            nodes, expected, ignore_indices={0}, ignore_order={0,1}
+        )

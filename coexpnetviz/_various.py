@@ -204,7 +204,8 @@ def distinct_colours(n):
         # If enough points, drop extra points by returning a random selection
         if len(rgb) > n:
             indices = random.choice(len(rgb), n, replace=False)
-            return rgb[indices]
+            colours = rgb[indices]
+            return map(RGB.from_float, colours)
 
         # Else, continue with increased side
         side += 1
