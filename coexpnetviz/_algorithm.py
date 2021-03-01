@@ -96,7 +96,7 @@ def _correlate_matrix(matrix, baits, percentile_ranks):
     # Correlation matrix
     present_baits = matrix_df.reindex(baits).dropna()
     cors = pearson_df(matrix_df, present_baits)
-    cor_matrix = cors.copy()
+    cor_matrix = cors
 
     # Cutoff and reformat to relational (DB) format
     cors = cors[(cors <= lower_cutoff) | (cors >= upper_cutoff)]
@@ -194,7 +194,7 @@ def _create_bait_nodes(baits, gene_families):
 
 def _create_non_bait_nodes(baits, cors, gene_families):
     is_not_a_bait = ~cors['gene'].isin(baits)
-    cors = cors[is_not_a_bait].copy()
+    cors = cors[is_not_a_bait]
     family_nodes = pd.DataFrame(
         columns=('baits', 'label', 'type', 'genes', 'family')
     )
@@ -204,7 +204,7 @@ def _create_non_bait_nodes(baits, cors, gene_families):
     if not cors.empty:
         # Split into family and gene nodes
         cors = pd.merge(cors, gene_families, on='gene', how='left')
-        gene_nodes = cors[cors['family'].isnull()].copy()
+        gene_nodes = cors[cors['family'].isnull()]
         cors = cors.dropna()  # drop gene nodes
 
         if not cors.empty:
@@ -286,9 +286,8 @@ def _create_cor_edges(nodes, cors):
     if cors.empty:
         return pd.DataFrame(columns=('bait_node', 'node', 'max_correlation'))
 
-    cors = cors.copy()
-
     # Map cors.bait to bait_node id
+    cors = cors.copy()
     nodes = nodes[['id', 'genes', 'type']].copy()
     nodes = nodes.explode('genes').set_index('genes')
     cors.update(cors['bait'].map(nodes['id']))
