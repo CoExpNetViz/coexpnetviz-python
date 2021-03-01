@@ -489,3 +489,56 @@ class TestCreateHomologyEdges:
         assert_df_equals(
             edges, expected, ignore_indices={0}, ignore_order={0, 1}
         )
+
+class TestCreateCorEdges:
+
+    '''
+    Happy days, edges between bait and non-bait, aggregate fam-bait correlations
+    '''
+
+    @pytest.fixture
+    def nodes(self):
+        '''
+        Nodes with just the columns relevant for this test
+
+        An edge for bait3 won't appear because nothing correlates with it.
+        gene2 appears in both the edge to bait1 and bait2 but its homolog gene1
+        only correlates with bait1; it should use cor 3.0 from bait2--gene2 for
+        its edge to bait1.
+        '''
+        return pd.DataFrame(
+            [[1, frozenset({'bait1'})],
+             [2, frozenset({'gene1', 'gene2'})],
+             [3, frozenset({'bait2'})],
+             [4, frozenset({'gene3'})],
+             [5, frozenset({'bait3'})]],
+            columns=('id', 'genes')
+        )
+
+    @pytest.fixture
+    def cors(self):
+        return pd.DataFrame(
+            [['bait1', 'gene1', 1.0],
+             ['bait1', 'gene2', 2.0],
+             ['bait2', 'gene2', 3.0],
+             ['bait2', 'gene3', 4.0]],
+            columns=('bait', 'gene', 'correlation'),
+        )
+
+    def test(self, nodes, cors):
+        orig_nodes = nodes.copy()
+        orig_cors = cors.copy()
+        edges = alg._create_cor_edges(nodes, cors)
+
+        # Then input unchanged
+        assert_df_equals(nodes, orig_nodes)
+        assert_df_equals(cors, orig_cors)
+
+        # and correct edges
+        expected = pd.DataFrame(
+            [[1, 2, 2.0],
+             [3, 2, 3.0],
+             [3, 4, 4.0]],
+            columns=('bait_node', 'node', 'max_correlation'),
+        )
+        assert_df_equals(edges, expected)

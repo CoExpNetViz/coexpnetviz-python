@@ -26,9 +26,6 @@ from coexpnetviz._various import (
 )
 
 
-# TODO refactor: inplace does not necessarily improve performance. Remove
-# unnecessary use of inplace.
-
 def create_network(baits, expression_matrices, gene_families, percentile_ranks=(5, 95)):
     cors, matrix_infos = _correlate_matrices(
         expression_matrices, baits, percentile_ranks
@@ -273,32 +270,31 @@ def _create_cor_edges(nodes, cors):
     '''
     Create DataFrame of correlation edges between bait and non-bait nodes.
 
+    cors param has no self/symmetrical/duplicate edges and only lists cors
+    between bait and non-baits.
+
     Columns:
 
     bait_node : int
     node : int
     max_correlation : float
     '''
-    # TODO node musn't be a bait node.
-    # TODO no self/symmetrical/duplicate edges (would apparently already be the
-    # case; but at least leave a comment why that is so)
-    if not cors.empty:
-        cors = cors.copy()
-        nodes = nodes[['id', 'genes']].copy()
-        nodes.update(nodes['genes'].apply(list))
-        ids = nodes.explode('genes').set_index('genes')['id']
-        cors.update(cors['gene'].map(ids))
-        cors.update(cors['bait'].map(ids))
-        cors.rename(columns={'bait': 'bait_node', 'gene': 'node'}, inplace=True)
-
-        # Summarise correlations per edge by taking the max (in the abs sense)
-        # per nodes of an edge
-        groups = cors.groupby(['bait_node', 'node'])[['correlation']]
-        cors = groups.agg(lambda x: x.iloc[x.abs().argmax()])
-
-        cors.reset_index(inplace=True)
-        cors.rename(columns={'correlation': 'max_correlation'}, inplace=True)
-        cors = cors.reindex(columns=('bait_node', 'node', 'max_correlation'))
-        return cors
-    else:
+    if cors.empty:
         return pd.DataFrame(columns=('bait_node', 'node', 'max_correlation'))
+
+    cors = cors.copy()
+    nodes = nodes[['id', 'genes']].copy()
+    nodes.update(nodes['genes'].apply(list))
+    ids = nodes.explode('genes').set_index('genes')['id']
+    cors.update(cors['gene'].map(ids))
+    cors.update(cors['bait'].map(ids))
+    cors = cors.rename(columns={'bait': 'bait_node', 'gene': 'node'})
+
+    # Summarise correlations per edge by taking the max (in the abs sense)
+    # per nodes of an edge
+    groups = cors.groupby(['bait_node', 'node'])[['correlation']]
+    cors = groups.agg(lambda x: x.iloc[x.abs().argmax()])
+
+    cors = cors.reset_index()
+    cors = cors.rename(columns={'correlation': 'max_correlation'})
+    return cors
