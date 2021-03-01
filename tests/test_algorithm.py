@@ -18,7 +18,7 @@
 '''
 Test _algorithm
 
-Too trivial to test: _create_nodes.
+Too trivial to test: _create_nodes, _create_network.
 '''
 
 from unittest.mock import Mock
