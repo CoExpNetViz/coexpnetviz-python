@@ -444,3 +444,48 @@ class TestConcatNodes:
         assert_df_equals(
             nodes, expected, ignore_indices={0}, ignore_order={0,1}
         )
+
+class TestCreateHomologyEdges:
+
+    'Happy days, edges between baits of the same family'
+
+    @pytest.fixture
+    def nodes(self):
+        '''
+        A nodes df minus any columns which are not needed for this test; a real
+        nodes df has more columns.
+        '''
+        return pd.DataFrame(
+            [
+                # Check it ignores non-bait
+                [1, 'gene', 'fam'],
+
+                # Expect edges between these, but no self-edges and no
+                # synonymous edges
+                [2, 'bait', 'fam'],
+                [3, 'bait', 'fam'],
+                [4, 'bait', 'fam'],
+
+                # Just 1 in the fam, so no edges
+                [5, 'bait', 'fam2'],
+            ],
+            columns = ('id', 'type', 'family')
+        )
+
+    def test(self, nodes):
+        orig_nodes = nodes.copy()
+        edges = alg._create_homology_edges(nodes)
+
+        # Then input unchanged
+        assert_df_equals(nodes, orig_nodes)
+
+        # and edges between baits of the same family except self/symmetric edges
+        expected = pd.DataFrame(
+            [[2, 3],
+             [2, 4],
+             [3, 4]],
+            columns=('bait_node1', 'bait_node2'),
+        )
+        assert_df_equals(
+            edges, expected, ignore_indices={0}, ignore_order={0, 1}
+        )
