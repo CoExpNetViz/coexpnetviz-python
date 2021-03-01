@@ -507,12 +507,12 @@ class TestCreateCorEdges:
         its edge to bait1.
         '''
         return pd.DataFrame(
-            [[1, frozenset({'bait1'})],
-             [2, frozenset({'gene1', 'gene2'})],
-             [3, frozenset({'bait2'})],
-             [4, frozenset({'gene3'})],
-             [5, frozenset({'bait3'})]],
-            columns=('id', 'genes')
+            [[1, 'bait', frozenset({'bait1'})],
+             [2, 'fam', frozenset({'gene1', 'gene2'})],
+             [3, 'bait', frozenset({'bait2'})],
+             [4, 'gene', frozenset({'gene3'})],
+             [5, 'bait', frozenset({'bait3'})]],
+            columns=('id', 'type', 'genes')
         )
 
     @pytest.fixture
@@ -521,7 +521,9 @@ class TestCreateCorEdges:
             [['bait1', 'gene1', 1.0],
              ['bait1', 'gene2', 2.0],
              ['bait2', 'gene2', 3.0],
-             ['bait2', 'gene3', 4.0]],
+             ['bait2', 'gene3', 4.0],
+             ['bait1', 'bait2', 5.0],
+             ['bait2', 'bait3', 5.0]],
             columns=('bait', 'gene', 'correlation'),
         )
 

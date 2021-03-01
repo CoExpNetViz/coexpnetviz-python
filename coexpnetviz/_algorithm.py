@@ -26,6 +26,10 @@ from coexpnetviz._various import (
 )
 
 
+# In hindsight it would have made sense to either map genes to nodes, with node
+# ids, up front; or to do away with node ids entirely and always use the gene
+# name. Probably the latter is a good option, assuming they are unique.
+
 def create_network(baits, expression_matrices, gene_families, percentile_ranks=(5, 95)):
     cors, matrix_infos = _correlate_matrices(
         expression_matrices, baits, percentile_ranks
@@ -270,8 +274,8 @@ def _create_cor_edges(nodes, cors):
     '''
     Create DataFrame of correlation edges between bait and non-bait nodes.
 
-    cors param has no self/symmetrical/duplicate edges and only lists cors
-    between bait and non-baits.
+    cors param has no self/symmetrical/duplicate edges but it may include
+    bait-bait cors.
 
     Columns:
 
@@ -283,12 +287,18 @@ def _create_cor_edges(nodes, cors):
         return pd.DataFrame(columns=('bait_node', 'node', 'max_correlation'))
 
     cors = cors.copy()
-    nodes = nodes[['id', 'genes']].copy()
-    nodes.update(nodes['genes'].apply(list))
-    ids = nodes.explode('genes').set_index('genes')['id']
-    cors.update(cors['gene'].map(ids))
-    cors.update(cors['bait'].map(ids))
+
+    # Map cors.bait to bait_node id
+    nodes = nodes[['id', 'genes', 'type']].copy()
+    nodes = nodes.explode('genes').set_index('genes')
+    cors.update(cors['bait'].map(nodes['id']))
+
+    # and cors.gene to node id but drop any baits
+    is_non_bait = nodes['type'] != 'bait'
+    ids = nodes['id'][is_non_bait]
+    cors['gene'] = cors['gene'].map(ids)
     cors = cors.rename(columns={'bait': 'bait_node', 'gene': 'node'})
+    cors = cors.dropna()  # drop bait-bait rows
 
     # Summarise correlations per edge by taking the max (in the abs sense)
     # per nodes of an edge
