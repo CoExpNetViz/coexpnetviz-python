@@ -42,16 +42,27 @@ _line_style = {'color': 'r', 'linewidth': 2}
 class App:
 
     def run(self):
-        _init()
-        self._parse_input()
-        network = create_network(
-            self._baits,
-            self._expression_matrices,
-            self._gene_families,
-            self._percentile_ranks,
-        )
-        _print_json_response(network)
-        self._write_sample_graphs(network)
+        try:
+            _init()
+            self._parse_input()
+            network = create_network(
+                self._baits,
+                self._expression_matrices,
+                self._gene_families,
+                self._percentile_ranks,
+            )
+            _print_json_response(network)
+            self._write_sample_graphs(network)
+        except BrokenPipeError:
+            # Broken pipe error tends to happen when our Cytoscape app stops
+            # reading stdout/stderr. Sometimes this exits as 1, sometimes as
+            # 120; here we ensure it always uses 120. This way the Cytoscape
+            # app knows to expect a read/parse error on its own end rather than
+            # showing the broken pipe error.
+            #
+            # Do not attempt to log here as we log to stderr which probably
+            # broke as well.
+            sys.exit(120)
 
     def _parse_input(self):
         args = json.load(sys.stdin)
