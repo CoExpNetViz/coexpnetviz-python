@@ -53,6 +53,9 @@ class App:
             )
             _print_json_response(network)
             self._write_sample_graphs(network)
+            _write_matrix_intermediates(network, self._output_dir)
+            _write_percentiles(network, self._output_dir)
+            _write_significant_cors(network, self._output_dir)
         except BrokenPipeError:
             # Broken pipe error tends to happen when our Cytoscape app stops
             # reading stdout/stderr. Sometimes this exits as 1, sometimes as
@@ -109,6 +112,7 @@ class App:
             _write_sample_cdf(
                 name, flat_sample, sample_size, self._output_dir, self._percentile_ranks
             )
+
 
 def _init():
     # TODO this is a quick and dirty fix to allow large csv files
@@ -229,24 +233,9 @@ def _print_json_response(network):
     nodes['genes'] = nodes['genes'].apply(tuple)
     response['nodes'] = nodes.to_dict('records')
 
-    data = tuple(
-        (info.matrix.name,) + info.percentiles
-        for info in network.matrix_infos
-    )
-    percentiles = pd.DataFrame(data, columns=('expression_matrix', 'lower', 'upper'))
-    response['percentiles'] = percentiles.to_dict('records')
-
     # TODO test empty dfs
     response['homology_edges'] = network.homology_edges.to_dict('records')
     response['cor_edges'] = network.cor_edges.to_dict('records')
-    response['significant_cors'] = network.significant_cors.to_dict('records')
-    response['matrix_infos'] = {
-        info.matrix.name: {
-            'sample': info.sample.to_dict('records'),
-            'cor_matrix': info.cor_matrix.to_dict('records'),
-        }
-        for info in network.matrix_infos
-    }
 
     json.dump(response, sys.stdout)
 
@@ -276,6 +265,35 @@ def _write_sample_cdf(name, flat_sample, sample_size, output_dir, percentile_ran
     plt.axhline(percentile_ranks[0]/100.0, **_line_style)
     plt.axhline(percentile_ranks[1]/100.0, **_line_style)
     plt.savefig(str(output_dir / f'{name}.sample_cdf.png'))
+
+def _write_matrix_intermediates(network, output_dir):
+    for info in network.matrix_infos:
+        name = info.matrix.name
+
+        sample = info.sample
+        sample.index.name = None
+        sample_file = str(output_dir / f'{name}.sample_matrix.txt')
+        sample.to_csv(sample_file, sep='\t', na_rep=str(np.nan))
+
+        cor_matrix = info.cor_matrix
+        cor_matrix.index.name = None
+        cor_file = str(output_dir / f'{name}.correlation_matrix.txt')
+        cor_matrix.to_csv(cor_file, sep='\t', na_rep=str(np.nan))
+
+def _write_percentiles(network, output_dir):
+    data = tuple(
+        (info.matrix.name,) + info.percentiles
+        for info in network.matrix_infos
+    )
+    percentiles = pd.DataFrame(data, columns=('expression_matrix', 'lower', 'upper'))
+    percentiles_file = str(output_dir / 'percentiles.txt')
+    percentiles.to_csv(percentiles_file, sep='\t', na_rep=str(np.nan), index=False)
+
+def _write_significant_cors(network, output_dir):
+    output_file = output_dir / 'significant_correlations.txt'
+    network.significant_cors.to_csv(
+        str(output_file), sep='\t', na_rep=str(np.nan), index=False,
+    )
 
 def main():
     App().run()
