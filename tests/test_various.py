@@ -20,7 +20,6 @@
 from textwrap import dedent
 
 from pytil.data_frame import assert_df_equals
-from pytil.test import assert_text_contains
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
@@ -165,4 +164,4 @@ class TestValidateGeneFamilies(object):
             _validate_gene_families(pd.DataFrame(
                 families, columns=['family', 'gene']
             ))
-        assert_text_contains(ex.value.args[0], dedent(error.rstrip()))
+        assert dedent(error.rstrip()) in ex.value.args[0]

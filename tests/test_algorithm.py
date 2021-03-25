@@ -25,7 +25,7 @@ from unittest.mock import Mock
 import pytest
 
 from pytil.data_frame import assert_df_equals
-from pytil.series import assert_equals as assert_series_equals
+from pytil.series import assert_series_equals
 from varbio import ExpressionMatrix
 import pandas as pd
 import numpy as np
