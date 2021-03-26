@@ -100,6 +100,7 @@ def _correlate_matrix(matrix, baits, percentile_ranks):
 
     # Cutoff and reformat to relational (DB) format
     cors = cors[(cors <= lower_cutoff) | (cors >= upper_cutoff)]
+    cors.index.name = None
     cors = cors.reset_index()
     cors = cors.rename(columns={'index': 'gene'})
     cors = pd.melt(cors, id_vars=['gene'], var_name='bait', value_name='correlation')
