@@ -37,7 +37,7 @@ test:
     - pytest >=3
     - pytil ==8.*
   commands:
-    - pytest
+    - pytest -l --tb=auto
 
 about:
   home: https://github.com/CoExpNetViz/coexpnetviz-python
