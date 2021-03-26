@@ -30,9 +30,9 @@ from coexpnetviz._various import (
 # ids, up front; or to do away with node ids entirely and always use the gene
 # name. Probably the latter is a good option, assuming they are unique.
 
-def create_network(baits, expression_matrices, gene_families, percentile_ranks=(5, 95)):
+def create_network(baits, expression_matrices, gene_families, percentiles=(5, 95)):
     cors, matrix_infos = _correlate_matrices(
-        expression_matrices, baits, percentile_ranks
+        expression_matrices, baits, percentiles
     )
     nodes = _create_nodes(baits, cors, gene_families)
     homology_edges = _create_homology_edges(nodes)
@@ -46,9 +46,9 @@ def create_network(baits, expression_matrices, gene_families, percentile_ranks=(
         matrix_infos=matrix_infos,
     )
 
-def _correlate_matrices(expression_matrices, baits, percentile_ranks):
+def _correlate_matrices(expression_matrices, baits, percentiles):
     results = tuple(
-        _correlate_matrix(matrix, baits, percentile_ranks)
+        _correlate_matrix(matrix, baits, percentiles)
         for matrix in expression_matrices
     )
 
@@ -60,7 +60,7 @@ def _correlate_matrices(expression_matrices, baits, percentile_ranks):
     matrix_infos = tuple(result[1] for result in results)
     return cors, matrix_infos
 
-def _correlate_matrix(matrix, baits, percentile_ranks):
+def _correlate_matrix(matrix, baits, percentiles):
     matrix_df = matrix.data
 
     # Remove rows with no variance as correlation functions yield nan for it
@@ -89,9 +89,9 @@ def _correlate_matrix(matrix, baits, percentile_ranks):
             ))
 
     # Get cutoffs
-    sample, percentiles = _estimate_cutoffs(matrix, percentile_ranks)
-    percentiles = tuple(percentiles)
-    lower_cutoff, upper_cutoff = percentiles
+    sample, cutoffs = _estimate_cutoffs(matrix, percentiles)
+    cutoffs = tuple(cutoffs)
+    lower_cutoff, upper_cutoff = cutoffs
 
     # Correlation matrix
     present_baits = matrix_df.reindex(baits).dropna()
@@ -106,23 +106,22 @@ def _correlate_matrix(matrix, baits, percentile_ranks):
     cors = pd.melt(cors, id_vars=['gene'], var_name='bait', value_name='correlation')
     cors = cors.dropna(subset=['correlation'])
 
-    return cors, ExpressionMatrixInfo(matrix, sample, percentiles, cor_matrix)
+    return cors, ExpressionMatrixInfo(matrix, sample, cutoffs, cor_matrix)
 
-def _estimate_cutoffs(matrix, percentile_ranks):
+def _estimate_cutoffs(matrix, percentiles):
     '''
     Estimate upper and lower correlation cutoffs
 
-    Takes the x-th and y-th (percentile ranks) percentile of a sample
-    similarity matrix of `matrix`, returning these as the lower and upper
-    cut-off respectively.
+    Takes the x-th and y-th percentile of a sample similarity matrix of
+    `matrix`, returning these as the lower and upper cut-off respectively.
 
     Using a sample as calculating all correlations is n**2. Sample size is
     chosen to be easy enough to calculate; for a large matrix our estimate
     is less accurate than for a small matrix. We could report a confidence
     interval for the cut-off estimate if that bothers us or more likely delve
     into statistics to find a better cut-off. In practice the user just plays
-    with the percentile ranks until the result is what they want; so this is
-    good enough.
+    with the percentiles until the result is what they want; so this is good
+    enough.
     '''
     matrix_df = matrix.data
 
@@ -157,9 +156,9 @@ def _estimate_cutoffs(matrix, percentile_ranks):
 
     # Ignore NaN values when calculating percentiles
     triu = triu[~np.isnan(triu)]
-    percentiles = np.percentile(triu, percentile_ranks)
+    cutoffs = np.percentile(triu, percentiles)
 
-    return cors, percentiles
+    return cors, cutoffs
 
 def _create_nodes(baits, cors, gene_families):
     '''

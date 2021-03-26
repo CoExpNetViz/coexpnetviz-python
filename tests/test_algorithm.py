@@ -43,8 +43,8 @@ def pearson_df_mock(monkeypatch):
 class TestEstimateCutoffs:
 
     '''
-    Happy days scenario to spot stack traces and to ensure percentiles are
-    correct. Manually reviewed the rest of it.
+    Happy days scenario to spot stack traces and to ensure percentile values
+    are correct. Manually reviewed the rest of it.
     '''
 
     @pytest.fixture
@@ -74,15 +74,13 @@ class TestEstimateCutoffs:
 
     def test(self, pearson_df_mock, matrix, expected_cors, percentile_mock):
         orig_matrix_df = matrix.data.copy()
-        percentile_ranks = np.array([20.0, 80.0])
-        orig_percentile_ranks = percentile_ranks.copy()
-        cors, _ = alg._estimate_cutoffs(
-            matrix, percentile_ranks=percentile_ranks
-        )
+        percentiles = np.array([20.0, 80.0])
+        orig_percentiles = percentiles.copy()
+        cors, _ = alg._estimate_cutoffs(matrix, percentiles=percentiles)
 
         # Input is unchanged
         assert_df_equals(matrix.data, orig_matrix_df)
-        assert np.allclose(percentile_ranks, orig_percentile_ranks)
+        assert np.allclose(percentiles, orig_percentiles)
 
         # Then correlations of the entire matrix are calculated (instead of just a
         # sample)
@@ -96,7 +94,7 @@ class TestEstimateCutoffs:
         # percentiles are calculated on a triangle minus the diagonal
         args = percentile_mock.call_args.args
         assert np.allclose(args[0], np.array([1.0, 2.0, 3.0]))
-        assert np.allclose(args[1], percentile_ranks)
+        assert np.allclose(args[1], percentiles)
 
 class TestCorrelateMatrix:
 
@@ -107,23 +105,20 @@ class TestCorrelateMatrix:
     '''
 
     @pytest.fixture
-    def percentiles(self):
+    def cutoffs(self):
         'Values which cut some but not all cors'
         return np.array([1.0, 5.0])
 
     @pytest.fixture
-    def estimate_cutoffs_mock(self, monkeypatch, percentiles):
+    def estimate_cutoffs_mock(self, monkeypatch, cutoffs):
         # sample is a bogus value, but sufficient for this test
-        mock = Mock(return_value=('sample', percentiles.copy()))
+        mock = Mock(return_value=('sample', cutoffs.copy()))
         monkeypatch.setattr('coexpnetviz._algorithm._estimate_cutoffs', mock)
         return mock
 
     @pytest.fixture
-    def percentile_ranks(self):
-        '''
-        Some percentile ranks, values do not matter as we mock
-        _estimate_cutoffs
-        '''
+    def percentiles(self):
+        'Some percentiles, values do not matter as we mock _estimate_cutoffs'
         return np.array([1.0, 99.0])
 
     @pytest.fixture
@@ -159,19 +154,19 @@ class TestCorrelateMatrix:
         return pearson_df_mock
 
     def test(self, matrix, baits, pearson_df_mock, estimate_cutoffs_mock,
-             percentile_ranks, cor_matrix, percentiles):
+             percentiles, cor_matrix, cutoffs):
 
         orig_matrix_df = matrix.data.copy()
         orig_baits = baits.copy()
-        orig_percentile_ranks = percentile_ranks.copy()
+        orig_percentiles = percentiles.copy()
         cors, matrix_info = alg._correlate_matrix(
-            matrix, baits, percentile_ranks
+            matrix, baits, percentiles
         )
 
         # Then input unchanged
         assert_df_equals(matrix.data, orig_matrix_df)
         assert_series_equals(baits, orig_baits)
-        assert np.allclose(percentile_ranks, orig_percentile_ranks)
+        assert np.allclose(percentiles, orig_percentiles)
 
         # Correlate entire matrix (so no rows were dropped due to low std) to
         # present baits
@@ -181,7 +176,7 @@ class TestCorrelateMatrix:
 
         # Matrix info is passed on unchanged
         assert_df_equals(matrix_info.cor_matrix, cor_matrix)
-        assert np.allclose(matrix_info.percentiles, percentiles)
+        assert np.allclose(matrix_info.percentile_values, cutoffs)
         assert matrix_info.sample == 'sample'
 
         # Insignificant cors have been cut, but only those. And the cors df has

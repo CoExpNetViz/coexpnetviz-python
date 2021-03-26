@@ -39,7 +39,7 @@ class ExpressionMatrixInfo:
 
     matrix = attr.ib()
     sample = attr.ib()
-    percentiles = attr.ib()
+    percentile_values = attr.ib()
     cor_matrix = attr.ib()
 
 class RGB:

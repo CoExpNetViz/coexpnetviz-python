@@ -88,8 +88,8 @@ class TestHappyDays:
             'baits': str(baits1),
             'gene_families': str(gene_families1),
             'output_dir': str(output_dir),
-            'lower_percentile_rank': 5,
-            'upper_percentile_rank': 95,
+            'lower_percentile': 5,
+            'upper_percentile': 95,
         }
         monkeypatch.setattr('sys.stdin', io.StringIO(json.dumps(args)))
 
@@ -124,14 +124,14 @@ class TestHappyDays:
         actual = pd.read_table(str(output_dir / 'matrix1.correlation_matrix.txt'), index_col=0)
         assert_df_equals(actual, expected, ignore_order={0,1}, all_close=True)
 
-        # Percentiles file
+        # Percentile values file
         expected = pd.DataFrame(
             [
                 ['matrix1', -0.95073877, 0.44702967]
             ],
             columns=['expression_matrix', 'lower', 'upper'],
         )
-        actual = pd.read_table(str(output_dir / 'percentiles.txt'), index_col=None)
+        actual = pd.read_table(str(output_dir / 'percentile_values.txt'), index_col=None)
         assert_df_equals(actual, expected, ignore_order={0,1}, ignore_indices={0}, all_close=True)
 
         # Significant correlations file

@@ -49,12 +49,12 @@ class App:
                 self._baits,
                 self._expression_matrices,
                 self._gene_families,
-                self._percentile_ranks,
+                self._percentiles,
             )
             _print_json_response(network)
             self._write_sample_graphs(network)
             _write_matrix_intermediates(network, self._output_dir)
-            _write_percentiles(network, self._output_dir)
+            _write_percentile_values(network, self._output_dir)
             _write_significant_cors(network, self._output_dir)
         except BrokenPipeError:
             # Broken pipe error tends to happen when our Cytoscape app stops
@@ -92,8 +92,8 @@ class App:
         else:
             self._gene_families = pd.DataFrame(columns=('family', 'gene'))
 
-        self._percentile_ranks = _parse_percentile_ranks(args)
-        logging.info(f'percentile ranks: {self._percentile_ranks}')
+        self._percentiles = _parse_percentiles(args)
+        logging.info(f'percentiles: {self._percentiles}')
 
     def _write_sample_graphs(self, network):
         for info in network.matrix_infos:
@@ -107,10 +107,10 @@ class App:
             flat_sample = flat_sample[~np.isnan(flat_sample)].ravel()
 
             _write_sample_histogram(
-                name, flat_sample, sample_size, self._output_dir, info.percentiles
+                name, flat_sample, sample_size, self._output_dir, info.percentile_values
             )
             _write_sample_cdf(
-                name, flat_sample, sample_size, self._output_dir, self._percentile_ranks
+                name, flat_sample, sample_size, self._output_dir, self._percentiles
             )
 
 
@@ -134,25 +134,25 @@ def _parse_json_baits(args):
             raise UserError(f'Need at least 2 baits, but got only {len(baits)}')
     return pd.Series(baits)
 
-def _parse_percentile_ranks(args):
-    lower_rank = args['lower_percentile_rank']
-    upper_rank = args['upper_percentile_rank']
-    if lower_rank < 0:
+def _parse_percentiles(args):
+    lower_percentile = args['lower_percentile']
+    upper_percentile = args['upper_percentile']
+    if lower_percentile < 0:
         raise UserError(
-            f'Lower percentile rank must be at least 0. Got: {lower_rank}'
+            f'Lower percentile must be at least 0. Got: {lower_percentile}'
         )
-    if upper_rank > 100:
+    if upper_percentile > 100:
         raise UserError(
-            f'Upper percentile rank must be at most 100. Got: {upper_rank}'
+            f'Upper percentile must be at most 100. Got: {upper_percentile}'
         )
-    if lower_rank > upper_rank:
+    if lower_percentile > upper_percentile:
         raise ValueError(join_lines(
             f'''
-            Lower percentile rank must be less or equal to upper percentile
-            rank, got: {lower_rank}, {upper_rank}
+            Lower percentile must be less or equal to upper percentile, got:
+            {lower_percentile}, {upper_percentile}
             '''
         ))
-    return np.array([lower_rank, upper_rank])
+    return np.array([lower_percentile, upper_percentile])
 
 def _validate_matrices(baits, matrices):
     if not matrices:
@@ -238,7 +238,7 @@ def _print_json_response(network):
 
     json.dump(response, sys.stdout)
 
-def _write_sample_histogram(name, flat_sample, sample_size, output_dir, percentiles):
+def _write_sample_histogram(name, flat_sample, sample_size, output_dir, percentile_values):
     plt.clf()
     pd.Series(flat_sample).plot.hist(bins=60)
     plt.title(
@@ -247,11 +247,11 @@ def _write_sample_histogram(name, flat_sample, sample_size, output_dir, percenti
     )
     plt.xlabel('pearson')
     plt.ylabel('frequency')
-    plt.axvline(percentiles[0], **_line_style)
-    plt.axvline(percentiles[1], **_line_style)
+    plt.axvline(percentile_values[0], **_line_style)
+    plt.axvline(percentile_values[1], **_line_style)
     plt.savefig(str(output_dir / f'{name}.sample_histogram.png'))
 
-def _write_sample_cdf(name, flat_sample, sample_size, output_dir, percentile_ranks):
+def _write_sample_cdf(name, flat_sample, sample_size, output_dir, percentiles):
     plt.clf()
     pd.Series(flat_sample).plot.hist(bins=60, cumulative=True, density=True)
     plt.title(
@@ -261,8 +261,8 @@ def _write_sample_cdf(name, flat_sample, sample_size, output_dir, percentile_ran
     )
     plt.xlabel('pearson')
     plt.ylabel('Cumulative probability, i.e. $P(cor \\leq x)$')
-    plt.axhline(percentile_ranks[0]/100.0, **_line_style)
-    plt.axhline(percentile_ranks[1]/100.0, **_line_style)
+    plt.axhline(percentiles[0]/100.0, **_line_style)
+    plt.axhline(percentiles[1]/100.0, **_line_style)
     plt.savefig(str(output_dir / f'{name}.sample_cdf.png'))
 
 def _write_matrix_intermediates(network, output_dir):
@@ -279,14 +279,14 @@ def _write_matrix_intermediates(network, output_dir):
         cor_file = str(output_dir / f'{name}.correlation_matrix.txt')
         cor_matrix.to_csv(cor_file, sep='\t', na_rep=str(np.nan))
 
-def _write_percentiles(network, output_dir):
+def _write_percentile_values(network, output_dir):
     data = tuple(
-        (info.matrix.name,) + info.percentiles
+        (info.matrix.name,) + info.percentile_values
         for info in network.matrix_infos
     )
-    percentiles = pd.DataFrame(data, columns=('expression_matrix', 'lower', 'upper'))
-    percentiles_file = str(output_dir / 'percentiles.txt')
-    percentiles.to_csv(percentiles_file, sep='\t', na_rep=str(np.nan), index=False)
+    percentile_values = pd.DataFrame(data, columns=('expression_matrix', 'lower', 'upper'))
+    percentile_values_file = str(output_dir / 'percentile_values.txt')
+    percentile_values.to_csv(percentile_values_file, sep='\t', na_rep=str(np.nan), index=False)
 
 def _write_significant_cors(network, output_dir):
     output_file = output_dir / 'significant_correlations.txt'
