@@ -37,9 +37,6 @@ test:
     - pytest >=3
     - pytil ==8.*
   commands:
-    # Ensure we can run coexpnetviz without error
-    - coexpnetviz --help
-    # Ensure tests succeed
     - pytest
 
 about:
