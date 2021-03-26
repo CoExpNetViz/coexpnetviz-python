@@ -15,4 +15,4 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = '5.0.0.dev1'
+__version__ = '5.0.0'
