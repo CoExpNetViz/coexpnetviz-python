@@ -1,0 +1,28 @@
+# Analog to pytil's workflow
+name: Publish to anaconda
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-conda-pkg:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Add conda to system path
+      run: echo $CONDA/bin >> $GITHUB_PATH
+    - name: Install conda tools
+      run: conda install -y anaconda-client conda-build
+    - name: Build conda pkg
+      run: |
+        mkdir dist
+        conda build . --channel anaconda --channel timdiels --output-folder dist
+    - name: Publish to anaconda
+      run: anaconda upload --all dist/linux-64/*.tar.bz2
+      env:
+        ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
