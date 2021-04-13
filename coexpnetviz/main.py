@@ -19,6 +19,7 @@ from pathlib import Path
 from itertools import product
 from textwrap import dedent
 import csv
+import ctypes
 import json
 import logging
 import sys
@@ -115,9 +116,11 @@ class App:
 
 
 def _init():
-    # TODO this is a quick and dirty fix to allow large csv files
-    # https://stackoverflow.com/questions/15063936/csv-error-field-larger-than-field-limit-131072#15063941
-    csv.field_size_limit(sys.maxsize)
+    # Avoid any csv field size limit errors by setting it to the max value for
+    # the current architecture. This does not affect any buffers CPython
+    # allocates, it's just a validation check. The magic below is explained by
+    # https://stackoverflow.com/a/54517228
+    csv.field_size_limit(int(ctypes.c_ulong(-1).value // 2))
 
     # Init matplotlib: the default backend does not work on a headless server
     # or on mac, Agg seems to work anywhere so use that instead, always.
