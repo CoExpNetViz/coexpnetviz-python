@@ -488,7 +488,7 @@ class TestCreateHomologyEdges:
 class TestCreateCorEdges:
 
     '''
-    Happy days, edges between bait and non-bait, aggregate fam-bait correlations
+    Happy days, edges between nodes, aggregate fam-bait correlations
     '''
 
     @pytest.fixture
@@ -535,7 +535,12 @@ class TestCreateCorEdges:
         expected = pd.DataFrame(
             [[1, 2, 2.0],
              [3, 2, 3.0],
-             [3, 4, 4.0]],
+             [3, 4, 4.0],
+
+             # include bait-bait cor edges as well
+             [1, 3, 5.0],
+             [3, 5, 5.0],
+             ],
             columns=('bait_node', 'node', 'max_correlation'),
         )
-        assert_df_equals(edges, expected)
+        assert_df_equals(edges, expected, ignore_indices={0}, ignore_order={0,1})

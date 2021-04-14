@@ -272,10 +272,9 @@ def _create_homology_edges(nodes):
 
 def _create_cor_edges(nodes, cors):
     '''
-    Create DataFrame of correlation edges between bait and non-bait nodes.
+    Create DataFrame of correlation edges between nodes.
 
-    cors param has no self/symmetrical/duplicate edges but it may include
-    bait-bait cors.
+    cors param has no self/symmetrical/duplicate edges.
 
     Columns:
 
@@ -286,18 +285,15 @@ def _create_cor_edges(nodes, cors):
     if cors.empty:
         return pd.DataFrame(columns=('bait_node', 'node', 'max_correlation'))
 
-    # Map cors.bait to bait_node id
+    # Map cors.bait and cors.gene to their node id.
+    #
+    # Do include bait-bait cors (coexpnetviz/coexpnetviz#13)
     cors = cors.copy()
     nodes = nodes[['id', 'genes', 'type']].copy()
     nodes = nodes.explode('genes').set_index('genes')
     cors.update(cors['bait'].map(nodes['id']))
-
-    # and cors.gene to node id but drop any baits
-    is_non_bait = nodes['type'] != 'bait'
-    ids = nodes['id'][is_non_bait]
-    cors['gene'] = cors['gene'].map(ids)
+    cors.update(cors['gene'].map(nodes['id']))
     cors = cors.rename(columns={'bait': 'bait_node', 'gene': 'node'})
-    cors = cors.dropna()  # drop bait-bait rows
 
     # Summarise correlations per edge by taking the max (in the abs sense)
     # per nodes of an edge
