@@ -15,6 +15,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with CoExpNetViz.  If not, see <http://www.gnu.org/licenses/>.
 
+# Init matplotlib: the default backend does not work on a headless server
+# or on mac, Agg seems to work anywhere so use that instead, always.
+# Best to do this as early as possible, e.g. pyplot import already loads the
+# backend.
+#
+# This turns imports into a mess, so we must pylint ignore it
+# pylint: disable=wrong-import-order,wrong-import-position,ungrouped-imports
+import matplotlib
+matplotlib.use('Agg')
+
+
 from pathlib import Path
 from itertools import product
 from textwrap import dedent
@@ -28,7 +39,6 @@ from varbio import (
     ExpressionMatrix, parse_baits, parse_csv, init_logging, UserError,
     join_lines
 )
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -39,6 +49,7 @@ from coexpnetviz._various import parse_gene_families
 
 
 _line_style = {'color': 'r', 'linewidth': 2}
+
 
 class App:
 
@@ -121,10 +132,6 @@ def _init():
     # allocates, it's just a validation check. The magic below is explained by
     # https://stackoverflow.com/a/54517228
     csv.field_size_limit(int(ctypes.c_ulong(-1).value // 2))
-
-    # Init matplotlib: the default backend does not work on a headless server
-    # or on mac, Agg seems to work anywhere so use that instead, always.
-    matplotlib.use('Agg')
 
 def _parse_json_baits(args):
     baits = args['baits']
