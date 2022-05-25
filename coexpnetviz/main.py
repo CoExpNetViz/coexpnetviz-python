@@ -80,7 +80,8 @@ class App:
             sys.exit(120)
 
     def _parse_input(self):
-        args = json.load(sys.stdin)
+        with open(sys.argv[1]) as f:
+            args = json.load(f)
 
         self._output_dir = Path(args['output_dir'])
         log_file = self._output_dir / 'coexpnetviz.log'

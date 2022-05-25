@@ -81,8 +81,8 @@ class TestHappyDays:
         return output_dir
 
     @pytest.fixture
-    def mock_stdin(self, baits1, matrix1, gene_families1,
-                   monkeypatch, output_dir):
+    def mock_json_input(self, baits1, matrix1, gene_families1,
+                   monkeypatch, output_dir, tmpdir):
         args = {
             'expression_matrices': [str(matrix1)],
             'baits': str(baits1),
@@ -91,9 +91,11 @@ class TestHappyDays:
             'lower_percentile': 5,
             'upper_percentile': 95,
         }
-        monkeypatch.setattr('sys.stdin', io.StringIO(json.dumps(args)))
+        path = (Path(tmpdir) / 'input.json')
+        path.write_text(json.dumps(args))
+        monkeypatch.setattr('sys.argv', ['coexpnetviz', str(path)])
 
-    def test(self, mock_stdin, output_dir):
+    def test(self, mock_json_input, output_dir):
         main()
 
         # Sample matrix file
