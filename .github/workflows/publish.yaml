@@ -13,7 +13,7 @@ jobs:
         miniconda-version: latest
         python-version: 3.8.*
         auto-update-conda: true
-        conda-build-version: latest
+        conda-build-version: 3.*
     - name: Install anaconda uploader
       shell: bash -l {0}
       run: conda install -y anaconda-client
