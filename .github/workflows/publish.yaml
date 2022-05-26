@@ -10,9 +10,10 @@ jobs:
     - uses: actions/checkout@v2
     - uses: conda-incubator/setup-miniconda@v2
       with:
-        activate-environment: true
+        miniconda-version: latest
         python-version: 3.8.*
-        conda-build-version: 3.*
+        auto-update-conda: true
+        conda-build-version: latest
     - name: Install anaconda uploader
       shell: bash -l {0}
       run: conda install -y anaconda-client
