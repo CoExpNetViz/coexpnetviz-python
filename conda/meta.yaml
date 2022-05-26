@@ -27,7 +27,7 @@ requirements:
     - numpy >=1
     - pandas >=1.2.0
     - more-itertools >=3
-    - varbio ==3.*
+    #- varbio ==3.*
 
 test:
   source_files:
@@ -35,7 +35,7 @@ test:
     - tests
   requires:
     - pytest >=3
-    - pytil ==8.*
+    #- pytil ==8.*
   commands:
     - pytest -l --tb=auto
 
