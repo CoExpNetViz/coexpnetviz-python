@@ -12,9 +12,10 @@ jobs:
       with:
         activate-environment: ""
         python-version: 3.8.*
-    - name: Install conda tools
+        conda-build-version: 3.*
+    - name: Install anaconda uploader
       shell: bash -l {0}
-      run: conda install -y anaconda-client conda-build
+      run: conda install -y anaconda-client
     - name: Build conda pkg
       shell: bash -l {0}
       run: |
