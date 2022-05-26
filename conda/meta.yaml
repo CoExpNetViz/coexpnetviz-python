@@ -21,13 +21,13 @@ requirements:
     # Conda recommends always adding the interpreter as a host dep
     - python
   run:
-    - python ==3.8.*
-    - attrs >=17
-    - matplotlib >=1
-    - numpy >=1
-    - pandas >=1.2.0
-    - more-itertools >=3
-    #- varbio ==3.*
+    - python
+    - attrs
+    - matplotlib
+    - numpy
+    - pandas
+    - more-itertools
+    - varbio ==3.*
 
 test:
   source_files:
@@ -35,7 +35,7 @@ test:
     - tests
   requires:
     - pytest >=3
-    #- pytil ==8.*
+    - pytil ==8.*
   commands:
     - pytest -l --tb=auto
 
