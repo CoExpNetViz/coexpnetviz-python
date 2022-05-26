@@ -21,7 +21,7 @@ requirements:
     # Conda recommends always adding the interpreter as a host dep
     - python
   run:
-    - python ==3.8.*
+    - python >=3.8
     - attrs >=17
     - matplotlib >=1
     - numpy >=1
