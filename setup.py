@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 name = 'coexpnetviz'
 setup(
-    version='6.0.0',
+    version='6.0.1',
     name=name,
     entry_points={'console_scripts': [
         'coexpnetviz = coexpnetviz.main:main'
