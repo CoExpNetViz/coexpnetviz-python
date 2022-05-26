@@ -17,11 +17,11 @@ jobs:
     - name: Install anaconda uploader
       shell: bash -l {0}
       run: conda install -y anaconda-client
-   - name: Publish to anaconda
-     shell: bash -l {0}
-     run: $CONDA_PREFIX/bin/anaconda #upload --all dist/linux-64/*.tar.bz2
-     env:
-       ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+    - name: Publish to anaconda
+      shell: bash -l {0}
+      run: $CONDA_PREFIX/bin/anaconda #upload --all dist/linux-64/*.tar.bz2
+      env:
+        ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
     - name: Build conda pkg
       shell: bash -l {0}
       run: |
