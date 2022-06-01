@@ -36,7 +36,7 @@ import logging
 import sys
 
 from varbio import (
-    ExpressionMatrix, parse_baits, parse_csv, init_logging, UserError,
+    ExpressionMatrix, parse_baits, parse_csv, UserError,
     join_lines
 )
 import matplotlib.pyplot as plt
@@ -85,7 +85,7 @@ class App:
 
         self._output_dir = Path(args['output_dir'])
         log_file = self._output_dir / 'coexpnetviz.log'
-        init_logging('coexpnetviz', __version__, log_file)
+        _init_logging(log_file)
 
         self._baits = _parse_json_baits(args)
 
@@ -304,9 +304,25 @@ def _write_significant_cors(network, output_dir):
     network.significant_cors.to_csv(
         str(output_file), sep='\t', na_rep=str(np.nan), index=False,
     )
+def _init_logging(log_file):
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    logging.getLogger('coexpnetviz').setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter('{asctime} {levelname[0]}: {message}', style='{')
+
+    # Log to file
+    file_handler = logging.FileHandler(str(log_file))
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    root_logger.addHandler(file_handler)
 
 def main():
-    App().run()
+    try:
+        App().run()
+    except Exception:
+        logging.exception('Uncaught exception')
+        raise
 
 if __name__ == '__main__':
     # pylint does not understand click's magic
